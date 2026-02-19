@@ -8,17 +8,18 @@
 import SwiftUI
 
 struct ContentView: View {
+    @Environment(UserProfileStore.self) private var profileStore
+
     var body: some View {
-        VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-            Text("Hello, world!")
+        if profileStore.hasCompletedOnboarding {
+            HomeView()
+        } else {
+            WelcomeView()
         }
-        .padding()
     }
 }
 
 #Preview {
     ContentView()
+        .environment(UserProfileStore())
 }

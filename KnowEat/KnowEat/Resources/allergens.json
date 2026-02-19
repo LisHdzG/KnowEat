@@ -1,0 +1,72 @@
+[
+    {
+        "id": "gluten",
+        "name": "Gluten",
+        "icon": "square.grid.3x3.fill"
+    },
+    {
+        "id": "crustaceans",
+        "name": "Crustaceans",
+        "icon": "ant.fill"
+    },
+    {
+        "id": "eggs",
+        "name": "Eggs",
+        "icon": "oval.fill"
+    },
+    {
+        "id": "fish",
+        "name": "Fish",
+        "icon": "fish.fill"
+    },
+    {
+        "id": "peanuts",
+        "name": "Peanuts",
+        "icon": "leaf.circle.fill"
+    },
+    {
+        "id": "soy",
+        "name": "Soy",
+        "icon": "leaf.fill"
+    },
+    {
+        "id": "dairy",
+        "name": "Dairy",
+        "icon": "mug.fill"
+    },
+    {
+        "id": "tree_nuts",
+        "name": "Tree Nuts",
+        "icon": "tree.fill"
+    },
+    {
+        "id": "celery",
+        "name": "Celery",
+        "icon": "leaf.arrow.triangle.circlepath"
+    },
+    {
+        "id": "mustard",
+        "name": "Mustard",
+        "icon": "flask.fill"
+    },
+    {
+        "id": "sesame",
+        "name": "Sesame",
+        "icon": "drop.circle.fill"
+    },
+    {
+        "id": "sulfites",
+        "name": "Sulfites",
+        "icon": "atom"
+    },
+    {
+        "id": "lupins",
+        "name": "Lupins",
+        "icon": "camera.macro"
+    },
+    {
+        "id": "mollusks",
+        "name": "Mollusks",
+        "icon": "fossil.shell.fill"
+    }
+]
