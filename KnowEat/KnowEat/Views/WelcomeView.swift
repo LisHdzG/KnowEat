@@ -135,7 +135,8 @@ struct WelcomeView: View {
         Button {
             profileStore.profile = UserProfile(
                 nativeLanguage: viewModel.selectedLanguage,
-                allergenIds: Array(viewModel.selectedAllergens)
+                allergenIds: Array(viewModel.selectedAllergens),
+                saveHistory: true
             )
         } label: {
             Text("Continue")

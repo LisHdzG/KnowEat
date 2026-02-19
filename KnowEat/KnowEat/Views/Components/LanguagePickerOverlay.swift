@@ -15,7 +15,7 @@ struct LanguagePickerOverlay: View {
     @State private var dragOffset: CGFloat = 0
     @State private var sheetAppeared = false
 
-    private let sheetHeight: CGFloat = 420
+    private let sheetHeight: CGFloat = 350
     private let dismissThreshold: CGFloat = 100
 
     var body: some View {
@@ -110,10 +110,6 @@ struct LanguagePickerOverlay: View {
             }
         } label: {
             HStack(spacing: 14) {
-                Text(flagEmoji(for: language))
-                    .font(.system(size: 36))
-                    .shadow(color: .black.opacity(0.1), radius: 2, y: 1)
-
                 Text(language)
                     .font(.interSemiBold(size: 16))
                     .foregroundStyle(isActive ? Color("PrimaryOrange") : .primary)
@@ -152,15 +148,6 @@ struct LanguagePickerOverlay: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-    }
-
-    private func flagEmoji(for language: String) -> String {
-        switch language {
-        case "English": return "\u{1F1FA}\u{1F1F8}"
-        case "Español": return "\u{1F1EA}\u{1F1F8}"
-        case "Italiano": return "\u{1F1EE}\u{1F1F9}"
-        default: return "\u{1F310}"
-        }
     }
 
     private func animateDismiss() {

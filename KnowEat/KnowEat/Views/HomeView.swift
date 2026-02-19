@@ -28,7 +28,8 @@ struct HomeView: View {
             .background(Color(.systemBackground))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Button {
+                    NavigationLink {
+                        SettingsView()
                     } label: {
                         Image(systemName: "gearshape")
                     }
