@@ -434,9 +434,9 @@ private struct DishCard: View {
         var result = Text("")
         for (i, ingredient) in ingredients.enumerated() {
             let color: Color = isIngredientFlagged(ingredient) ? statusColor : safe
-            result = result + Text(ingredient).foregroundColor(color)
+            result = Text("\(result)\(Text(ingredient).foregroundColor(color))")
             if i < ingredients.count - 1 {
-                result = result + Text(", ").foregroundColor(safe)
+                result = Text("\(result)\(Text(", ").foregroundColor(safe))")
             }
         }
         return result

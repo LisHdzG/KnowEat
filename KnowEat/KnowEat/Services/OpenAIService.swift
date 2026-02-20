@@ -28,7 +28,8 @@ enum OpenAIError: LocalizedError {
     }
 }
 
-actor OpenAIService {
+@MainActor
+final class OpenAIService {
     static let shared = OpenAIService()
 
     private let allergenIDs = [

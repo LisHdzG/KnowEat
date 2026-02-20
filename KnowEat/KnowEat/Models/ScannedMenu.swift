@@ -7,7 +7,7 @@
 
 import Foundation
 
-struct ScannedMenu: Identifiable, Codable {
+struct ScannedMenu: Identifiable, Codable, Sendable {
     let id: UUID
     var restaurant: String
     var dishes: [Dish]
@@ -35,7 +35,7 @@ struct ScannedMenu: Identifiable, Codable {
     }
 }
 
-struct Dish: Identifiable, Codable {
+struct Dish: Identifiable, Codable, Sendable {
     let id: UUID
     let name: String
     let description: String?
@@ -55,7 +55,7 @@ struct Dish: Identifiable, Codable {
     }
 }
 
-struct AnalyzedDish: Identifiable {
+struct AnalyzedDish: Identifiable, Sendable {
     let dish: Dish
     let isSafe: Bool
     let matchedAllergenIds: [String]
