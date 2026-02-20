@@ -22,9 +22,10 @@ struct MenuCell: View {
                 .fill(Color("PrimaryOrange").opacity(0.08))
                 .frame(width: 64, height: 64)
                 .overlay {
-                    Image(systemName: "menucard.fill")
-                        .font(.system(size: 26))
-                        .foregroundStyle(Color("PrimaryOrange").opacity(0.5))
+                    Image(menu.categoryIcon)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: 36, height: 36)
                 }
 
             VStack(alignment: .leading, spacing: 4) {
@@ -37,15 +38,23 @@ struct MenuCell: View {
                     .font(.interRegular(size: 12))
                     .foregroundStyle(.secondary)
 
-                HStack(spacing: 4) {
-                    Image(systemName: "fork.knife")
-                        .font(.system(size: 10))
-                        .foregroundStyle(.secondary)
+                HStack(spacing: 10) {
+                    HStack(spacing: 4) {
+                        Image(systemName: "fork.knife")
+                            .font(.system(size: 10))
+                        Text("\(menu.dishes.count) dishes")
+                            .font(.interRegular(size: 12))
+                    }
 
-                    Text("\(menu.dishes.count) dishes")
-                        .font(.interRegular(size: 12))
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        Image(systemName: "globe")
+                            .font(.system(size: 10))
+                        Text(menu.menuLanguage)
+                            .font(.interRegular(size: 12))
+                            .lineLimit(1)
+                    }
                 }
+                .foregroundStyle(.secondary)
             }
 
             Spacer()

@@ -66,12 +66,21 @@ actor OpenAIService {
         return try parseResponse(data: data)
     }
 
+    private static let categoryIcons = [
+        "beer", "dinner", "fried-rice", "lasagna", "lunch-bag", "nachos",
+        "pancake", "pasta", "pastry", "pizza-slice", "ramen", "restaurant",
+        "rice", "salad", "sausage", "shrimp", "taco"
+    ]
+
     private func buildSystemPrompt(userLanguage: String) -> String {
         let ids = allergenIDs.joined(separator: ", ")
+        let icons = Self.categoryIcons.joined(separator: ", ")
         return """
         You are a menu analysis assistant. Analyze the restaurant menu image(s) and return ONLY valid JSON with this exact structure:
         {
           "restaurant": "Name of the restaurant if visible, otherwise 'Unknown'",
+          "categoryIcon": "best matching icon for this restaurant type",
+          "menuLanguage": "detected language of the menu",
           "dishes": [
             {
               "name": "Dish name translated to \(userLanguage)",
@@ -88,6 +97,8 @@ actor OpenAIService {
         - LANGUAGE: All dish names, categories, and ingredients MUST be translated to \(userLanguage). Keep the original name in the description field.
         - For ingredients: list the most likely ingredients even if not explicitly stated on the menu. Use your culinary knowledge. Translate them to \(userLanguage).
         - For allergenIds: use ONLY these IDs: \(ids)
+        - For categoryIcon: pick the SINGLE best matching icon from this list based on the restaurant's cuisine type: \(icons). If none fits well, use "restaurant".
+        - For menuLanguage: detect the original language of the menu text and return its name in English (e.g. "Italian", "Japanese", "Spanish").
         - For category: translate the menu section heading to \(userLanguage) and include the original in parentheses (e.g. "Land Appetizers (Antipasti di Terra)").
         - For description: always put the original dish name as written on the menu (in its original language).
         - Include ALL dishes visible in the menu image(s).
@@ -164,12 +175,19 @@ actor OpenAIService {
             )
         }
 
-        return ScannedMenu(restaurant: menuResponse.restaurant, dishes: dishes)
+        let icon = Self.categoryIcons.contains(menuResponse.categoryIcon ?? "")
+            ? menuResponse.categoryIcon! : "restaurant"
+
+        let language = menuResponse.menuLanguage ?? "Unknown"
+
+        return ScannedMenu(restaurant: menuResponse.restaurant, dishes: dishes, categoryIcon: icon, menuLanguage: language)
     }
 }
 
 private struct MenuAPIResponse: Decodable {
     let restaurant: String
+    let categoryIcon: String?
+    let menuLanguage: String?
     let dishes: [DishResponse]
 }
 

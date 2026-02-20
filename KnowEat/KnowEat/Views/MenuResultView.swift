@@ -117,10 +117,13 @@ struct MenuResultView: View {
             }
             .alert("Restaurant Name", isPresented: $showNamePrompt) {
                 TextField("Enter restaurant name", text: $alertNameInput)
+                    .onChange(of: alertNameInput) { _, newValue in
+                        if newValue.count > 20 { alertNameInput = String(newValue.prefix(20)) }
+                    }
                 Button("Save") {
                     let name = alertNameInput.trimmingCharacters(in: .whitespaces)
                     if !name.isEmpty {
-                        let savedMenu = ScannedMenu(restaurant: name, dishes: menu.dishes)
+                        let savedMenu = ScannedMenu(restaurant: name, dishes: menu.dishes, categoryIcon: menu.categoryIcon, menuLanguage: menu.menuLanguage)
                         onSave?(savedMenu)
                     }
                 }

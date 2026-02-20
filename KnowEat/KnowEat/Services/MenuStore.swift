@@ -32,6 +32,12 @@ final class MenuStore {
         persist()
     }
 
+    func rename(_ menu: ScannedMenu, to newName: String) {
+        guard let index = menus.firstIndex(where: { $0.id == menu.id }) else { return }
+        menus[index].restaurant = newName
+        persist()
+    }
+
     private func load() {
         guard let data = UserDefaults.standard.data(forKey: Self.storageKey),
               let decoded = try? JSONDecoder().decode([ScannedMenu].self, from: data) else { return }

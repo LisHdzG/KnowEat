@@ -13,6 +13,9 @@ struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @State private var scanVM = MenuScanViewModel()
     @State private var selectedMenu: ScannedMenu?
+    @State private var menuToRename: ScannedMenu?
+    @State private var renameText = ""
+    @State private var showRenameAlert = false
 
     private var groupedMenus: [(String, [ScannedMenu])] {
         let calendar = Calendar.current
@@ -123,6 +126,19 @@ struct HomeView: View {
                 } message: {
                     Text("KnowEat needs camera access to scan menus. Please enable it in Settings.")
                 }
+                .alert("Rename Menu", isPresented: $showRenameAlert) {
+                    TextField("Restaurant name", text: $renameText)
+                        .onChange(of: renameText) { _, newValue in
+                            if newValue.count > 20 { renameText = String(newValue.prefix(20)) }
+                        }
+                    Button("Save") {
+                        if let menu = menuToRename,
+                           !renameText.trimmingCharacters(in: .whitespaces).isEmpty {
+                            menuStore.rename(menu, to: renameText)
+                        }
+                    }
+                    Button("Cancel", role: .cancel) {}
+                }
             }
 
             if scanVM.isAnalyzing {
@@ -149,12 +165,14 @@ struct HomeView: View {
     // MARK: - Menu List
 
     private var menuListSection: some View {
-        ScrollView(showsIndicators: false) {
+        Group {
             if menuStore.menus.isEmpty {
-                emptyMenuPlaceholder
-                    .padding(.top, 60)
+                ScrollView {
+                    emptyMenuPlaceholder
+                        .padding(.top, 60)
+                }
             } else {
-                LazyVStack(alignment: .leading, spacing: 16) {
+                List {
                     ForEach(groupedMenus, id: \.0) { dateLabel, menus in
                         Section {
                             ForEach(menus) { menu in
@@ -164,16 +182,36 @@ struct HomeView: View {
                                     MenuCell(menu: menu)
                                 }
                                 .buttonStyle(.plain)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                                    Button(role: .destructive) {
+                                        withAnimation { menuStore.delete(menu) }
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
+                                .swipeActions(edge: .leading, allowsFullSwipe: false) {
+                                    Button {
+                                        renameText = menu.restaurant
+                                        menuToRename = menu
+                                        showRenameAlert = true
+                                    } label: {
+                                        Label("Rename", systemImage: "pencil")
+                                    }
+                                    .tint(Color("PrimaryOrange"))
+                                }
+                                .listRowBackground(Color.clear)
+                                .listRowSeparator(.hidden)
+                                .listRowInsets(EdgeInsets(top: 8, leading: 24, bottom: 8, trailing: 24))
                             }
                         } header: {
                             Text(dateLabel)
                                 .font(.interSemiBold(size: 16))
                                 .foregroundStyle(.secondary)
-                                .padding(.top, 4)
+                                .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 0, trailing: 24))
                         }
                     }
                 }
-                .padding(.horizontal, 24)
+                .listStyle(.plain)
             }
         }
         .frame(maxHeight: .infinity)
