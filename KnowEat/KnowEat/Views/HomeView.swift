@@ -36,8 +36,8 @@ struct HomeView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            ZStack {
+        ZStack {
+            NavigationStack {
                 VStack(alignment: .leading, spacing: 16) {
                     titleSection
                         .padding(.horizontal, 24)
@@ -51,82 +51,84 @@ struct HomeView: View {
                 }
                 .padding(.top, 8)
                 .background(Color(.systemBackground))
-
-                if scanVM.isAnalyzing {
-                    analyzingOverlay
-                }
-            }
-            .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
-                    NavigationLink {
-                        SettingsView()
-                    } label: {
-                        Image(systemName: "gearshape")
+                .toolbar {
+                    ToolbarItem(placement: .topBarLeading) {
+                        NavigationLink {
+                            SettingsView()
+                        } label: {
+                            Image(systemName: "gearshape")
+                        }
+                        .tint(Color("SecondaryGray"))
                     }
-                    .tint(Color("SecondaryGray"))
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        scanVM.openScanner()
-                    } label: {
-                        Image(systemName: "doc.viewfinder")
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Button {
+                            scanVM.openScanner()
+                        } label: {
+                            Image(systemName: "doc.viewfinder")
+                        }
+                        .tint(Color("PrimaryOrange"))
                     }
-                    .tint(Color("PrimaryOrange"))
                 }
-            }
-            .fullScreenCover(isPresented: $scanVM.isShowingScanner) {
-                CameraView(
-                    onPhotosReady: { images in
-                        let allergenIds = profileStore.profile?.allergenIds ?? []
-                        let language = profileStore.profile?.nativeLanguage ?? "English"
-                        scanVM.handleScannedImages(images, userAllergenIds: allergenIds, userLanguage: language)
-                    },
-                    onCancelled: {
-                        scanVM.handleScanCancelled()
-                    }
-                )
-            }
-            .fullScreenCover(isPresented: $scanVM.showResults) {
-                if let menu = scanVM.scannedMenu {
-                    MenuResultView(
-                        menu: menu,
-                        analyzedDishes: scanVM.analyzedDishes,
-                        allergens: viewModel.allergens,
-                        activeFilters: viewModel.activeFilters(for: profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])),
-                        onSave: { savedMenu in
-                            menuStore.save(savedMenu)
-                            scanVM.dismissResults()
+                .fullScreenCover(isPresented: $scanVM.isShowingScanner) {
+                    CameraView(
+                        onPhotosReady: { images in
+                            let allergenIds = profileStore.profile?.allergenIds ?? []
+                            let language = profileStore.profile?.nativeLanguage ?? "English"
+                            scanVM.handleScannedImages(images, userAllergenIds: allergenIds, userLanguage: language)
                         },
-                        onDismiss: { scanVM.dismissResults() }
+                        onCancelled: {
+                            scanVM.handleScanCancelled()
+                        }
                     )
                 }
-            }
-            .fullScreenCover(item: $selectedMenu) { menu in
-                let userAllergenIds = profileStore.profile?.allergenIds ?? []
-                let analyzed = AllergenChecker.analyze(menu: menu, userAllergenIds: userAllergenIds)
-                MenuResultView(
-                    menu: menu,
-                    analyzedDishes: analyzed,
-                    allergens: viewModel.allergens,
-                    activeFilters: viewModel.activeFilters(for: profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])),
-                    onDismiss: { selectedMenu = nil }
-                )
-            }
-            .alert("Error", isPresented: .init(
-                get: { scanVM.errorMessage != nil },
-                set: { if !$0 { scanVM.errorMessage = nil } }
-            )) {
-                Button("OK") { scanVM.errorMessage = nil }
-            } message: {
-                Text(scanVM.errorMessage ?? "")
-            }
-            .alert("Camera Access Required", isPresented: $scanVM.showPermissionDeniedAlert) {
-                Button("Open Settings") {
-                    scanVM.openAppSettings()
+                .fullScreenCover(isPresented: $scanVM.showResults) {
+                    if let menu = scanVM.scannedMenu {
+                        MenuResultView(
+                            menu: menu,
+                            analyzedDishes: scanVM.analyzedDishes,
+                            allergens: viewModel.allergens,
+                            activeFilters: viewModel.activeFilters(for: profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])),
+                            onSave: { savedMenu in
+                                menuStore.save(savedMenu)
+                                scanVM.dismissResults()
+                            },
+                            onDismiss: { scanVM.dismissResults() }
+                        )
+                    }
                 }
-                Button("Cancel", role: .cancel) {}
-            } message: {
-                Text("KnowEat needs camera access to scan menus. Please enable it in Settings.")
+                .fullScreenCover(item: $selectedMenu) { menu in
+                    let userAllergenIds = profileStore.profile?.allergenIds ?? []
+                    let analyzed = AllergenChecker.analyze(menu: menu, userAllergenIds: userAllergenIds)
+                    MenuResultView(
+                        menu: menu,
+                        analyzedDishes: analyzed,
+                        allergens: viewModel.allergens,
+                        activeFilters: viewModel.activeFilters(for: profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])),
+                        onDismiss: { selectedMenu = nil }
+                    )
+                }
+                .alert("Error", isPresented: .init(
+                    get: { scanVM.errorMessage != nil },
+                    set: { if !$0 { scanVM.errorMessage = nil } }
+                )) {
+                    Button("OK") { scanVM.errorMessage = nil }
+                } message: {
+                    Text(scanVM.errorMessage ?? "")
+                }
+                .alert("Camera Access Required", isPresented: $scanVM.showPermissionDeniedAlert) {
+                    Button("Open Settings") {
+                        scanVM.openAppSettings()
+                    }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("KnowEat needs camera access to scan menus. Please enable it in Settings.")
+                }
+            }
+
+            if scanVM.isAnalyzing {
+                LoaderView()
+                    .transition(.opacity)
+                    .ignoresSafeArea()
             }
         }
     }
@@ -197,31 +199,6 @@ struct HomeView: View {
         }
     }
 
-    private var analyzingOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-
-            VStack(spacing: 16) {
-                ProgressView()
-                    .controlSize(.large)
-                    .tint(Color("PrimaryOrange"))
-
-                Text("Analyzing menu...")
-                    .font(.interSemiBold(size: 17))
-                    .foregroundStyle(.white)
-
-                Text("This may take a few seconds")
-                    .font(.interRegular(size: 13))
-                    .foregroundStyle(.white.opacity(0.7))
-            }
-            .padding(32)
-            .background(
-                RoundedRectangle(cornerRadius: 20)
-                    .fill(.ultraThinMaterial)
-            )
-        }
-    }
 }
 
 #Preview {
