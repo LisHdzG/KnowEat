@@ -1,0 +1,11 @@
+# macOS
+.DS_Store
+
+# Xcode user state
+*.xcuserstate
+
+# Node
+functions/node_modules/
+
+# Secrets (ya no se usa, pero por seguridad)
+Secrets.plist

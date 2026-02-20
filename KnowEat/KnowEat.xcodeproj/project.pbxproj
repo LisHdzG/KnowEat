@@ -6,6 +6,14 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		687ADF282F48ABA700122074 /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = 687ADF272F48ABA700122074 /* FirebaseAnalytics */; };
+		687ADF2A2F48ABA700122074 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 687ADF292F48ABA700122074 /* FirebaseCrashlytics */; };
+		687ADF2C2F48ABA700122074 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 687ADF2B2F48ABA700122074 /* FirebaseRemoteConfig */; };
+		687ADF2E2F48AC5100122074 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 687ADF2D2F48AC5100122074 /* FirebaseCore */; };
+		687ADF302F48AC5100122074 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 687ADF2F2F48AC5100122074 /* FirebaseFunctions */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		684CCFCE2F47C789001C0BA9 /* KnowEat.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = KnowEat.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +31,11 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				687ADF2C2F48ABA700122074 /* FirebaseRemoteConfig in Frameworks */,
+				687ADF282F48ABA700122074 /* FirebaseAnalytics in Frameworks */,
+				687ADF302F48AC5100122074 /* FirebaseFunctions in Frameworks */,
+				687ADF2E2F48AC5100122074 /* FirebaseCore in Frameworks */,
+				687ADF2A2F48ABA700122074 /* FirebaseCrashlytics in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +78,11 @@
 			);
 			name = KnowEat;
 			packageProductDependencies = (
+				687ADF272F48ABA700122074 /* FirebaseAnalytics */,
+				687ADF292F48ABA700122074 /* FirebaseCrashlytics */,
+				687ADF2B2F48ABA700122074 /* FirebaseRemoteConfig */,
+				687ADF2D2F48AC5100122074 /* FirebaseCore */,
+				687ADF2F2F48AC5100122074 /* FirebaseFunctions */,
 			);
 			productName = KnowEat;
 			productReference = 684CCFCE2F47C789001C0BA9 /* KnowEat.app */;
@@ -94,6 +112,9 @@
 			);
 			mainGroup = 684CCFC52F47C789001C0BA9;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				687ADF262F48ABA700122074 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 684CCFCF2F47C789001C0BA9 /* Products */;
 			projectDirPath = "";
@@ -249,26 +270,27 @@
 		684CCFDA2F47C78A001C0BA9 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = KnowEat;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = L69L73WG96;
+				DEVELOPMENT_TEAM = HMT7XKVJZ7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
 				INFOPLIST_KEY_NSCameraUsageDescription = "KnowEat needs camera access to scan restaurant menus and identify allergens in dishes.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = marianlisethDev.KnowEat;
+				PRODUCT_BUNDLE_IDENTIFIER = simisTeam.KnowEat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -283,26 +305,27 @@
 		684CCFDB2F47C78A001C0BA9 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_APPICON_NAME = KnowEat;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = L69L73WG96;
+				DEVELOPMENT_TEAM = HMT7XKVJZ7;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.food-and-drink";
 				INFOPLIST_KEY_NSCameraUsageDescription = "KnowEat needs camera access to scan restaurant menus and identify allergens in dishes.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = "Launch Screen";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = marianlisethDev.KnowEat;
+				PRODUCT_BUNDLE_IDENTIFIER = simisTeam.KnowEat;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -336,6 +359,45 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		687ADF262F48ABA700122074 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 12.9.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		687ADF272F48ABA700122074 /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 687ADF262F48ABA700122074 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		687ADF292F48ABA700122074 /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 687ADF262F48ABA700122074 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		687ADF2B2F48ABA700122074 /* FirebaseRemoteConfig */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 687ADF262F48ABA700122074 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseRemoteConfig;
+		};
+		687ADF2D2F48AC5100122074 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 687ADF262F48ABA700122074 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		687ADF2F2F48AC5100122074 /* FirebaseFunctions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 687ADF262F48ABA700122074 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFunctions;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 684CCFC62F47C789001C0BA9 /* Project object */;
 }
