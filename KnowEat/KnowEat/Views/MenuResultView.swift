@@ -161,15 +161,14 @@ struct MenuResultView: View {
             } message: {
                 Text("We couldn't detect the restaurant name. Please enter it to save this menu.")
             }
-            .overlay {
-                if showLanguagePicker {
-                    LanguagePickerOverlay(
-                        selectedLanguage: $selectedLanguage,
-                        languages: availableLanguages,
-                        isPresented: $showLanguagePicker
-                    )
-                }
-            }
+        }
+
+        if showLanguagePicker {
+            LanguagePickerOverlay(
+                selectedLanguage: $selectedLanguage,
+                languages: availableLanguages,
+                isPresented: $showLanguagePicker
+            )
         }
 
         if isTranslating {
