@@ -109,11 +109,19 @@ struct HomeView: View {
                         onDismiss: { selectedMenu = nil }
                     )
                 }
-                .alert("Error", isPresented: .init(
+                .alert(scanVM.errorTitle, isPresented: .init(
                     get: { scanVM.errorMessage != nil },
                     set: { if !$0 { scanVM.errorMessage = nil } }
                 )) {
-                    Button("OK") { scanVM.errorMessage = nil }
+                    if scanVM.canRetry {
+                        Button("Try Again") {
+                            scanVM.errorMessage = nil
+                            scanVM.retry()
+                        }
+                    }
+                    Button(scanVM.canRetry ? "Cancel" : "OK", role: .cancel) {
+                        scanVM.errorMessage = nil
+                    }
                 } message: {
                     Text(scanVM.errorMessage ?? "")
                 }

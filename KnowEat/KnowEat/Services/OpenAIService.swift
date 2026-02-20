@@ -12,6 +12,8 @@ enum OpenAIError: LocalizedError {
     case invalidAPIKey
     case encodingFailed
     case invalidResponse
+    case unreadableMenu
+    case timeout
     case serverError(String)
 
     var errorDescription: String? {
@@ -22,8 +24,19 @@ enum OpenAIError: LocalizedError {
             return "Failed to encode the menu images."
         case .invalidResponse:
             return "Could not understand the API response."
+        case .unreadableMenu:
+            return "The scanned menu could not be analyzed. Please try with a clearer photo and make sure the menu text is fully visible."
+        case .timeout:
+            return "The request took too long. Please try again."
         case .serverError(let message):
             return message
+        }
+    }
+
+    var isRetryable: Bool {
+        switch self {
+        case .timeout, .serverError: return true
+        default: return false
         }
     }
 }
@@ -69,7 +82,13 @@ final class OpenAIService {
         let systemPrompt = buildSystemPrompt(userLanguage: userLanguage)
         let request = try buildRequest(base64Images: base64Images, systemPrompt: systemPrompt)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch let urlError as URLError where urlError.code == .timedOut {
+            throw OpenAIError.timeout
+        }
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw OpenAIError.invalidResponse
@@ -263,10 +282,19 @@ final class OpenAIService {
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard let contentData = cleaned.data(using: .utf8) else {
-            throw OpenAIError.invalidResponse
+            throw OpenAIError.unreadableMenu
         }
 
-        let menuResponse = try JSONDecoder().decode(MenuAPIResponse.self, from: contentData)
+        let menuResponse: MenuAPIResponse
+        do {
+            menuResponse = try JSONDecoder().decode(MenuAPIResponse.self, from: contentData)
+        } catch {
+            throw OpenAIError.unreadableMenu
+        }
+
+        guard !menuResponse.dishes.isEmpty else {
+            throw OpenAIError.unreadableMenu
+        }
 
         let dishes = menuResponse.dishes.map { raw in
             Dish(

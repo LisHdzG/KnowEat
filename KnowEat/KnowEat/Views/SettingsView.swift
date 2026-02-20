@@ -9,7 +9,10 @@ import SwiftUI
 
 struct SettingsView: View {
     @Environment(UserProfileStore.self) private var profileStore
+    @Environment(MenuStore.self) private var menuStore
     @State private var viewModel = SettingsViewModel()
+    @State private var showDeleteConfirmation = false
+    @State private var showFinalConfirmation = false
 
     var body: some View {
         ScrollView {
@@ -221,20 +224,54 @@ struct SettingsView: View {
 
     private var historySection: some View {
         sectionContainer(header: "History") {
-            HStack(spacing: 14) {
-                settingsIcon("clock.arrow.circlepath")
+            VStack(spacing: 0) {
+                HStack(spacing: 14) {
+                    settingsIcon("clock.arrow.circlepath")
 
-                Text("Save history")
-                    .font(.interRegular(size: 16))
+                    Text("Save history")
+                        .font(.interRegular(size: 16))
 
-                Spacer()
+                    Spacer()
 
-                Toggle("", isOn: saveHistoryBinding)
-                    .labelsHidden()
-                    .tint(Color("PrimaryOrange"))
+                    Toggle("", isOn: saveHistoryBinding)
+                        .labelsHidden()
+                        .tint(Color("PrimaryOrange"))
+                }
+                .padding(.horizontal, 16)
+                .padding(.vertical, 12)
+
+                if !menuStore.menus.isEmpty {
+                    Divider()
+                        .padding(.leading, 62)
+
+                    Button {
+                        showDeleteConfirmation = true
+                    } label: {
+                        settingsRow(
+                            icon: "trash.fill",
+                            title: "Delete all menus",
+                            trailing: "\(menuStore.menus.count)"
+                        )
+                    }
+                    .buttonStyle(.plain)
+                    .alert("Delete All Menus?", isPresented: $showDeleteConfirmation) {
+                        Button("Delete All", role: .destructive) {
+                            showFinalConfirmation = true
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("This will permanently delete all \(menuStore.menus.count) saved menus.")
+                    }
+                    .alert("Are you sure?", isPresented: $showFinalConfirmation) {
+                        Button("Yes, delete everything", role: .destructive) {
+                            withAnimation { menuStore.deleteAll() }
+                        }
+                        Button("Cancel", role: .cancel) {}
+                    } message: {
+                        Text("This action cannot be undone.")
+                    }
+                }
             }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
         }
     }
 
@@ -352,5 +389,6 @@ struct SettingsView: View {
     NavigationStack {
         SettingsView()
             .environment(UserProfileStore())
+            .environment(MenuStore())
     }
 }

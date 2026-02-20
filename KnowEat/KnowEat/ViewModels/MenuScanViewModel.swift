@@ -15,8 +15,13 @@ final class MenuScanViewModel {
     var scannedMenu: ScannedMenu?
     var analyzedDishes: [AnalyzedDish] = []
     var errorMessage: String?
+    var errorTitle: String = "Error"
+    var canRetry = false
     var showResults = false
     var showPermissionDeniedAlert = false
+
+    private var lastImages: [UIImage] = []
+    private var lastProfile: UserProfile?
 
     func openScanner() {
         errorMessage = nil
@@ -50,9 +55,33 @@ final class MenuScanViewModel {
     }
 
     func handleScannedImages(_ images: [UIImage], profile: UserProfile) {
+        lastImages = images
+        lastProfile = profile
         isShowingScanner = false
+        performAnalysis(images: images, profile: profile)
+    }
+
+    func retry() {
+        guard let profile = lastProfile, !lastImages.isEmpty else { return }
+        performAnalysis(images: lastImages, profile: profile)
+    }
+
+    func handleScanCancelled() {
+        isShowingScanner = false
+    }
+
+    func dismissResults() {
+        showResults = false
+        scannedMenu = nil
+        analyzedDishes = []
+        lastImages = []
+        lastProfile = nil
+    }
+
+    private func performAnalysis(images: [UIImage], profile: UserProfile) {
         isAnalyzing = true
         errorMessage = nil
+        canRetry = false
 
         Task {
             do {
@@ -65,22 +94,30 @@ final class MenuScanViewModel {
                     self.isAnalyzing = false
                     self.showResults = true
                 }
+            } catch let openAIError as OpenAIError {
+                await MainActor.run {
+                    self.isAnalyzing = false
+                    self.canRetry = openAIError.isRetryable
+                    switch openAIError {
+                    case .unreadableMenu:
+                        self.errorTitle = "Unreadable Menu"
+                        self.errorMessage = openAIError.errorDescription
+                    case .timeout:
+                        self.errorTitle = "Connection Timeout"
+                        self.errorMessage = openAIError.errorDescription
+                    default:
+                        self.errorTitle = "Error"
+                        self.errorMessage = openAIError.errorDescription
+                    }
+                }
             } catch {
                 await MainActor.run {
-                    self.errorMessage = error.localizedDescription
                     self.isAnalyzing = false
+                    self.errorTitle = "Error"
+                    self.errorMessage = error.localizedDescription
+                    self.canRetry = false
                 }
             }
         }
-    }
-
-    func handleScanCancelled() {
-        isShowingScanner = false
-    }
-
-    func dismissResults() {
-        showResults = false
-        scannedMenu = nil
-        analyzedDishes = []
     }
 }
