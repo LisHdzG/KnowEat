@@ -28,6 +28,7 @@ struct MenuResultView: View {
     @State private var displayMenu: ScannedMenu?
     @State private var displayDishes: [AnalyzedDish]?
     @State private var isTranslating = false
+    @State private var translationError: String?
     @State private var showDietaryEditor = false
     @State private var currentFilterGroups: [DietaryFilterGroup]?
 
@@ -143,7 +144,12 @@ struct MenuResultView: View {
             }
             .onAppear {
                 if selectedLanguage.isEmpty {
-                    selectedLanguage = profileStore.profile?.nativeLanguage ?? "English"
+                    let menuLang = menu.menuLanguage
+                    if menuLang != "Unknown" && !menuLang.isEmpty {
+                        selectedLanguage = menuLang
+                    } else {
+                        selectedLanguage = profileStore.profile?.nativeLanguage ?? "English"
+                    }
                 }
             }
             .onChange(of: selectedLanguage) { oldValue, newValue in
@@ -172,6 +178,14 @@ struct MenuResultView: View {
                 }
             } message: {
                 Text("We couldn't detect the restaurant name. Please enter it to save this menu.")
+            }
+            .alert("Translation Error", isPresented: .init(
+                get: { translationError != nil },
+                set: { if !$0 { translationError = nil } }
+            )) {
+                Button("OK") { translationError = nil }
+            } message: {
+                Text(translationError ?? "")
             }
         }
 
@@ -338,14 +352,19 @@ struct MenuResultView: View {
         showLanguagePicker = false
         isTranslating = true
         selectedCategoryIndex = 0
-        let sourceDishes = activeMenu.dishes
+        let currentMenu = activeMenu
 
         Task { @MainActor in
             do {
-                let translated = try await OpenAIService.shared.retranslateMenu(dishes: sourceDishes, to: language)
+                let result = try await OpenAIService.shared.retranslateMenu(
+                    dishes: currentMenu.dishes,
+                    restaurant: currentMenu.restaurant,
+                    to: language
+                )
 
                 var updated = displayMenu ?? menu
-                updated.dishes = translated
+                updated.dishes = result.dishes
+                updated.restaurant = result.restaurant
                 updated.menuLanguage = language
                 displayMenu = updated
 
@@ -353,12 +372,13 @@ struct MenuResultView: View {
                 displayDishes = AllergenChecker.analyze(menu: updated, profile: profile)
 
                 if isReadOnly {
-                    menuStore.updateTranslation(menu, dishes: translated, menuLanguage: language)
+                    menuStore.updateTranslation(menu, translated: updated)
                 }
 
                 isTranslating = false
             } catch {
                 isTranslating = false
+                translationError = error.localizedDescription
             }
         }
     }

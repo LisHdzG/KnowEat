@@ -132,21 +132,30 @@ exports.retranslateMenu = onCall(
     maxInstances: 10,
   },
   async (request) => {
-    const { dishesJSON, targetLanguage } = request.data;
+    const { dishesJSON, targetLanguage, restaurant } = request.data;
 
     if (!dishesJSON || !targetLanguage) {
       throw new HttpsError("invalid-argument", "Missing dishesJSON or targetLanguage");
     }
 
-    const systemPrompt = `You are a translation assistant. Translate menu dishes to ${targetLanguage}.
-For each dish:
+    const restaurantLine = restaurant
+      ? `\nAlso translate the restaurant name "${restaurant}" to ${targetLanguage} and include it in the response.`
+      : "";
+
+    const systemPrompt = `You are a translation assistant. Translate menu content to ${targetLanguage}.
+Return ONLY a valid JSON object with this structure:
+{
+  "restaurant": "restaurant name translated to ${targetLanguage}",
+  "dishes": [translated dishes array]
+}
+For each dish in the "dishes" array:
 - "name": translate the dish name to ${targetLanguage}
 - "description": keep EXACTLY as is (original name from menu)
 - "price": keep EXACTLY as is
 - "category": translate to ${targetLanguage} with original in parentheses
 - "ingredients": translate all to ${targetLanguage}
-- "allergenIds": keep EXACTLY as is
-Return ONLY a valid JSON array. No markdown, no code fences, no extra text.`;
+- "allergenIds": keep EXACTLY as is${restaurantLine}
+Return ONLY the JSON object. No markdown, no code fences, no extra text.`;
 
     const body = {
       model: MODEL,
@@ -182,7 +191,11 @@ Return ONLY a valid JSON array. No markdown, no code fences, no extra text.`;
     const cleaned = content.replace(/```json/g, "").replace(/```/g, "").trim();
 
     try {
-      return JSON.parse(cleaned);
+      const parsed = JSON.parse(cleaned);
+      if (Array.isArray(parsed)) {
+        return { restaurant: restaurant || "", dishes: parsed };
+      }
+      return parsed;
     } catch {
       throw new HttpsError("internal", "Failed to parse OpenAI JSON response");
     }

@@ -84,7 +84,12 @@ final class OpenAIService {
         return try parseMenuResponse(dict: dict, userLanguage: userLanguage)
     }
 
-    func retranslateMenu(dishes: [Dish], to language: String) async throws -> [Dish] {
+    struct TranslationResult {
+        let restaurant: String
+        let dishes: [Dish]
+    }
+
+    func retranslateMenu(dishes: [Dish], restaurant: String, to language: String) async throws -> TranslationResult {
         let dishArray = dishes.map { dish -> [String: Any] in
             var d: [String: Any] = [
                 "name": dish.name,
@@ -104,21 +109,25 @@ final class OpenAIService {
         do {
             result = try await functions.httpsCallable("retranslateMenu").call([
                 "dishesJSON": dishJSON,
-                "targetLanguage": language
+                "targetLanguage": language,
+                "restaurant": restaurant
             ])
         } catch {
             let nsError = error as NSError
             throw OpenAIError.serverError(nsError.localizedDescription)
         }
 
-        guard let dishDicts = result.data as? [[String: Any]] else {
+        guard let dict = result.data as? [String: Any],
+              let dishDicts = dict["dishes"] as? [[String: Any]] else {
             throw OpenAIError.invalidResponse
         }
+
+        let translatedRestaurant = dict["restaurant"] as? String ?? restaurant
 
         let jsonResult = try JSONSerialization.data(withJSONObject: dishDicts)
         let rawDishes = try JSONDecoder().decode([DishResponse].self, from: jsonResult)
 
-        return rawDishes.map { raw in
+        let translatedDishes = rawDishes.map { raw in
             Dish(
                 name: raw.name,
                 description: raw.description,
@@ -128,6 +137,8 @@ final class OpenAIService {
                 allergenIds: raw.allergenIds
             )
         }
+
+        return TranslationResult(restaurant: translatedRestaurant, dishes: translatedDishes)
     }
 
     private func parseMenuResponse(dict: [String: Any], userLanguage: String) throws -> ScannedMenu {

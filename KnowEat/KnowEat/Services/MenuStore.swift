@@ -43,10 +43,11 @@ final class MenuStore {
         persist()
     }
 
-    func updateTranslation(_ menu: ScannedMenu, dishes: [Dish], menuLanguage: String) {
-        guard let index = menus.firstIndex(where: { $0.id == menu.id }) else { return }
-        menus[index].dishes = dishes
-        menus[index].menuLanguage = menuLanguage
+    func updateTranslation(_ original: ScannedMenu, translated: ScannedMenu) {
+        guard let index = menus.firstIndex(where: { $0.id == original.id }) else { return }
+        menus[index].dishes = translated.dishes
+        menus[index].restaurant = translated.restaurant
+        menus[index].menuLanguage = translated.menuLanguage
         persist()
     }
 
