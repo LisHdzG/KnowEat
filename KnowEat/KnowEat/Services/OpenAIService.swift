@@ -38,6 +38,22 @@ final class OpenAIService {
         "sesame", "sulfites", "lupins", "mollusks"
     ]
 
+    private let intoleranceIDs = [
+        "lactose", "fructose", "histamine", "fodmap"
+    ]
+
+    private let conditionIDs = [
+        "celiac", "diabetes", "hypertension", "kidney_disease", "gout", "favism"
+    ]
+
+    private let dietIDs = [
+        "vegetarian", "vegan", "pescatarian", "halal", "kosher"
+    ]
+
+    private let situationIDs = [
+        "pregnant", "breastfeeding"
+    ]
+
     func analyzeMenu(images: [UIImage], userLanguage: String) async throws -> ScannedMenu {
         guard !APIConfig.openAIKey.isEmpty else {
             throw OpenAIError.invalidAPIKey
@@ -64,7 +80,7 @@ final class OpenAIService {
             throw OpenAIError.serverError("API error (\(httpResponse.statusCode)): \(body)")
         }
 
-        return try parseResponse(data: data)
+        return try parseResponse(data: data, translatedTo: userLanguage)
     }
 
     func retranslateMenu(dishes: [Dish], to language: String) async throws -> [Dish] {
@@ -159,7 +175,8 @@ final class OpenAIService {
     ]
 
     private func buildSystemPrompt(userLanguage: String) -> String {
-        let ids = allergenIDs.joined(separator: ", ")
+        let allIDs = (allergenIDs + intoleranceIDs + conditionIDs + dietIDs + situationIDs)
+            .joined(separator: ", ")
         let icons = Self.categoryIcons.joined(separator: ", ")
         return """
         You are a menu analysis assistant. Analyze the restaurant menu image(s) and return ONLY valid JSON with this exact structure:
@@ -182,7 +199,8 @@ final class OpenAIService {
         Rules:
         - LANGUAGE: All dish names, categories, and ingredients MUST be translated to \(userLanguage). Keep the original name in the description field.
         - For ingredients: list the most likely ingredients even if not explicitly stated on the menu. Use your culinary knowledge. Translate them to \(userLanguage).
-        - For allergenIds: use ONLY these IDs: \(ids)
+        - For allergenIds: tag each dish with ALL applicable IDs from this list: \(allIDs)
+          These cover allergens (gluten, dairy, eggs…), intolerances (lactose, fructose, histamine, fodmap), medical conditions the dish is problematic for (celiac, diabetes=high sugar, hypertension=high sodium, kidney_disease=high potassium/phosphorus, gout=high purines, favism=fava beans), diets the dish violates (vegetarian=contains meat/fish, vegan=contains any animal product, pescatarian=contains meat but not fish, halal=contains pork/alcohol, kosher=not kosher), and situations where the dish should be avoided (pregnant=raw fish/unpasteurized/high mercury, breastfeeding=alcohol/high caffeine).
         - For categoryIcon: pick the SINGLE best matching icon from this list based on the restaurant's cuisine type: \(icons). If none fits well, use "restaurant".
         - For menuLanguage: detect the original language of the menu text and return its name in English (e.g. "Italian", "Japanese", "Spanish").
         - For category: translate the menu section heading to \(userLanguage) and include the original in parentheses (e.g. "Land Appetizers (Antipasti di Terra)").
@@ -230,7 +248,7 @@ final class OpenAIService {
         return request
     }
 
-    private func parseResponse(data: Data) throws -> ScannedMenu {
+    private func parseResponse(data: Data, translatedTo userLanguage: String) throws -> ScannedMenu {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let choices = json["choices"] as? [[String: Any]],
               let first = choices.first,
@@ -264,9 +282,7 @@ final class OpenAIService {
         let icon = Self.categoryIcons.contains(menuResponse.categoryIcon ?? "")
             ? menuResponse.categoryIcon! : "restaurant"
 
-        let language = menuResponse.menuLanguage ?? "Unknown"
-
-        return ScannedMenu(restaurant: menuResponse.restaurant, dishes: dishes, categoryIcon: icon, menuLanguage: language)
+        return ScannedMenu(restaurant: menuResponse.restaurant, dishes: dishes, categoryIcon: icon, menuLanguage: userLanguage)
     }
 }
 

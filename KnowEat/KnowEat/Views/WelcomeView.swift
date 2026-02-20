@@ -17,6 +17,16 @@ struct WelcomeView: View {
         GridItem(.flexible(), spacing: 12)
     ]
 
+    private var sections: [(DietaryCategory, String, String, [Allergen])] {
+        [
+            (.allergens, "Allergens", "Most common food allergens.", viewModel.allergens),
+            (.intolerances, "Intolerances", "Foods your body has trouble digesting.", viewModel.intolerances),
+            (.conditions, "Medical Conditions", "Conditions that affect your diet.", viewModel.conditions),
+            (.diets, "Diets", "Lifestyle or religious diets.", viewModel.diets),
+            (.situations, "Situations", "Temporary situations.", viewModel.situations),
+        ]
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             ScrollView(showsIndicators: false) {
@@ -24,7 +34,17 @@ struct WelcomeView: View {
                     headerSection
                     descriptionText
                     languageSection
-                    allergensSection
+
+                    ForEach(sections, id: \.0) { category, title, description, items in
+                        if !items.isEmpty {
+                            dietarySectionView(
+                                category: category,
+                                title: title,
+                                description: description,
+                                items: items
+                            )
+                        }
+                    }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 48)
@@ -60,7 +80,7 @@ struct WelcomeView: View {
     }
 
     private var descriptionText: some View {
-        Text("Set your basic requirements. You can add more specific details in the settings.")
+        Text("Set up your dietary profile. You can always change it later in Settings.")
             .font(.interRegular(size: 15))
             .foregroundStyle(Color("SecondaryGray"))
             .lineSpacing(3)
@@ -110,20 +130,31 @@ struct WelcomeView: View {
         }
     }
 
-    private var allergensSection: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("Most common allergens")
+    // MARK: - Dietary Sections
+
+    private func dietarySectionView(
+        category: DietaryCategory,
+        title: String,
+        description: String,
+        items: [Allergen]
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(title)
                 .font(.interMedium(size: 13))
                 .foregroundStyle(Color("SecondaryGray"))
 
+            Text(description)
+                .font(.interRegular(size: 13))
+                .foregroundStyle(Color("SecondaryGray").opacity(0.7))
+
             LazyVGrid(columns: columns, spacing: 12) {
-                ForEach(viewModel.allergens) { allergen in
+                ForEach(items) { item in
                     AllergenChipView(
-                        allergen: allergen,
-                        isSelected: viewModel.isSelected(allergen.id)
+                        allergen: item,
+                        isSelected: viewModel.isSelected(item.id, category: category)
                     ) {
                         withAnimation(.easeInOut(duration: 0.2)) {
-                            viewModel.toggleAllergen(allergen.id)
+                            viewModel.toggle(item.id, category: category)
                         }
                     }
                 }
@@ -133,11 +164,7 @@ struct WelcomeView: View {
 
     private var continueButton: some View {
         Button {
-            profileStore.profile = UserProfile(
-                nativeLanguage: viewModel.selectedLanguage,
-                allergenIds: Array(viewModel.selectedAllergens),
-                saveHistory: true
-            )
+            profileStore.profile = viewModel.buildProfile()
         } label: {
             Text("Continue")
                 .font(.interSemiBold(size: 18))

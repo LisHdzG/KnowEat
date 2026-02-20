@@ -49,11 +49,6 @@ struct HomeView: View {
                     titleSection
                         .padding(.horizontal, 24)
 
-                    if let profile = profileStore.profile {
-                        activeFiltersCard(for: profile)
-                            .padding(.horizontal, 24)
-                    }
-
                     menuListSection
                 }
                 .padding(.top, 8)
@@ -79,9 +74,8 @@ struct HomeView: View {
                 .fullScreenCover(isPresented: $scanVM.isShowingScanner) {
                     CameraView(
                         onPhotosReady: { images in
-                            let allergenIds = profileStore.profile?.allergenIds ?? []
-                            let language = profileStore.profile?.nativeLanguage ?? "English"
-                            scanVM.handleScannedImages(images, userAllergenIds: allergenIds, userLanguage: language)
+                            let profile = profileStore.profile ?? UserProfile(nativeLanguage: "English", allergenIds: [])
+                            scanVM.handleScannedImages(images, profile: profile)
                         },
                         onCancelled: {
                             scanVM.handleScanCancelled()
@@ -90,11 +84,12 @@ struct HomeView: View {
                 }
                 .fullScreenCover(isPresented: $scanVM.showResults) {
                     if let menu = scanVM.scannedMenu {
+                        let profile = profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])
                         MenuResultView(
                             menu: menu,
                             analyzedDishes: scanVM.analyzedDishes,
-                            allergens: viewModel.allergens,
-                            activeFilters: viewModel.activeFilters(for: profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])),
+                            allergens: viewModel.allDietaryItems,
+                            filterGroups: viewModel.groupedFilters(for: profile),
                             onSave: { savedMenu in
                                 menuStore.save(savedMenu)
                                 scanVM.dismissResults()
@@ -104,13 +99,13 @@ struct HomeView: View {
                     }
                 }
                 .fullScreenCover(item: $selectedMenu) { menu in
-                    let userAllergenIds = profileStore.profile?.allergenIds ?? []
-                    let analyzed = AllergenChecker.analyze(menu: menu, userAllergenIds: userAllergenIds)
+                    let profile = profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])
+                    let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
                     MenuResultView(
                         menu: menu,
                         analyzedDishes: analyzed,
-                        allergens: viewModel.allergens,
-                        activeFilters: viewModel.activeFilters(for: profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])),
+                        allergens: viewModel.allDietaryItems,
+                        filterGroups: viewModel.groupedFilters(for: profile),
                         onDismiss: { selectedMenu = nil }
                     )
                 }
@@ -157,13 +152,6 @@ struct HomeView: View {
         Text("Recent Menus")
             .font(.interSemiBold(size: 28))
             .foregroundStyle(Color("PrimaryOrange"))
-    }
-
-    private func activeFiltersCard(for profile: UserProfile) -> some View {
-        let filters = viewModel.activeFilters(for: profile)
-        return ActiveFiltersCard(filters: filters) {
-            // TODO: Navigate to allergen editor
-        }
     }
 
     // MARK: - Menu List

@@ -68,46 +68,132 @@ struct SettingsView: View {
     private var dietarySection: some View {
         sectionContainer(
             header: "Dietary Profile",
-            footer: "KnowEat will highlight these allergens when scanning menus."
+            footer: "KnowEat will consider all your dietary restrictions when scanning menus."
         ) {
-            NavigationLink {
-                allergenEditorView
-            } label: {
-                let count = profileStore.profile?.allergenIds.count ?? 0
-                settingsRow(
+            VStack(spacing: 0) {
+                dietaryRow(
                     icon: "exclamationmark.shield.fill",
-                    title: "My Allergens",
-                    trailing: count > 0 ? "\(count) active" : nil,
-                    showChevron: true
+                    title: "Allergens",
+                    editorTitle: "My Allergens",
+                    description: "Select the allergens you want KnowEat to watch for when scanning menus.",
+                    items: viewModel.allergens,
+                    category: .allergens,
+                    count: profileStore.profile?.allergenIds.count ?? 0
+                )
+
+                sectionDivider
+
+                dietaryRow(
+                    icon: "pills.fill",
+                    title: "Intolerances",
+                    editorTitle: "Intolerances",
+                    description: "Select food intolerances so KnowEat can flag problematic ingredients.",
+                    items: viewModel.intolerances,
+                    category: .intolerances,
+                    count: profileStore.profile?.intoleranceIds.count ?? 0
+                )
+
+                sectionDivider
+
+                dietaryRow(
+                    icon: "heart.text.clipboard.fill",
+                    title: "Medical Conditions",
+                    editorTitle: "Medical Conditions",
+                    description: "Select medical conditions that affect your diet so KnowEat can give better recommendations.",
+                    items: viewModel.conditions,
+                    category: .conditions,
+                    count: profileStore.profile?.conditionIds.count ?? 0
+                )
+
+                sectionDivider
+
+                dietaryRow(
+                    icon: "fork.knife",
+                    title: "Diets",
+                    editorTitle: "Diets",
+                    description: "Select lifestyle or religious diets you follow.",
+                    items: viewModel.diets,
+                    category: .diets,
+                    count: profileStore.profile?.dietIds.count ?? 0
+                )
+
+                sectionDivider
+
+                dietaryRow(
+                    icon: "figure.and.child.holdinghands",
+                    title: "Situations",
+                    editorTitle: "Situations",
+                    description: "Select temporary situations that may affect what you should eat.",
+                    items: viewModel.situations,
+                    category: .situations,
+                    count: profileStore.profile?.situationIds.count ?? 0
                 )
             }
-            .buttonStyle(.plain)
         }
     }
 
-    private let allergenColumns = [
+    private func dietaryRow(
+        icon: String,
+        title: String,
+        editorTitle: String,
+        description: String,
+        items: [Allergen],
+        category: DietaryCategory,
+        count: Int
+    ) -> some View {
+        NavigationLink {
+            dietaryEditorView(
+                title: editorTitle,
+                description: description,
+                items: items,
+                category: category
+            )
+        } label: {
+            settingsRow(
+                icon: icon,
+                title: title,
+                trailing: count > 0 ? "\(count) active" : nil,
+                showChevron: true
+            )
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var sectionDivider: some View {
+        Divider()
+            .padding(.leading, 62)
+    }
+
+    // MARK: - Generic Dietary Editor
+
+    private let editorColumns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
     ]
 
-    private var allergenEditorView: some View {
+    private func dietaryEditorView(
+        title: String,
+        description: String,
+        items: [Allergen],
+        category: DietaryCategory
+    ) -> some View {
         ScrollView(showsIndicators: false) {
             VStack(alignment: .leading, spacing: 16) {
-                Text("Select the allergens you want KnowEat to watch for when scanning menus.")
+                Text(description)
                     .font(.interRegular(size: 15))
                     .foregroundStyle(Color("SecondaryGray"))
                     .lineSpacing(3)
                     .padding(.horizontal, 24)
 
-                LazyVGrid(columns: allergenColumns, spacing: 12) {
-                    ForEach(viewModel.allergens) { allergen in
+                LazyVGrid(columns: editorColumns, spacing: 12) {
+                    ForEach(items) { item in
                         AllergenChipView(
-                            allergen: allergen,
-                            isSelected: viewModel.isSelected(allergen.id)
+                            allergen: item,
+                            isSelected: viewModel.isSelected(item.id, category: category)
                         ) {
                             withAnimation(.easeInOut(duration: 0.2)) {
-                                viewModel.toggleAllergen(allergen.id)
-                                profileStore.profile?.allergenIds = Array(viewModel.selectedAllergens)
+                                viewModel.toggle(item.id, category: category)
+                                syncProfile(category: category)
                             }
                         }
                     }
@@ -118,8 +204,19 @@ struct SettingsView: View {
             .padding(.bottom, 32)
         }
         .background(Color(.systemGroupedBackground))
-        .navigationTitle("My Allergens")
+        .navigationTitle(title)
         .navigationBarTitleDisplayMode(.large)
+    }
+
+    private func syncProfile(category: DietaryCategory) {
+        let ids = Array(viewModel.selectedIds(for: category))
+        switch category {
+        case .allergens: profileStore.profile?.allergenIds = ids
+        case .intolerances: profileStore.profile?.intoleranceIds = ids
+        case .conditions: profileStore.profile?.conditionIds = ids
+        case .diets: profileStore.profile?.dietIds = ids
+        case .situations: profileStore.profile?.situationIds = ids
+        }
     }
 
     private var historySection: some View {
@@ -229,6 +326,7 @@ struct SettingsView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 12)
+        .contentShape(Rectangle())
     }
 
     private func settingsIcon(_ systemName: String) -> some View {

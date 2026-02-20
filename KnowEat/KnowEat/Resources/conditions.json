@@ -1,0 +1,32 @@
+[
+    {
+        "id": "celiac",
+        "name": "Celiac Disease",
+        "icon": "medical.thermometer.fill"
+    },
+    {
+        "id": "diabetes",
+        "name": "Diabetes",
+        "icon": "syringe.fill"
+    },
+    {
+        "id": "hypertension",
+        "name": "Hypertension",
+        "icon": "heart.fill"
+    },
+    {
+        "id": "kidney_disease",
+        "name": "Kidney Disease",
+        "icon": "cross.vial.fill"
+    },
+    {
+        "id": "gout",
+        "name": "Gout",
+        "icon": "figure.walk"
+    },
+    {
+        "id": "favism",
+        "name": "Favism (G6PD)",
+        "icon": "leaf.circle"
+    }
+]

@@ -1,0 +1,27 @@
+[
+    {
+        "id": "vegetarian",
+        "name": "Vegetarian",
+        "icon": "carrot.fill"
+    },
+    {
+        "id": "vegan",
+        "name": "Vegan",
+        "icon": "leaf.fill"
+    },
+    {
+        "id": "pescatarian",
+        "name": "Pescatarian",
+        "icon": "fish.fill"
+    },
+    {
+        "id": "halal",
+        "name": "Halal",
+        "icon": "moon.stars.fill"
+    },
+    {
+        "id": "kosher",
+        "name": "Kosher",
+        "icon": "staroflife.fill"
+    }
+]

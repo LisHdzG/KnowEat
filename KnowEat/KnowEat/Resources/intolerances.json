@@ -1,0 +1,22 @@
+[
+    {
+        "id": "lactose",
+        "name": "Lactose",
+        "icon": "drop.fill"
+    },
+    {
+        "id": "fructose",
+        "name": "Fructose",
+        "icon": "bolt.heart.fill"
+    },
+    {
+        "id": "histamine",
+        "name": "Histamine",
+        "icon": "waveform.path.ecg"
+    },
+    {
+        "id": "fodmap",
+        "name": "FODMAP",
+        "icon": "pills.fill"
+    }
+]

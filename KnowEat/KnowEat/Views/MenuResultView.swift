@@ -11,7 +11,7 @@ struct MenuResultView: View {
     let menu: ScannedMenu
     let analyzedDishes: [AnalyzedDish]
     let allergens: [Allergen]
-    let activeFilters: [Allergen]
+    let filterGroups: [DietaryFilterGroup]
     var onSave: ((ScannedMenu) -> Void)? = nil
     let onDismiss: () -> Void
 
@@ -28,6 +28,8 @@ struct MenuResultView: View {
     @State private var displayMenu: ScannedMenu?
     @State private var displayDishes: [AnalyzedDish]?
     @State private var isTranslating = false
+    @State private var showDietaryEditor = false
+    @State private var currentFilterGroups: [DietaryFilterGroup]?
 
     private let availableLanguages = ["English", "Español", "Italiano"]
     private var isReadOnly: Bool { onSave == nil }
@@ -88,9 +90,11 @@ struct MenuResultView: View {
                                 .padding(.horizontal, 24)
                         }
 
-                        ActiveFiltersCard(filters: activeFilters) {
-                            // TODO: Navigate to allergen editor
-                        }
+                        ActiveFiltersCard(
+                            groups: currentFilterGroups ?? filterGroups,
+                            showChevron: true,
+                            onTap: { showDietaryEditor = true }
+                        )
                         .padding(.horizontal, 24)
 
                         dishList
@@ -142,6 +146,11 @@ struct MenuResultView: View {
             .onChange(of: selectedLanguage) { oldValue, newValue in
                 guard !oldValue.isEmpty, oldValue != newValue else { return }
                 handleRetranslation(to: newValue)
+            }
+            .sheet(isPresented: $showDietaryEditor) {
+                DietaryProfileEditorView {
+                    reAnalyzeWithUpdatedProfile()
+                }
             }
             .alert("Restaurant Name", isPresented: $showNamePrompt) {
                 TextField("Enter restaurant name", text: $alertNameInput)
@@ -313,6 +322,15 @@ struct MenuResultView: View {
         }
     }
 
+    private func reAnalyzeWithUpdatedProfile() {
+        guard let profile = profileStore.profile else { return }
+        let menuToAnalyze = activeMenu
+        displayDishes = AllergenChecker.analyze(menu: menuToAnalyze, profile: profile)
+
+        let vm = HomeViewModel()
+        currentFilterGroups = vm.groupedFilters(for: profile)
+    }
+
     private func handleRetranslation(to language: String) {
         showLanguagePicker = false
         isTranslating = true
@@ -328,8 +346,8 @@ struct MenuResultView: View {
                 updated.menuLanguage = language
                 displayMenu = updated
 
-                let ids = profileStore.profile?.allergenIds ?? []
-                displayDishes = AllergenChecker.analyze(menu: updated, userAllergenIds: ids)
+                let profile = profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])
+                displayDishes = AllergenChecker.analyze(menu: updated, profile: profile)
 
                 if isReadOnly {
                     menuStore.updateTranslation(menu, dishes: translated, menuLanguage: language)
@@ -349,21 +367,32 @@ private struct DishCard: View {
     let item: AnalyzedDish
     let allergens: [Allergen]
 
+    private static let allergenIDs: Set<String> = [
+        "gluten", "crustaceans", "eggs", "fish", "peanuts",
+        "soy", "dairy", "tree_nuts", "celery", "mustard",
+        "sesame", "sulfites", "lupins", "mollusks"
+    ]
+
+    private var matchedAllergens: [String] {
+        item.matchedAllergenIds.filter { Self.allergenIDs.contains($0) }
+    }
+
+    private var advisoryRestrictions: [String] {
+        item.matchedAllergenIds
+            .filter { !Self.allergenIDs.contains($0) }
+            .compactMap { id in allergens.first(where: { $0.id == id })?.name }
+    }
+
+    private var hasAllergenDanger: Bool { !matchedAllergens.isEmpty }
+    private var hasAdvisoryOnly: Bool { !item.isSafe && matchedAllergens.isEmpty }
+
     private var accentColor: Color {
-        item.isSafe ? .green : Color("PrimaryOrange")
+        if item.isSafe { return .green }
+        if hasAllergenDanger { return .red }
+        return .yellow
     }
 
-    private var statusIcon: String {
-        if item.isSafe { return "checkmark" }
-        return item.matchedAllergenIds.count >= 3 ? "xmark" : "exclamationmark.triangle.fill"
-    }
-
-    private var statusColor: Color {
-        if item.isSafe {
-            return .green
-        }
-        return item.matchedAllergenIds.count >= 3 ? .red : Color("PrimaryOrange")
-    }
+    private var statusColor: Color { accentColor }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -404,6 +433,26 @@ private struct DishCard: View {
                             .font(.interRegular(size: 13))
                             .lineLimit(2)
                     }
+                }
+
+                if !item.isSafe, !advisoryRestrictions.isEmpty {
+                    HStack(alignment: .top, spacing: 6) {
+                        Image(systemName: "exclamationmark.triangle.fill")
+                            .font(.system(size: 11))
+                            .foregroundStyle(.yellow)
+                            .padding(.top, 1)
+
+                        Text("Not recommended for: \(advisoryRestrictions.joined(separator: ", "))")
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding(8)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .background(
+                        RoundedRectangle(cornerRadius: 8)
+                            .fill(.yellow.opacity(0.08))
+                    )
+                    .padding(.top, 2)
                 }
 
                 if let price = item.dish.price, !price.isEmpty {
@@ -462,6 +511,10 @@ private struct DishCard: View {
         "sesame": ["sesame", "tahini", "sésamo", "sesamo"],
         "sulfites": ["wine", "vinegar", "sulfite", "vino", "vinagre", "aceto"],
         "lupins": ["lupin", "lupini", "altramuz"],
-        "mollusks": ["mussel", "clam", "oyster", "squid", "octopus", "scallop", "calamari", "snail", "mejillón", "almeja", "ostra", "calamar", "pulpo", "cozza", "vongola", "ostrica", "polpo", "capesante"]
+        "mollusks": ["mussel", "clam", "oyster", "squid", "octopus", "scallop", "calamari", "snail", "mejillón", "almeja", "ostra", "calamar", "pulpo", "cozza", "vongola", "ostrica", "polpo", "capesante"],
+        "lactose": ["milk", "cheese", "cream", "butter", "yogurt", "ice cream", "leche", "queso", "crema", "mantequilla", "yogur", "helado", "latte", "formaggio", "burro", "gelato"],
+        "fructose": ["honey", "apple", "pear", "mango", "agave", "miel", "manzana", "pera", "miele", "mela"],
+        "histamine": ["wine", "aged cheese", "fermented", "cured", "smoked", "vinegar", "vino", "ahumado", "curado", "fermentado", "affumicato", "stagionato"],
+        "fodmap": ["garlic", "onion", "wheat", "apple", "pear", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"]
     ]
 }

@@ -49,15 +49,15 @@ final class MenuScanViewModel {
         UIApplication.shared.open(url)
     }
 
-    func handleScannedImages(_ images: [UIImage], userAllergenIds: [String], userLanguage: String) {
+    func handleScannedImages(_ images: [UIImage], profile: UserProfile) {
         isShowingScanner = false
         isAnalyzing = true
         errorMessage = nil
 
         Task {
             do {
-                let menu = try await OpenAIService.shared.analyzeMenu(images: images, userLanguage: userLanguage)
-                let analyzed = AllergenChecker.analyze(menu: menu, userAllergenIds: userAllergenIds)
+                let menu = try await OpenAIService.shared.analyzeMenu(images: images, userLanguage: profile.nativeLanguage)
+                let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
 
                 await MainActor.run {
                     self.scannedMenu = menu

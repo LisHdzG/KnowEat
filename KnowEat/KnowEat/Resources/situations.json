@@ -1,0 +1,12 @@
+[
+    {
+        "id": "pregnant",
+        "name": "Pregnancy",
+        "icon": "figure.and.child.holdinghands"
+    },
+    {
+        "id": "breastfeeding",
+        "name": "Breastfeeding",
+        "icon": "heart.circle.fill"
+    }
+]
