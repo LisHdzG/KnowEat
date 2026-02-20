@@ -16,10 +16,14 @@ struct HomeView: View {
     @State private var menuToRename: ScannedMenu?
     @State private var renameText = ""
     @State private var showRenameAlert = false
+    @State private var searchText = ""
 
     private var groupedMenus: [(String, [ScannedMenu])] {
         let calendar = Calendar.current
-        let grouped = Dictionary(grouping: menuStore.menus) { menu -> String in
+        let source = searchText.isEmpty
+            ? menuStore.menus
+            : menuStore.menus.filter { $0.restaurant.localizedCaseInsensitiveContains(searchText) }
+        let grouped = Dictionary(grouping: source) { menu -> String in
             if calendar.isDateInToday(menu.scannedAt) {
                 return "Today"
             } else if calendar.isDateInYesterday(menu.scannedAt) {
@@ -173,6 +177,11 @@ struct HomeView: View {
                 }
             } else {
                 List {
+                    if !menuStore.menus.isEmpty && groupedMenus.isEmpty {
+                        ContentUnavailableView.search(text: searchText)
+                            .listRowBackground(Color.clear)
+                            .listRowSeparator(.hidden)
+                    }
                     ForEach(groupedMenus, id: \.0) { dateLabel, menus in
                         Section {
                             ForEach(menus) { menu in
@@ -212,6 +221,7 @@ struct HomeView: View {
                     }
                 }
                 .listStyle(.plain)
+                .searchable(text: $searchText, prompt: "Search menus...")
             }
         }
         .frame(maxHeight: .infinity)

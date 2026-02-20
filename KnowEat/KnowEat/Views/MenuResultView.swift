@@ -17,6 +17,7 @@ struct MenuResultView: View {
 
     @Environment(UserProfileStore.self) private var profileStore
     @Environment(MenuStore.self) private var menuStore
+    @Environment(\.dismiss) private var dismiss
     @State private var showNamePrompt = false
     @State private var alertNameInput = ""
     @State private var searchText = ""
@@ -92,9 +93,6 @@ struct MenuResultView: View {
                         }
                         .padding(.horizontal, 24)
 
-                        searchBar
-                            .padding(.horizontal, 24)
-
                         dishList
                             .padding(.horizontal, 24)
                     }
@@ -103,10 +101,12 @@ struct MenuResultView: View {
                 }
             }
             .background(Color(.systemBackground))
+            .searchable(text: $searchText, prompt: "Search dishes...")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
+                        dismiss()
                         onDismiss()
                     } label: {
                         Image(systemName: "xmark")
@@ -270,31 +270,6 @@ struct MenuResultView: View {
                 withAnimation { proxy.scrollTo(newValue, anchor: .center) }
             }
         }
-    }
-
-    // MARK: - Search
-
-    private var searchBar: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-                .font(.system(size: 15))
-
-            TextField("Search dishes...", text: $searchText)
-                .font(.interRegular(size: 15))
-
-            if !searchText.isEmpty {
-                Button {
-                    searchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.tertiary)
-                        .font(.system(size: 16))
-                }
-            }
-        }
-        .padding(10)
-        .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Dish List
