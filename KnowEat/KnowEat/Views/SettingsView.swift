@@ -68,16 +68,58 @@ struct SettingsView: View {
     private var dietarySection: some View {
         sectionContainer(
             header: "Dietary Profile",
-            footer: "KnowEat will highlight these ingredients in red when scanning menus."
+            footer: "KnowEat will highlight these allergens when scanning menus."
         ) {
-            let count = profileStore.profile?.allergenIds.count ?? 0
-            settingsRow(
-                icon: "shield.fill",
-                title: "Diets and Allergies",
-                trailing: count > 0 ? "\(count) active" : nil,
-                showChevron: true
-            )
+            NavigationLink {
+                allergenEditorView
+            } label: {
+                let count = profileStore.profile?.allergenIds.count ?? 0
+                settingsRow(
+                    icon: "exclamationmark.shield.fill",
+                    title: "My Allergens",
+                    trailing: count > 0 ? "\(count) active" : nil,
+                    showChevron: true
+                )
+            }
+            .buttonStyle(.plain)
         }
+    }
+
+    private let allergenColumns = [
+        GridItem(.flexible(), spacing: 12),
+        GridItem(.flexible(), spacing: 12)
+    ]
+
+    private var allergenEditorView: some View {
+        ScrollView(showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("Select the allergens you want KnowEat to watch for when scanning menus.")
+                    .font(.interRegular(size: 15))
+                    .foregroundStyle(Color("SecondaryGray"))
+                    .lineSpacing(3)
+                    .padding(.horizontal, 24)
+
+                LazyVGrid(columns: allergenColumns, spacing: 12) {
+                    ForEach(viewModel.allergens) { allergen in
+                        AllergenChipView(
+                            allergen: allergen,
+                            isSelected: viewModel.isSelected(allergen.id)
+                        ) {
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                viewModel.toggleAllergen(allergen.id)
+                                profileStore.profile?.allergenIds = Array(viewModel.selectedAllergens)
+                            }
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+            .padding(.top, 8)
+            .padding(.bottom, 32)
+        }
+        .background(Color(.systemGroupedBackground))
+        .navigationTitle("My Allergens")
+        .navigationBarTitleDisplayMode(.large)
     }
 
     private var historySection: some View {

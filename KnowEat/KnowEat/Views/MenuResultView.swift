@@ -426,9 +426,8 @@ private struct DishCard: View {
                             .font(.interMedium(size: 12))
                             .foregroundStyle(Color("SecondaryGray").opacity(0.5))
 
-                        Text(item.dish.ingredients.joined(separator: ", "))
+                        ingredientsText
                             .font(.interRegular(size: 13))
-                            .foregroundStyle(Color("SecondaryGray").opacity(0.85))
                             .lineLimit(2)
                     }
                 }
@@ -453,4 +452,42 @@ private struct DishCard: View {
                 .shadow(color: .black.opacity(0.06), radius: 8, y: 2)
         )
     }
+
+    private var ingredientsText: Text {
+        let safe = Color("SecondaryGray").opacity(0.85)
+        let ingredients = item.dish.ingredients
+        var result = Text("")
+        for (i, ingredient) in ingredients.enumerated() {
+            let color: Color = isIngredientFlagged(ingredient) ? statusColor : safe
+            result = result + Text(ingredient).foregroundColor(color)
+            if i < ingredients.count - 1 {
+                result = result + Text(", ").foregroundColor(safe)
+            }
+        }
+        return result
+    }
+
+    private func isIngredientFlagged(_ ingredient: String) -> Bool {
+        let lower = ingredient.lowercased()
+        return item.matchedAllergenIds.contains { id in
+            (Self.keywords[id] ?? []).contains { lower.contains($0) }
+        }
+    }
+
+    private static let keywords: [String: [String]] = [
+        "gluten": ["wheat", "flour", "bread", "pasta", "barley", "rye", "oat", "semolina", "couscous", "noodle", "dough", "pastry", "cracker", "trigo", "harina", "pan", "avena", "cebada", "centeno", "grano", "farina", "orzo", "segale"],
+        "dairy": ["milk", "cheese", "cream", "butter", "yogurt", "mozzarella", "parmesan", "cheddar", "ricotta", "mascarpone", "brie", "feta", "whey", "ghee", "paneer", "leche", "queso", "crema", "mantequilla", "yogur", "nata", "latte", "formaggio", "burro", "panna"],
+        "eggs": ["egg", "mayonnaise", "meringue", "aioli", "huevo", "mayonesa", "uovo", "uova", "maionese"],
+        "fish": ["fish", "salmon", "tuna", "cod", "anchovy", "sardine", "bass", "trout", "halibut", "swordfish", "mackerel", "pescado", "salmón", "atún", "bacalao", "anchoa", "sardina", "trucha", "pesce", "tonno", "merluzzo", "acciuga"],
+        "crustaceans": ["shrimp", "prawn", "crab", "lobster", "crawfish", "langoustine", "camarón", "gamba", "cangrejo", "langosta", "gambero", "granchio", "aragosta", "gambas"],
+        "peanuts": ["peanut", "cacahuete", "maní", "arachide"],
+        "soy": ["soy", "soja", "tofu", "edamame", "tempeh", "miso"],
+        "tree_nuts": ["almond", "walnut", "cashew", "pistachio", "pecan", "hazelnut", "macadamia", "chestnut", "pine nut", "almendra", "nuez", "avellana", "castaña", "pistacho", "mandorla", "noce", "nocciola", "pistacchio", "castagna"],
+        "celery": ["celery", "celeriac", "apio", "sedano"],
+        "mustard": ["mustard", "mostaza", "senape"],
+        "sesame": ["sesame", "tahini", "sésamo", "sesamo"],
+        "sulfites": ["wine", "vinegar", "sulfite", "vino", "vinagre", "aceto"],
+        "lupins": ["lupin", "lupini", "altramuz"],
+        "mollusks": ["mussel", "clam", "oyster", "squid", "octopus", "scallop", "calamari", "snail", "mejillón", "almeja", "ostra", "calamar", "pulpo", "cozza", "vongola", "ostrica", "polpo", "capesante"]
+    ]
 }
