@@ -8,7 +8,7 @@ import SwiftUI
 struct LoaderView: View {
     private static let gifNames = ["LoaderTomato", "LoaderEggs"]
 
-    private static let phrases = [
+    private static let defaultPhrases = [
         "Reading every dish on the menu…",
         "Checking ingredients carefully…",
         "Matching with your allergen profile…",
@@ -16,14 +16,16 @@ struct LoaderView: View {
         "Making sure everything is safe for you…"
     ]
 
+    private let phrases: [String]
     @State private var currentPhrase: String
     private let selectedGIF: String
 
-    init() {
+    init(phrases: [String]? = nil) {
+        let p = phrases ?? Self.defaultPhrases
+        self.phrases = p
         let gif = Self.gifNames.randomElement() ?? Self.gifNames[0]
-        let phrase = Self.phrases.randomElement() ?? Self.phrases[0]
         selectedGIF = gif
-        _currentPhrase = State(initialValue: phrase)
+        _currentPhrase = State(initialValue: p.randomElement() ?? p[0])
     }
 
     var body: some View {
@@ -49,7 +51,7 @@ struct LoaderView: View {
         Timer.scheduledTimer(withTimeInterval: 3.5, repeats: true) { _ in
             Task { @MainActor in
                 withAnimation {
-                    currentPhrase = Self.phrases.filter { $0 != currentPhrase }.randomElement() ?? Self.phrases[0]
+                    currentPhrase = phrases.filter { $0 != currentPhrase }.randomElement() ?? phrases[0]
                 }
             }
         }

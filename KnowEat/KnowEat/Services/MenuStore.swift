@@ -38,6 +38,13 @@ final class MenuStore {
         persist()
     }
 
+    func updateTranslation(_ menu: ScannedMenu, dishes: [Dish], menuLanguage: String) {
+        guard let index = menus.firstIndex(where: { $0.id == menu.id }) else { return }
+        menus[index].dishes = dishes
+        menus[index].menuLanguage = menuLanguage
+        persist()
+    }
+
     private func load() {
         guard let data = UserDefaults.standard.data(forKey: Self.storageKey),
               let decoded = try? JSONDecoder().decode([ScannedMenu].self, from: data) else { return }

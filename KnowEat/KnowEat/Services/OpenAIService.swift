@@ -66,6 +66,91 @@ actor OpenAIService {
         return try parseResponse(data: data)
     }
 
+    func retranslateMenu(dishes: [Dish], to language: String) async throws -> [Dish] {
+        guard !APIConfig.openAIKey.isEmpty else { throw OpenAIError.invalidAPIKey }
+
+        let dishArray = dishes.map { dish -> [String: Any] in
+            var d: [String: Any] = [
+                "name": dish.name,
+                "price": dish.price ?? "",
+                "category": dish.category ?? "",
+                "ingredients": dish.ingredients,
+                "allergenIds": dish.allergenIds
+            ]
+            if let desc = dish.description { d["description"] = desc }
+            return d
+        }
+
+        let jsonData = try JSONSerialization.data(withJSONObject: dishArray)
+        let dishJSON = String(data: jsonData, encoding: .utf8) ?? "[]"
+
+        let systemPrompt = """
+        You are a translation assistant. Translate menu dishes to \(language).
+        For each dish:
+        - "name": translate the dish name to \(language)
+        - "description": keep EXACTLY as is (original name from menu)
+        - "price": keep EXACTLY as is
+        - "category": translate to \(language) with original in parentheses
+        - "ingredients": translate all to \(language)
+        - "allergenIds": keep EXACTLY as is
+        Return ONLY a valid JSON array. No markdown, no code fences, no extra text.
+        """
+
+        let body: [String: Any] = [
+            "model": APIConfig.model,
+            "messages": [
+                ["role": "system", "content": systemPrompt],
+                ["role": "user", "content": dishJSON]
+            ],
+            "max_tokens": 4096,
+            "temperature": 0.1
+        ]
+
+        let jsonBody = try JSONSerialization.data(withJSONObject: body)
+
+        var request = URLRequest(url: URL(string: APIConfig.openAIBaseURL)!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(APIConfig.openAIKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonBody
+        request.timeoutInterval = 60
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            let errBody = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw OpenAIError.serverError("API error: \(errBody)")
+        }
+
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choices = json["choices"] as? [[String: Any]],
+              let first = choices.first,
+              let message = first["message"] as? [String: Any],
+              let content = message["content"] as? String else {
+            throw OpenAIError.invalidResponse
+        }
+
+        let cleaned = content
+            .replacingOccurrences(of: "```json", with: "")
+            .replacingOccurrences(of: "```", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let contentData = cleaned.data(using: .utf8) else { throw OpenAIError.invalidResponse }
+
+        let rawDishes = try JSONDecoder().decode([DishResponse].self, from: contentData)
+
+        return rawDishes.map { raw in
+            Dish(
+                name: raw.name,
+                description: raw.description,
+                price: raw.price,
+                category: raw.category,
+                ingredients: raw.ingredients,
+                allergenIds: raw.allergenIds
+            )
+        }
+    }
+
     private static let categoryIcons = [
         "beer", "dinner", "fried-rice", "lasagna", "lunch-bag", "nachos",
         "pancake", "pasta", "pastry", "pizza-slice", "ramen", "restaurant",

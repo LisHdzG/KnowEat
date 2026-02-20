@@ -15,16 +15,26 @@ struct MenuResultView: View {
     var onSave: ((ScannedMenu) -> Void)? = nil
     let onDismiss: () -> Void
 
+    @Environment(UserProfileStore.self) private var profileStore
+    @Environment(MenuStore.self) private var menuStore
     @State private var showNamePrompt = false
     @State private var alertNameInput = ""
     @State private var searchText = ""
     @State private var selectedCategoryIndex = 0
     @State private var showDisclaimer = true
+    @State private var showLanguagePicker = false
+    @State private var selectedLanguage = ""
+    @State private var displayMenu: ScannedMenu?
+    @State private var displayDishes: [AnalyzedDish]?
+    @State private var isTranslating = false
 
+    private let availableLanguages = ["English", "Español", "Italiano"]
     private var isReadOnly: Bool { onSave == nil }
+    private var activeMenu: ScannedMenu { displayMenu ?? menu }
+    private var activeDishes: [AnalyzedDish] { displayDishes ?? analyzedDishes }
 
     private var categories: [String] {
-        let cats = Set(analyzedDishes.compactMap { $0.dish.category })
+        let cats = Set(activeDishes.compactMap { $0.dish.category })
         return ["All"] + cats.sorted()
     }
 
@@ -34,7 +44,7 @@ struct MenuResultView: View {
     }
 
     private var filteredDishes: [AnalyzedDish] {
-        var result = analyzedDishes
+        var result = activeDishes
 
         if let category = selectedCategory {
             result = result.filter { $0.dish.category == category }
@@ -60,6 +70,7 @@ struct MenuResultView: View {
     }
 
     var body: some View {
+        ZStack {
         NavigationStack {
             VStack(spacing: 0) {
                 if categories.count > 2 {
@@ -103,8 +114,16 @@ struct MenuResultView: View {
                     }
                     .tint(Color("SecondaryGray"))
                 }
-                if !isReadOnly {
-                    ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .topBarTrailing) {
+                    if isReadOnly {
+                        Button {
+                            showLanguagePicker = true
+                        } label: {
+                            Image(systemName: "character.bubble")
+                                .font(.system(size: 16, weight: .medium))
+                        }
+                        .tint(Color("PrimaryOrange"))
+                    } else {
                         Button {
                             handleSave()
                         } label: {
@@ -115,6 +134,15 @@ struct MenuResultView: View {
                     }
                 }
             }
+            .onAppear {
+                if selectedLanguage.isEmpty {
+                    selectedLanguage = profileStore.profile?.nativeLanguage ?? "English"
+                }
+            }
+            .onChange(of: selectedLanguage) { oldValue, newValue in
+                guard !oldValue.isEmpty, oldValue != newValue else { return }
+                handleRetranslation(to: newValue)
+            }
             .alert("Restaurant Name", isPresented: $showNamePrompt) {
                 TextField("Enter restaurant name", text: $alertNameInput)
                     .onChange(of: alertNameInput) { _, newValue in
@@ -123,7 +151,7 @@ struct MenuResultView: View {
                 Button("Save") {
                     let name = alertNameInput.trimmingCharacters(in: .whitespaces)
                     if !name.isEmpty {
-                        let savedMenu = ScannedMenu(restaurant: name, dishes: menu.dishes, categoryIcon: menu.categoryIcon, menuLanguage: menu.menuLanguage)
+                        let savedMenu = ScannedMenu(restaurant: name, dishes: activeMenu.dishes, categoryIcon: activeMenu.categoryIcon, menuLanguage: activeMenu.menuLanguage)
                         onSave?(savedMenu)
                     }
                 }
@@ -133,6 +161,27 @@ struct MenuResultView: View {
             } message: {
                 Text("We couldn't detect the restaurant name. Please enter it to save this menu.")
             }
+            .overlay {
+                if showLanguagePicker {
+                    LanguagePickerOverlay(
+                        selectedLanguage: $selectedLanguage,
+                        languages: availableLanguages,
+                        isPresented: $showLanguagePicker
+                    )
+                }
+            }
+        }
+
+        if isTranslating {
+            LoaderView(phrases: [
+                "Translating dishes…",
+                "Adapting ingredients…",
+                "Updating your menu…",
+                "Almost ready…"
+            ])
+            .transition(.opacity)
+            .ignoresSafeArea()
+        }
         }
     }
 
@@ -140,7 +189,7 @@ struct MenuResultView: View {
 
     private var headerSection: some View {
         VStack(alignment: .leading, spacing: 4) {
-            let name = menu.restaurant.trimmingCharacters(in: .whitespacesAndNewlines)
+            let name = activeMenu.restaurant.trimmingCharacters(in: .whitespacesAndNewlines)
             let isUnknown = name.isEmpty || name.lowercased() == "unknown"
 
             if !isUnknown {
@@ -149,7 +198,7 @@ struct MenuResultView: View {
                     .foregroundStyle(Color("PrimaryOrange"))
             }
 
-            Text("\(analyzedDishes.count) dishes found")
+            Text("\(activeDishes.count) dishes found")
                 .font(.interRegular(size: 14))
                 .foregroundStyle(.secondary)
         }
@@ -278,14 +327,44 @@ struct MenuResultView: View {
     // MARK: - Save
 
     private func handleSave() {
-        let name = menu.restaurant.trimmingCharacters(in: .whitespacesAndNewlines)
+        let m = activeMenu
+        let name = m.restaurant.trimmingCharacters(in: .whitespacesAndNewlines)
         let isUnknown = name.isEmpty || name.lowercased() == "unknown"
 
         if isUnknown {
             alertNameInput = ""
             showNamePrompt = true
         } else {
-            onSave?(menu)
+            onSave?(m)
+        }
+    }
+
+    private func handleRetranslation(to language: String) {
+        showLanguagePicker = false
+        isTranslating = true
+        selectedCategoryIndex = 0
+        let sourceDishes = activeMenu.dishes
+
+        Task { @MainActor in
+            do {
+                let translated = try await OpenAIService.shared.retranslateMenu(dishes: sourceDishes, to: language)
+
+                var updated = displayMenu ?? menu
+                updated.dishes = translated
+                updated.menuLanguage = language
+                displayMenu = updated
+
+                let ids = profileStore.profile?.allergenIds ?? []
+                displayDishes = AllergenChecker.analyze(menu: updated, userAllergenIds: ids)
+
+                if isReadOnly {
+                    menuStore.updateTranslation(menu, dishes: translated, menuLanguage: language)
+                }
+
+                isTranslating = false
+            } catch {
+                isTranslating = false
+            }
         }
     }
 }
@@ -301,12 +380,8 @@ private struct DishCard: View {
     }
 
     private var statusIcon: String {
-        if item.isSafe {
-            return "checkmark.circle.fill"
-        }
-        return item.matchedAllergenIds.count >= 3
-            ? "xmark.circle.fill"
-            : "exclamationmark.triangle.fill"
+        if item.isSafe { return "checkmark" }
+        return item.matchedAllergenIds.count >= 3 ? "xmark" : "exclamationmark.triangle.fill"
     }
 
     private var statusColor: Color {
@@ -325,31 +400,37 @@ private struct DishCard: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(item.dish.name)
-                            .font(.interSemiBold(size: 16))
-                            .foregroundStyle(.primary)
+                    VStack(alignment: .leading, spacing: 3) {
+                        if let original = item.dish.description, !original.isEmpty {
+                            Text(original)
+                                .font(.interSemiBold(size: 16))
+                                .foregroundStyle(.primary)
 
-                        if let description = item.dish.description, !description.isEmpty {
-                            Text(description)
-                                .font(.interRegular(size: 12))
+                            Text(item.dish.name)
+                                .font(.interRegular(size: 13))
                                 .foregroundStyle(Color("SecondaryGray"))
                                 .italic()
+                        } else {
+                            Text(item.dish.name)
+                                .font(.interSemiBold(size: 16))
+                                .foregroundStyle(.primary)
                         }
                     }
 
                     Spacer()
-
-                    Image(systemName: statusIcon)
-                        .font(.system(size: 24))
-                        .foregroundStyle(statusColor)
                 }
 
                 if !item.dish.ingredients.isEmpty {
-                    Text(item.dish.ingredients.joined(separator: ", "))
-                        .font(.interRegular(size: 13))
-                        .foregroundStyle(Color("SecondaryGray").opacity(0.9))
-                        .lineLimit(2)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text("Ingredients")
+                            .font(.interMedium(size: 12))
+                            .foregroundStyle(Color("SecondaryGray").opacity(0.5))
+
+                        Text(item.dish.ingredients.joined(separator: ", "))
+                            .font(.interRegular(size: 13))
+                            .foregroundStyle(Color("SecondaryGray").opacity(0.85))
+                            .lineLimit(2)
+                    }
                 }
 
                 if let price = item.dish.price, !price.isEmpty {
@@ -357,7 +438,7 @@ private struct DishCard: View {
                         Spacer()
                         Text(price)
                             .font(.interMedium(size: 14))
-                            .foregroundStyle(Color("SecondaryGray"))
+                            .foregroundStyle(Color("SecondaryGray").opacity(0.45))
                     }
                 }
             }

@@ -10,10 +10,10 @@ import Foundation
 struct ScannedMenu: Identifiable, Codable {
     let id: UUID
     var restaurant: String
-    let dishes: [Dish]
+    var dishes: [Dish]
     let scannedAt: Date
     var categoryIcon: String
-    let menuLanguage: String
+    var menuLanguage: String
 
     init(restaurant: String, dishes: [Dish], categoryIcon: String = "restaurant", menuLanguage: String = "Unknown") {
         self.id = UUID()

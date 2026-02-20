@@ -28,8 +28,8 @@
                                 <nil key="highlightedColor"/>
                             </label>
                             <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="KnowEat" textAlignment="center" lineBreakMode="middleTruncation" baselineAdjustment="alignBaselines" minimumFontSize="18" translatesAutoresizingMaskIntoConstraints="NO" id="GJd-Yh-RWb">
-                                <rect key="frame" x="104.66666666666669" y="407.33333333333331" width="184" height="87.666666666666686"/>
-                                <fontDescription key="fontDescription" name="Italianno-Regular" family="Italianno" pointSize="70"/>
+                                <rect key="frame" x="131" y="419.66666666666669" width="131.33333333333337" height="62.666666666666686"/>
+                                <fontDescription key="fontDescription" name="Italianno-Regular" family="Italianno" pointSize="50"/>
                                 <color key="textColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <nil key="highlightedColor"/>
                             </label>
