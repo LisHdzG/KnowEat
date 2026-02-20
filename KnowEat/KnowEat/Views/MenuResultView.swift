@@ -30,7 +30,10 @@ struct MenuResultView: View {
     @State private var isTranslating = false
 
     private let availableLanguages = ["English", "Español", "Italiano"]
-    private var isReadOnly: Bool { onSave == nil }
+    private var canSave: Bool {
+        onSave != nil && (profileStore.profile?.saveHistory ?? true)
+    }
+    private var isReadOnly: Bool { !canSave }
     private var activeMenu: ScannedMenu { displayMenu ?? menu }
     private var activeDishes: [AnalyzedDish] { displayDishes ?? analyzedDishes }
 

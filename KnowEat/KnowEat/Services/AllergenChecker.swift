@@ -19,6 +19,11 @@ enum AllergenChecker {
         }
     }
 
+    static func analyze(menu: ScannedMenu, profile: UserProfile) -> [AnalyzedDish] {
+        let allIds = profile.allergenIds
+        return analyze(menu: menu, userAllergenIds: allIds)
+    }
+
     static func safeCount(in analyzed: [AnalyzedDish]) -> Int {
         analyzed.filter(\.isSafe).count
     }

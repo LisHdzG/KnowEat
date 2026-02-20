@@ -38,6 +38,11 @@ final class MenuStore {
         persist()
     }
 
+    func deleteAll() {
+        menus.removeAll()
+        persist()
+    }
+
     func updateTranslation(_ menu: ScannedMenu, dishes: [Dish], menuLanguage: String) {
         guard let index = menus.firstIndex(where: { $0.id == menu.id }) else { return }
         menus[index].dishes = dishes

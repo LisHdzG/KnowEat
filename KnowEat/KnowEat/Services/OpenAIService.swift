@@ -12,6 +12,8 @@ enum OpenAIError: LocalizedError {
     case invalidAPIKey
     case encodingFailed
     case invalidResponse
+    case unreadableMenu
+    case timeout
     case serverError(String)
 
     var errorDescription: String? {
@@ -22,8 +24,19 @@ enum OpenAIError: LocalizedError {
             return "Failed to encode the menu images."
         case .invalidResponse:
             return "Could not understand the API response."
+        case .unreadableMenu:
+            return "The scanned menu could not be analyzed. Please try with a clearer photo and make sure the menu text is fully visible."
+        case .timeout:
+            return "The request took too long. Please try again."
         case .serverError(let message):
             return message
+        }
+    }
+
+    var isRetryable: Bool {
+        switch self {
+        case .timeout, .serverError: return true
+        default: return false
         }
     }
 }
@@ -53,7 +66,13 @@ final class OpenAIService {
         let systemPrompt = buildSystemPrompt(userLanguage: userLanguage)
         let request = try buildRequest(base64Images: base64Images, systemPrompt: systemPrompt)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await URLSession.shared.data(for: request)
+        } catch let urlError as URLError where urlError.code == .timedOut {
+            throw OpenAIError.timeout
+        }
 
         guard let httpResponse = response as? HTTPURLResponse else {
             throw OpenAIError.invalidResponse
@@ -64,7 +83,7 @@ final class OpenAIService {
             throw OpenAIError.serverError("API error (\(httpResponse.statusCode)): \(body)")
         }
 
-        return try parseResponse(data: data)
+        return try parseResponse(data: data, translatedTo: userLanguage)
     }
 
     func retranslateMenu(dishes: [Dish], to language: String) async throws -> [Dish] {
@@ -230,7 +249,7 @@ final class OpenAIService {
         return request
     }
 
-    private func parseResponse(data: Data) throws -> ScannedMenu {
+    private func parseResponse(data: Data, translatedTo userLanguage: String) throws -> ScannedMenu {
         guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
               let choices = json["choices"] as? [[String: Any]],
               let first = choices.first,
@@ -245,10 +264,19 @@ final class OpenAIService {
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         guard let contentData = cleaned.data(using: .utf8) else {
-            throw OpenAIError.invalidResponse
+            throw OpenAIError.unreadableMenu
         }
 
-        let menuResponse = try JSONDecoder().decode(MenuAPIResponse.self, from: contentData)
+        let menuResponse: MenuAPIResponse
+        do {
+            menuResponse = try JSONDecoder().decode(MenuAPIResponse.self, from: contentData)
+        } catch {
+            throw OpenAIError.unreadableMenu
+        }
+
+        guard !menuResponse.dishes.isEmpty else {
+            throw OpenAIError.unreadableMenu
+        }
 
         let dishes = menuResponse.dishes.map { raw in
             Dish(
@@ -264,9 +292,7 @@ final class OpenAIService {
         let icon = Self.categoryIcons.contains(menuResponse.categoryIcon ?? "")
             ? menuResponse.categoryIcon! : "restaurant"
 
-        let language = menuResponse.menuLanguage ?? "Unknown"
-
-        return ScannedMenu(restaurant: menuResponse.restaurant, dishes: dishes, categoryIcon: icon, menuLanguage: language)
+        return ScannedMenu(restaurant: menuResponse.restaurant, dishes: dishes, categoryIcon: icon, menuLanguage: userLanguage)
     }
 }
 

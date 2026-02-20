@@ -79,9 +79,8 @@ struct HomeView: View {
                 .fullScreenCover(isPresented: $scanVM.isShowingScanner) {
                     CameraView(
                         onPhotosReady: { images in
-                            let allergenIds = profileStore.profile?.allergenIds ?? []
-                            let language = profileStore.profile?.nativeLanguage ?? "English"
-                            scanVM.handleScannedImages(images, userAllergenIds: allergenIds, userLanguage: language)
+                            let profile = profileStore.profile ?? UserProfile(nativeLanguage: "English", allergenIds: [])
+                            scanVM.handleScannedImages(images, profile: profile)
                         },
                         onCancelled: {
                             scanVM.handleScanCancelled()
@@ -114,11 +113,19 @@ struct HomeView: View {
                         onDismiss: { selectedMenu = nil }
                     )
                 }
-                .alert("Error", isPresented: .init(
+                .alert(scanVM.errorTitle, isPresented: .init(
                     get: { scanVM.errorMessage != nil },
                     set: { if !$0 { scanVM.errorMessage = nil } }
                 )) {
-                    Button("OK") { scanVM.errorMessage = nil }
+                    if scanVM.canRetry {
+                        Button("Try Again") {
+                            scanVM.errorMessage = nil
+                            scanVM.retry()
+                        }
+                    }
+                    Button(scanVM.canRetry ? "Cancel" : "OK", role: .cancel) {
+                        scanVM.errorMessage = nil
+                    }
                 } message: {
                     Text(scanVM.errorMessage ?? "")
                 }

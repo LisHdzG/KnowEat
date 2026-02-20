@@ -15,8 +15,13 @@ final class MenuScanViewModel {
     var scannedMenu: ScannedMenu?
     var analyzedDishes: [AnalyzedDish] = []
     var errorMessage: String?
+    var errorTitle: String = "Error"
+    var canRetry = false
     var showResults = false
     var showPermissionDeniedAlert = false
+
+    private var lastImages: [UIImage] = []
+    private var lastProfile: UserProfile?
 
     func openScanner() {
         errorMessage = nil
@@ -49,29 +54,16 @@ final class MenuScanViewModel {
         UIApplication.shared.open(url)
     }
 
-    func handleScannedImages(_ images: [UIImage], userAllergenIds: [String], userLanguage: String) {
+    func handleScannedImages(_ images: [UIImage], profile: UserProfile) {
+        lastImages = images
+        lastProfile = profile
         isShowingScanner = false
-        isAnalyzing = true
-        errorMessage = nil
+        performAnalysis(images: images, profile: profile)
+    }
 
-        Task {
-            do {
-                let menu = try await OpenAIService.shared.analyzeMenu(images: images, userLanguage: userLanguage)
-                let analyzed = AllergenChecker.analyze(menu: menu, userAllergenIds: userAllergenIds)
-
-                await MainActor.run {
-                    self.scannedMenu = menu
-                    self.analyzedDishes = analyzed
-                    self.isAnalyzing = false
-                    self.showResults = true
-                }
-            } catch {
-                await MainActor.run {
-                    self.errorMessage = error.localizedDescription
-                    self.isAnalyzing = false
-                }
-            }
-        }
+    func retry() {
+        guard let profile = lastProfile, !lastImages.isEmpty else { return }
+        performAnalysis(images: lastImages, profile: profile)
     }
 
     func handleScanCancelled() {
@@ -82,5 +74,50 @@ final class MenuScanViewModel {
         showResults = false
         scannedMenu = nil
         analyzedDishes = []
+        lastImages = []
+        lastProfile = nil
+    }
+
+    private func performAnalysis(images: [UIImage], profile: UserProfile) {
+        isAnalyzing = true
+        errorMessage = nil
+        canRetry = false
+
+        Task {
+            do {
+                let menu = try await OpenAIService.shared.analyzeMenu(images: images, userLanguage: profile.nativeLanguage)
+                let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
+
+                await MainActor.run {
+                    self.scannedMenu = menu
+                    self.analyzedDishes = analyzed
+                    self.isAnalyzing = false
+                    self.showResults = true
+                }
+            } catch let openAIError as OpenAIError {
+                await MainActor.run {
+                    self.isAnalyzing = false
+                    self.canRetry = openAIError.isRetryable
+                    switch openAIError {
+                    case .unreadableMenu:
+                        self.errorTitle = "Unreadable Menu"
+                        self.errorMessage = openAIError.errorDescription
+                    case .timeout:
+                        self.errorTitle = "Connection Timeout"
+                        self.errorMessage = openAIError.errorDescription
+                    default:
+                        self.errorTitle = "Error"
+                        self.errorMessage = openAIError.errorDescription
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    self.isAnalyzing = false
+                    self.errorTitle = "Error"
+                    self.errorMessage = error.localizedDescription
+                    self.canRetry = false
+                }
+            }
+        }
     }
 }
