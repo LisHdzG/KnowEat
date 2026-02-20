@@ -9,23 +9,53 @@ import SwiftUI
 
 struct HomeView: View {
     @Environment(UserProfileStore.self) private var profileStore
+    @Environment(MenuStore.self) private var menuStore
     @State private var viewModel = HomeViewModel()
+    @State private var scanVM = MenuScanViewModel()
+    @State private var selectedMenu: ScannedMenu?
+
+    private var groupedMenus: [(String, [ScannedMenu])] {
+        let calendar = Calendar.current
+        let grouped = Dictionary(grouping: menuStore.menus) { menu -> String in
+            if calendar.isDateInToday(menu.scannedAt) {
+                return "Today"
+            } else if calendar.isDateInYesterday(menu.scannedAt) {
+                return "Yesterday"
+            } else {
+                let formatter = DateFormatter()
+                formatter.dateFormat = "dd MMM yyyy"
+                return formatter.string(from: menu.scannedAt)
+            }
+        }
+
+        let order: (String) -> Date = { key in
+            grouped[key]?.first?.scannedAt ?? .distantPast
+        }
+
+        return grouped.sorted { order($0.key) > order($1.key) }
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: 16) {
-                titleSection
-                    .padding(.horizontal, 24)
-
-                if let profile = profileStore.profile {
-                    activeFiltersCard(for: profile)
+            ZStack {
+                VStack(alignment: .leading, spacing: 16) {
+                    titleSection
                         .padding(.horizontal, 24)
-                }
 
-                menuListSection
+                    if let profile = profileStore.profile {
+                        activeFiltersCard(for: profile)
+                            .padding(.horizontal, 24)
+                    }
+
+                    menuListSection
+                }
+                .padding(.top, 8)
+                .background(Color(.systemBackground))
+
+                if scanVM.isAnalyzing {
+                    analyzingOverlay
+                }
             }
-            .padding(.top, 8)
-            .background(Color(.systemBackground))
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
                     NavigationLink {
@@ -37,11 +67,66 @@ struct HomeView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
+                        scanVM.openScanner()
                     } label: {
                         Image(systemName: "doc.viewfinder")
                     }
                     .tint(Color("PrimaryOrange"))
                 }
+            }
+            .fullScreenCover(isPresented: $scanVM.isShowingScanner) {
+                CameraView(
+                    onPhotosReady: { images in
+                        let allergenIds = profileStore.profile?.allergenIds ?? []
+                        let language = profileStore.profile?.nativeLanguage ?? "English"
+                        scanVM.handleScannedImages(images, userAllergenIds: allergenIds, userLanguage: language)
+                    },
+                    onCancelled: {
+                        scanVM.handleScanCancelled()
+                    }
+                )
+            }
+            .fullScreenCover(isPresented: $scanVM.showResults) {
+                if let menu = scanVM.scannedMenu {
+                    MenuResultView(
+                        menu: menu,
+                        analyzedDishes: scanVM.analyzedDishes,
+                        allergens: viewModel.allergens,
+                        activeFilters: viewModel.activeFilters(for: profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])),
+                        onSave: { savedMenu in
+                            menuStore.save(savedMenu)
+                            scanVM.dismissResults()
+                        },
+                        onDismiss: { scanVM.dismissResults() }
+                    )
+                }
+            }
+            .fullScreenCover(item: $selectedMenu) { menu in
+                let userAllergenIds = profileStore.profile?.allergenIds ?? []
+                let analyzed = AllergenChecker.analyze(menu: menu, userAllergenIds: userAllergenIds)
+                MenuResultView(
+                    menu: menu,
+                    analyzedDishes: analyzed,
+                    allergens: viewModel.allergens,
+                    activeFilters: viewModel.activeFilters(for: profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])),
+                    onDismiss: { selectedMenu = nil }
+                )
+            }
+            .alert("Error", isPresented: .init(
+                get: { scanVM.errorMessage != nil },
+                set: { if !$0 { scanVM.errorMessage = nil } }
+            )) {
+                Button("OK") { scanVM.errorMessage = nil }
+            } message: {
+                Text(scanVM.errorMessage ?? "")
+            }
+            .alert("Camera Access Required", isPresented: $scanVM.showPermissionDeniedAlert) {
+                Button("Open Settings") {
+                    scanVM.openAppSettings()
+                }
+                Button("Cancel", role: .cancel) {}
+            } message: {
+                Text("KnowEat needs camera access to scan menus. Please enable it in Settings.")
             }
         }
     }
@@ -54,65 +139,42 @@ struct HomeView: View {
 
     private func activeFiltersCard(for profile: UserProfile) -> some View {
         let filters = viewModel.activeFilters(for: profile)
-
-        return Button {
-        } label: {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    Text("Active filters")
-                        .font(.interRegular(size: 13))
-                        .foregroundStyle(Color("SecondaryGray"))
-
-                    Spacer()
-
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 12, weight: .semibold))
-                        .foregroundStyle(Color("SecondaryGray"))
-                }
-
-                if filters.isEmpty {
-                    Text("No filters set")
-                        .font(.interRegular(size: 13))
-                        .foregroundStyle(Color("SecondaryGray").opacity(0.6))
-                } else {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 8) {
-                            ForEach(filters) { allergen in
-                                Text(allergen.name)
-                                    .font(.interMedium(size: 13))
-                                    .foregroundStyle(.white)
-                                    .fixedSize()
-                                    .padding(.horizontal, 14)
-                                    .padding(.vertical, 7)
-                                    .background(
-                                        Capsule()
-                                            .fill(Color("PrimaryOrange"))
-                                    )
-                            }
-                        }
-                    }
-                }
-            }
-            .padding(14)
-            .background(
-                RoundedRectangle(cornerRadius: 16)
-                    .fill(Color(.systemBackground))
-                    .shadow(color: .black.opacity(0.06), radius: 10, y: 3)
-            )
+        return ActiveFiltersCard(filters: filters) {
+            // TODO: Navigate to allergen editor
         }
-        .buttonStyle(.plain)
     }
+
+    // MARK: - Menu List
 
     private var menuListSection: some View {
         ScrollView(showsIndicators: false) {
-            LazyVStack(spacing: 12) {
+            if menuStore.menus.isEmpty {
+                emptyMenuPlaceholder
+                    .padding(.top, 60)
+            } else {
+                LazyVStack(alignment: .leading, spacing: 16) {
+                    ForEach(groupedMenus, id: \.0) { dateLabel, menus in
+                        Section {
+                            ForEach(menus) { menu in
+                                Button {
+                                    selectedMenu = menu
+                                } label: {
+                                    MenuCell(menu: menu)
+                                }
+                                .buttonStyle(.plain)
+                            }
+                        } header: {
+                            Text(dateLabel)
+                                .font(.interSemiBold(size: 16))
+                                .foregroundStyle(.secondary)
+                                .padding(.top, 4)
+                        }
+                    }
+                }
+                .padding(.horizontal, 24)
             }
-            .padding(.horizontal, 24)
         }
         .frame(maxHeight: .infinity)
-        .overlay {
-            emptyMenuPlaceholder
-        }
     }
 
     private var emptyMenuPlaceholder: some View {
@@ -125,6 +187,7 @@ struct HomeView: View {
                 .foregroundStyle(Color("SecondaryGray").opacity(0.5))
         } actions: {
             Button {
+                scanVM.openScanner()
             } label: {
                 Text("Scan Menu")
                     .font(.interSemiBold(size: 16))
@@ -133,11 +196,38 @@ struct HomeView: View {
             .tint(Color("PrimaryOrange"))
         }
     }
+
+    private var analyzingOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
+
+            VStack(spacing: 16) {
+                ProgressView()
+                    .controlSize(.large)
+                    .tint(Color("PrimaryOrange"))
+
+                Text("Analyzing menu...")
+                    .font(.interSemiBold(size: 17))
+                    .foregroundStyle(.white)
+
+                Text("This may take a few seconds")
+                    .font(.interRegular(size: 13))
+                    .foregroundStyle(.white.opacity(0.7))
+            }
+            .padding(32)
+            .background(
+                RoundedRectangle(cornerRadius: 20)
+                    .fill(.ultraThinMaterial)
+            )
+        }
+    }
 }
 
 #Preview {
-    let store = UserProfileStore()
-    store.profile = UserProfile(nativeLanguage: "English", allergenIds: ["gluten", "dairy", "peanuts"])
+    let profileStore = UserProfileStore()
+    profileStore.profile = UserProfile(nativeLanguage: "English", allergenIds: ["gluten", "dairy", "peanuts"])
     return HomeView()
-        .environment(store)
+        .environment(profileStore)
+        .environment(MenuStore())
 }

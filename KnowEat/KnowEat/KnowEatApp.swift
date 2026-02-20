@@ -11,6 +11,7 @@ import CoreText
 @main
 struct KnowEatApp: App {
     @State private var profileStore = UserProfileStore()
+    @State private var menuStore = MenuStore()
 
     init() {
         registerCustomFonts()
@@ -20,6 +21,7 @@ struct KnowEatApp: App {
         WindowGroup {
             ContentView()
                 .environment(profileStore)
+                .environment(menuStore)
         }
     }
 

@@ -1,0 +1,183 @@
+//
+//  OpenAIService.swift
+//  KnowEat
+//
+//  Created by Lisette HG on 20/02/26.
+//
+
+import Foundation
+import UIKit
+
+enum OpenAIError: LocalizedError {
+    case invalidAPIKey
+    case encodingFailed
+    case invalidResponse
+    case serverError(String)
+
+    var errorDescription: String? {
+        switch self {
+        case .invalidAPIKey:
+            return "Invalid API key. Please set your OpenAI key in APIConfig."
+        case .encodingFailed:
+            return "Failed to encode the menu images."
+        case .invalidResponse:
+            return "Could not understand the API response."
+        case .serverError(let message):
+            return message
+        }
+    }
+}
+
+actor OpenAIService {
+    static let shared = OpenAIService()
+
+    private let allergenIDs = [
+        "gluten", "crustaceans", "eggs", "fish", "peanuts",
+        "soy", "dairy", "tree_nuts", "celery", "mustard",
+        "sesame", "sulfites", "lupins", "mollusks"
+    ]
+
+    func analyzeMenu(images: [UIImage], userLanguage: String) async throws -> ScannedMenu {
+        guard !APIConfig.openAIKey.isEmpty else {
+            throw OpenAIError.invalidAPIKey
+        }
+
+        let base64Images = try images.compactMap { image -> String in
+            guard let data = image.jpegData(compressionQuality: 0.7) else {
+                throw OpenAIError.encodingFailed
+            }
+            return data.base64EncodedString()
+        }
+
+        let systemPrompt = buildSystemPrompt(userLanguage: userLanguage)
+        let request = try buildRequest(base64Images: base64Images, systemPrompt: systemPrompt)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw OpenAIError.invalidResponse
+        }
+
+        guard httpResponse.statusCode == 200 else {
+            let body = String(data: data, encoding: .utf8) ?? "Unknown error"
+            throw OpenAIError.serverError("API error (\(httpResponse.statusCode)): \(body)")
+        }
+
+        return try parseResponse(data: data)
+    }
+
+    private func buildSystemPrompt(userLanguage: String) -> String {
+        let ids = allergenIDs.joined(separator: ", ")
+        return """
+        You are a menu analysis assistant. Analyze the restaurant menu image(s) and return ONLY valid JSON with this exact structure:
+        {
+          "restaurant": "Name of the restaurant if visible, otherwise 'Unknown'",
+          "dishes": [
+            {
+              "name": "Dish name translated to \(userLanguage)",
+              "description": "Original dish name as written on the menu",
+              "price": "Price if visible",
+              "category": "Menu section translated to \(userLanguage) with original in parentheses",
+              "ingredients": ["ingredient1", "ingredient2"],
+              "allergenIds": ["id1", "id2"]
+            }
+          ]
+        }
+
+        Rules:
+        - LANGUAGE: All dish names, categories, and ingredients MUST be translated to \(userLanguage). Keep the original name in the description field.
+        - For ingredients: list the most likely ingredients even if not explicitly stated on the menu. Use your culinary knowledge. Translate them to \(userLanguage).
+        - For allergenIds: use ONLY these IDs: \(ids)
+        - For category: translate the menu section heading to \(userLanguage) and include the original in parentheses (e.g. "Land Appetizers (Antipasti di Terra)").
+        - For description: always put the original dish name as written on the menu (in its original language).
+        - Include ALL dishes visible in the menu image(s).
+        - Return ONLY the JSON, no markdown formatting, no code fences, no extra text.
+        """
+    }
+
+    private func buildRequest(base64Images: [String], systemPrompt: String) throws -> URLRequest {
+        var imageContents: [[String: Any]] = []
+        for base64 in base64Images {
+            imageContents.append([
+                "type": "image_url",
+                "image_url": [
+                    "url": "data:image/jpeg;base64,\(base64)",
+                    "detail": "high"
+                ]
+            ])
+        }
+
+        let userContent: [[String: Any]] = [
+            ["type": "text", "text": "Analyze this restaurant menu and return the structured JSON."]
+        ] + imageContents
+
+        let body: [String: Any] = [
+            "model": APIConfig.model,
+            "messages": [
+                ["role": "system", "content": systemPrompt],
+                ["role": "user", "content": userContent]
+            ],
+            "max_tokens": 4096,
+            "temperature": 0.1
+        ]
+
+        let jsonData = try JSONSerialization.data(withJSONObject: body)
+
+        var request = URLRequest(url: URL(string: APIConfig.openAIBaseURL)!)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(APIConfig.openAIKey)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = jsonData
+        request.timeoutInterval = 60
+
+        return request
+    }
+
+    private func parseResponse(data: Data) throws -> ScannedMenu {
+        guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+              let choices = json["choices"] as? [[String: Any]],
+              let first = choices.first,
+              let message = first["message"] as? [String: Any],
+              let content = message["content"] as? String else {
+            throw OpenAIError.invalidResponse
+        }
+
+        let cleaned = content
+            .replacingOccurrences(of: "```json", with: "")
+            .replacingOccurrences(of: "```", with: "")
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
+        guard let contentData = cleaned.data(using: .utf8) else {
+            throw OpenAIError.invalidResponse
+        }
+
+        let menuResponse = try JSONDecoder().decode(MenuAPIResponse.self, from: contentData)
+
+        let dishes = menuResponse.dishes.map { raw in
+            Dish(
+                name: raw.name,
+                description: raw.description,
+                price: raw.price,
+                category: raw.category,
+                ingredients: raw.ingredients,
+                allergenIds: raw.allergenIds
+            )
+        }
+
+        return ScannedMenu(restaurant: menuResponse.restaurant, dishes: dishes)
+    }
+}
+
+private struct MenuAPIResponse: Decodable {
+    let restaurant: String
+    let dishes: [DishResponse]
+}
+
+private struct DishResponse: Decodable {
+    let name: String
+    let description: String?
+    let price: String?
+    let category: String?
+    let ingredients: [String]
+    let allergenIds: [String]
+}
