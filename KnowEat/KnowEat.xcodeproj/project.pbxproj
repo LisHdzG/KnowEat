@@ -11,7 +11,6 @@
 		687ADF2A2F48ABA700122074 /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = 687ADF292F48ABA700122074 /* FirebaseCrashlytics */; };
 		687ADF2C2F48ABA700122074 /* FirebaseRemoteConfig in Frameworks */ = {isa = PBXBuildFile; productRef = 687ADF2B2F48ABA700122074 /* FirebaseRemoteConfig */; };
 		687ADF2E2F48AC5100122074 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = 687ADF2D2F48AC5100122074 /* FirebaseCore */; };
-		687ADF302F48AC5100122074 /* FirebaseFunctions in Frameworks */ = {isa = PBXBuildFile; productRef = 687ADF2F2F48AC5100122074 /* FirebaseFunctions */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -33,7 +32,6 @@
 			files = (
 				687ADF2C2F48ABA700122074 /* FirebaseRemoteConfig in Frameworks */,
 				687ADF282F48ABA700122074 /* FirebaseAnalytics in Frameworks */,
-				687ADF302F48AC5100122074 /* FirebaseFunctions in Frameworks */,
 				687ADF2E2F48AC5100122074 /* FirebaseCore in Frameworks */,
 				687ADF2A2F48ABA700122074 /* FirebaseCrashlytics in Frameworks */,
 			);
@@ -83,7 +81,6 @@
 				687ADF292F48ABA700122074 /* FirebaseCrashlytics */,
 				687ADF2B2F48ABA700122074 /* FirebaseRemoteConfig */,
 				687ADF2D2F48AC5100122074 /* FirebaseCore */,
-				687ADF2F2F48AC5100122074 /* FirebaseFunctions */,
 			);
 			productName = KnowEat;
 			productReference = 684CCFCE2F47C789001C0BA9 /* KnowEat.app */;
@@ -418,11 +415,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 687ADF262F48ABA700122074 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseCore;
-		};
-		687ADF2F2F48AC5100122074 /* FirebaseFunctions */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 687ADF262F48ABA700122074 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
-			productName = FirebaseFunctions;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

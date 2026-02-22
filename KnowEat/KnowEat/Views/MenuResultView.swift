@@ -229,16 +229,18 @@ struct MenuResultView: View {
         }
     }
 
+    // MARK: - Offline Banner
+
     // MARK: - Disclaimer
 
     private var disclaimerBanner: some View {
         HStack(alignment: .top, spacing: 10) {
-            Image(systemName: "info.circle.fill")
-                .foregroundStyle(.blue)
+            Image(systemName: "apple.intelligence")
+                .foregroundStyle(.purple)
                 .font(.system(size: 16))
                 .padding(.top, 1)
 
-            Text("These results are AI-generated recommendations. Always verify with the restaurant staff if you have severe allergies.")
+            Text("Analyzed with Apple Intelligence on your device. Results may not be fully accurate — always confirm with the restaurant staff if you have severe allergies.")
                 .font(.system(size: 12))
                 .foregroundStyle(.secondary)
 
@@ -253,7 +255,7 @@ struct MenuResultView: View {
             }
         }
         .padding(12)
-        .background(.blue.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+        .background(.purple.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Category Picker
@@ -356,7 +358,7 @@ struct MenuResultView: View {
 
         Task { @MainActor in
             do {
-                let result = try await OpenAIService.shared.retranslateMenu(
+                let result = try await FoundationModelAnalyzer.shared.translateMenu(
                     dishes: currentMenu.dishes,
                     restaurant: currentMenu.restaurant,
                     to: language
@@ -390,32 +392,15 @@ private struct DishCard: View {
     let item: AnalyzedDish
     let allergens: [Allergen]
 
-    private static let allergenIDs: Set<String> = [
-        "gluten", "crustaceans", "eggs", "fish", "peanuts",
-        "soy", "dairy", "tree_nuts", "celery", "mustard",
-        "sesame", "sulfites", "lupins", "mollusks"
-    ]
-
-    private var matchedAllergens: [String] {
-        item.matchedAllergenIds.filter { Self.allergenIDs.contains($0) }
-    }
-
-    private var advisoryRestrictions: [String] {
-        item.matchedAllergenIds
-            .filter { !Self.allergenIDs.contains($0) }
-            .compactMap { id in allergens.first(where: { $0.id == id })?.name }
-    }
-
-    private var hasAllergenDanger: Bool { !matchedAllergens.isEmpty }
-    private var hasAdvisoryOnly: Bool { !item.isSafe && matchedAllergens.isEmpty }
-
     private var accentColor: Color {
         if item.isSafe { return .green }
-        if hasAllergenDanger { return .red }
+        if item.isDanger { return .red }
         return .yellow
     }
 
-    private var statusColor: Color { accentColor }
+    private func nameFor(_ id: String) -> String {
+        allergens.first(where: { $0.id == id })?.name ?? id
+    }
 
     var body: some View {
         HStack(spacing: 0) {
@@ -427,19 +412,15 @@ private struct DishCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .top) {
                     VStack(alignment: .leading, spacing: 3) {
-                        if let original = item.dish.description, !original.isEmpty {
-                            Text(original)
-                                .font(.interSemiBold(size: 16))
-                                .foregroundStyle(.primary)
+                        Text(item.dish.name)
+                            .font(.interSemiBold(size: 16))
+                            .foregroundStyle(.primary)
 
-                            Text(item.dish.name)
+                        if let description = item.dish.description, !description.isEmpty {
+                            Text(description)
                                 .font(.interRegular(size: 13))
                                 .foregroundStyle(Color("SecondaryGray"))
                                 .italic()
-                        } else {
-                            Text(item.dish.name)
-                                .font(.interSemiBold(size: 16))
-                                .foregroundStyle(.primary)
                         }
                     }
 
@@ -458,24 +439,61 @@ private struct DishCard: View {
                     }
                 }
 
-                if !item.isSafe, !advisoryRestrictions.isEmpty {
-                    HStack(alignment: .top, spacing: 6) {
-                        Image(systemName: "exclamationmark.triangle.fill")
-                            .font(.system(size: 11))
-                            .foregroundStyle(.yellow)
-                            .padding(.top, 1)
+                if !item.dish.inferredIngredients.isEmpty {
+                    VStack(alignment: .leading, spacing: 3) {
+                        HStack(spacing: 4) {
+                            Image(systemName: "apple.intelligence")
+                                .font(.system(size: 10))
+                                .foregroundStyle(.purple)
+                            Text("It may also contain")
+                                .font(.interMedium(size: 12))
+                                .foregroundStyle(.purple.opacity(0.7))
+                        }
 
-                        Text("Not recommended for: \(advisoryRestrictions.joined(separator: ", "))")
-                            .font(.system(size: 12))
-                            .foregroundStyle(.secondary)
+                        inferredIngredientsText
+                            .font(.interRegular(size: 13))
+                            .lineLimit(2)
                     }
-                    .padding(8)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(
-                        RoundedRectangle(cornerRadius: 8)
-                            .fill(.yellow.opacity(0.08))
+                }
+
+                if !item.matchedAllergenIds.isEmpty {
+                    reasonBanner(
+                        icon: "exclamationmark.triangle.fill",
+                        color: .red,
+                        text: "Contains allergens: \(item.matchedAllergenIds.map { nameFor($0) }.joined(separator: ", "))"
                     )
-                    .padding(.top, 2)
+                }
+
+                if !item.matchedConditionIds.isEmpty {
+                    reasonBanner(
+                        icon: "heart.fill",
+                        color: .red,
+                        text: "Not safe for your condition: \(item.matchedConditionIds.map { nameFor($0) }.joined(separator: ", "))"
+                    )
+                }
+
+                if !item.matchedIntoleranceIds.isEmpty {
+                    reasonBanner(
+                        icon: "exclamationmark.circle.fill",
+                        color: .yellow,
+                        text: "May cause intolerance: \(item.matchedIntoleranceIds.map { nameFor($0) }.joined(separator: ", "))"
+                    )
+                }
+
+                if !item.matchedDietIds.isEmpty {
+                    reasonBanner(
+                        icon: "leaf.fill",
+                        color: .yellow,
+                        text: "Not compatible with your diet: \(item.matchedDietIds.map { nameFor($0) }.joined(separator: ", "))"
+                    )
+                }
+
+                if !item.matchedSituationIds.isEmpty {
+                    reasonBanner(
+                        icon: "person.fill",
+                        color: .yellow,
+                        text: "Not recommended for your situation: \(item.matchedSituationIds.map { nameFor($0) }.joined(separator: ", "))"
+                    )
                 }
 
                 if let price = item.dish.price, !price.isEmpty {
@@ -499,12 +517,46 @@ private struct DishCard: View {
         )
     }
 
+    private func reasonBanner(icon: String, color: Color, text: String) -> some View {
+        HStack(alignment: .top, spacing: 6) {
+            Image(systemName: icon)
+                .font(.system(size: 11))
+                .foregroundStyle(color)
+                .padding(.top, 1)
+
+            Text(text)
+                .font(.system(size: 12))
+                .foregroundStyle(.secondary)
+        }
+        .padding(8)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(color.opacity(0.08))
+        )
+        .padding(.top, 2)
+    }
+
+    private var inferredIngredientsText: Text {
+        let base = Color.purple.opacity(0.6)
+        let inferred = item.dish.inferredIngredients
+        var result = Text("")
+        for (i, ingredient) in inferred.enumerated() {
+            let color: Color = isIngredientFlagged(ingredient) ? accentColor : base
+            result = Text("\(result)\(Text(ingredient).foregroundColor(color))")
+            if i < inferred.count - 1 {
+                result = Text("\(result)\(Text(", ").foregroundColor(base))")
+            }
+        }
+        return result
+    }
+
     private var ingredientsText: Text {
         let safe = Color("SecondaryGray").opacity(0.85)
         let ingredients = item.dish.ingredients
         var result = Text("")
         for (i, ingredient) in ingredients.enumerated() {
-            let color: Color = isIngredientFlagged(ingredient) ? statusColor : safe
+            let color: Color = isIngredientFlagged(ingredient) ? accentColor : safe
             result = Text("\(result)\(Text(ingredient).foregroundColor(color))")
             if i < ingredients.count - 1 {
                 result = Text("\(result)\(Text(", ").foregroundColor(safe))")
@@ -515,7 +567,8 @@ private struct DishCard: View {
 
     private func isIngredientFlagged(_ ingredient: String) -> Bool {
         let lower = ingredient.lowercased()
-        return item.matchedAllergenIds.contains { id in
+        let allMatchedIds = item.dangerIds + item.advisoryIds
+        return allMatchedIds.contains { id in
             (Self.keywords[id] ?? []).contains { lower.contains($0) }
         }
     }

@@ -14,18 +14,43 @@ enum AllergenChecker {
             return AnalyzedDish(
                 dish: dish,
                 isSafe: matched.isEmpty,
-                matchedAllergenIds: matched
+                matchedAllergenIds: matched,
+                matchedConditionIds: [],
+                matchedIntoleranceIds: [],
+                matchedDietIds: [],
+                matchedSituationIds: []
             )
         }
     }
 
     static func analyze(menu: ScannedMenu, profile: UserProfile) -> [AnalyzedDish] {
-        let allIds = profile.allergenIds
-            + profile.intoleranceIds
-            + profile.conditionIds
-            + profile.dietIds
-            + profile.situationIds
-        return analyze(menu: menu, userAllergenIds: allIds)
+        let allergenSet = Set(profile.allergenIds)
+        let conditionSet = Set(profile.conditionIds)
+        let intoleranceSet = Set(profile.intoleranceIds)
+        let dietSet = Set(profile.dietIds)
+        let situationSet = Set(profile.situationIds)
+
+        return menu.dishes.map { dish in
+            let dishIds = Set(dish.allergenIds)
+
+            let allergens = dishIds.intersection(allergenSet).sorted()
+            let conditions = dishIds.intersection(conditionSet).sorted()
+            let intolerances = dishIds.intersection(intoleranceSet).sorted()
+            let diets = dishIds.intersection(dietSet).sorted()
+            let situations = dishIds.intersection(situationSet).sorted()
+
+            let allMatched = allergens + conditions + intolerances + diets + situations
+
+            return AnalyzedDish(
+                dish: dish,
+                isSafe: allMatched.isEmpty,
+                matchedAllergenIds: Array(allergens),
+                matchedConditionIds: Array(conditions),
+                matchedIntoleranceIds: Array(intolerances),
+                matchedDietIds: Array(diets),
+                matchedSituationIds: Array(situations)
+            )
+        }
     }
 
     static func safeCount(in analyzed: [AnalyzedDish]) -> Int {

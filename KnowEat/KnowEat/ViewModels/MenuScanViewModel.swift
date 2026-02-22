@@ -85,38 +85,50 @@ final class MenuScanViewModel {
 
         Task {
             do {
-                let menu = try await OpenAIService.shared.analyzeMenu(images: images, userLanguage: profile.nativeLanguage)
-                let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
+                let ocrText = try await OCRService.shared.extractText(from: images)
+                let menu: ScannedMenu
 
-                await MainActor.run {
+                if FoundationModelAnalyzer.shared.isAvailable {
+                    menu = try await FoundationModelAnalyzer.shared.analyze(
+                        ocrText: ocrText,
+                        userLanguage: profile.nativeLanguage
+                    )
+                } else {
+                    menu = OfflineMenuAnalyzer.shared.analyze(
+                        ocrText: ocrText,
+                        userLanguage: profile.nativeLanguage
+                    )
+                }
+
+                let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
+                self.scannedMenu = menu
+                self.analyzedDishes = analyzed
+                self.isAnalyzing = false
+                self.showResults = true
+            } catch is FoundationModelError {
+                if let ocrText = try? await OCRService.shared.extractText(from: images) {
+                    let menu = OfflineMenuAnalyzer.shared.analyze(ocrText: ocrText, userLanguage: profile.nativeLanguage)
+                    let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
                     self.scannedMenu = menu
                     self.analyzedDishes = analyzed
                     self.isAnalyzing = false
                     self.showResults = true
-                }
-            } catch let openAIError as OpenAIError {
-                await MainActor.run {
+                } else {
                     self.isAnalyzing = false
-                    self.canRetry = openAIError.isRetryable
-                    switch openAIError {
-                    case .unreadableMenu:
-                        self.errorTitle = "Unreadable Menu"
-                        self.errorMessage = openAIError.errorDescription
-                    case .timeout:
-                        self.errorTitle = "Connection Timeout"
-                        self.errorMessage = openAIError.errorDescription
-                    default:
-                        self.errorTitle = "Error"
-                        self.errorMessage = openAIError.errorDescription
-                    }
+                    self.errorTitle = "Analysis Error"
+                    self.errorMessage = "Could not analyze the menu."
+                    self.canRetry = true
                 }
+            } catch let ocrError as OCRError {
+                self.isAnalyzing = false
+                self.errorTitle = "Scan Error"
+                self.errorMessage = ocrError.errorDescription
+                self.canRetry = true
             } catch {
-                await MainActor.run {
-                    self.isAnalyzing = false
-                    self.errorTitle = "Error"
-                    self.errorMessage = error.localizedDescription
-                    self.canRetry = false
-                }
+                self.isAnalyzing = false
+                self.errorTitle = "Error"
+                self.errorMessage = error.localizedDescription
+                self.canRetry = true
             }
         }
     }

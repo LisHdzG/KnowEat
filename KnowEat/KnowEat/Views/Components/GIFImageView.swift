@@ -2,6 +2,8 @@
 //  GIFImageView.swift
 //  KnowEat
 //
+//  Created by Lisette HG on 20/02/26.
+//
 
 import SwiftUI
 import UIKit

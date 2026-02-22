@@ -1,0 +1,237 @@
+//
+//  OfflineMenuAnalyzer.swift
+//  KnowEat
+//
+//  Created by Lisette HG on 20/02/26.
+//
+
+import Foundation
+
+final class OfflineMenuAnalyzer {
+    static let shared = OfflineMenuAnalyzer()
+
+    private let priceRegex: NSRegularExpression = {
+        try! NSRegularExpression(pattern: #"[\$€£]\s*\d+[.,]?\d{0,2}|\d+[.,]\d{2}\s*[\$€£]|\d+[.,]\d{2}\s*€?"#)
+    }()
+
+    func analyze(ocrText: String, userLanguage: String) -> ScannedMenu {
+        let lines = ocrText
+            .components(separatedBy: .newlines)
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.isEmpty }
+
+        let rawEntries = extractDishEntries(from: lines)
+        let dishes = rawEntries.map { buildDish(from: $0) }
+        let restaurant = guessRestaurant(from: lines, dishEntries: rawEntries)
+
+        return ScannedMenu(
+            restaurant: restaurant,
+            dishes: dishes.isEmpty ? fallbackSingleDish(from: ocrText) : dishes,
+            categoryIcon: "restaurant",
+            menuLanguage: userLanguage
+        )
+    }
+
+    // MARK: - Entry Extraction
+
+    private struct RawEntry {
+        var name: String
+        var description: String?
+        var price: String?
+        var category: String?
+    }
+
+    private func extractDishEntries(from lines: [String]) -> [RawEntry] {
+        var entries: [RawEntry] = []
+        var currentCategory: String?
+        var i = 0
+
+        while i < lines.count {
+            let line = lines[i]
+
+            if looksLikeCategory(line, nextLine: i + 1 < lines.count ? lines[i + 1] : nil) {
+                currentCategory = line
+                    .replacingOccurrences(of: ":", with: "")
+                    .trimmingCharacters(in: .whitespaces)
+                    .localizedCapitalized
+                i += 1
+                continue
+            }
+
+            if looksLikeDish(line) {
+                var entry = RawEntry(name: extractName(from: line), category: currentCategory)
+                entry.price = extractPrice(from: line)
+
+                if i + 1 < lines.count, looksLikeDescription(lines[i + 1]) {
+                    entry.description = lines[i + 1]
+                    i += 1
+                }
+
+                entries.append(entry)
+            }
+            i += 1
+        }
+
+        return entries
+    }
+
+    private func buildDish(from entry: RawEntry) -> Dish {
+        let textToAnalyze = [entry.name, entry.description ?? ""]
+            .joined(separator: " ")
+            .lowercased()
+
+        let detectedAllergens = detectAllergens(in: textToAnalyze)
+        let inferredIngredients = extractIngredientHints(from: textToAnalyze)
+
+        return Dish(
+            name: entry.name,
+            description: entry.description,
+            price: entry.price,
+            category: entry.category,
+            ingredients: inferredIngredients,
+            allergenIds: detectedAllergens
+        )
+    }
+
+    // MARK: - Line Classification
+
+    private func hasPrice(_ text: String) -> Bool {
+        let range = NSRange(text.startIndex..., in: text)
+        return priceRegex.firstMatch(in: text, range: range) != nil
+    }
+
+    private func firstPriceMatch(in text: String) -> NSTextCheckingResult? {
+        let range = NSRange(text.startIndex..., in: text)
+        return priceRegex.firstMatch(in: text, range: range)
+    }
+
+    private func looksLikeCategory(_ line: String, nextLine: String?) -> Bool {
+        let clean = line.replacingOccurrences(of: ":", with: "").trimmingCharacters(in: .whitespaces)
+
+        if clean.count > 30 || clean.count < 3 { return false }
+        if hasPrice(clean) { return false }
+
+        let isAllCaps = clean == clean.uppercased() && clean != clean.lowercased() && clean.count >= 3
+        let knownCategories = [
+            "appetizer", "starter", "entrée", "entree", "entrada", "antipasti", "antipasto",
+            "main", "principal", "secondo", "secondi", "plato fuerte",
+            "dessert", "postre", "dolci", "dolce",
+            "drink", "beverage", "bebida", "bevande",
+            "salad", "ensalada", "insalata",
+            "soup", "sopa", "zuppa",
+            "side", "acompañamiento", "contorno",
+            "pizza", "pasta", "sandwich", "burger"
+        ]
+        let lower = clean.lowercased()
+        let matchesKnown = knownCategories.contains { lower.contains($0) }
+
+        return isAllCaps || matchesKnown
+    }
+
+    private func looksLikeDish(_ line: String) -> Bool {
+        if line.count < 3 { return false }
+        if looksLikeCategory(line, nextLine: nil) { return false }
+        if hasPrice(line) { return true }
+        let wordCount = line.split(separator: " ").count
+        return wordCount >= 1 && wordCount <= 12 && line.first?.isUppercase == true
+    }
+
+    private func looksLikeDescription(_ line: String) -> Bool {
+        if hasPrice(line) { return false }
+        if looksLikeCategory(line, nextLine: nil) { return false }
+        let wordCount = line.split(separator: " ").count
+        return wordCount >= 3 && line.first?.isLowercase == true || line.contains(",")
+    }
+
+    private func extractName(from line: String) -> String {
+        var name = line
+        if let match = firstPriceMatch(in: name),
+           let range = Range(match.range, in: name) {
+            name = String(name[name.startIndex..<range.lowerBound])
+        }
+        return name
+            .trimmingCharacters(in: .whitespaces)
+            .trimmingCharacters(in: CharacterSet(charactersIn: ".-–—…"))
+            .trimmingCharacters(in: .whitespaces)
+    }
+
+    private func extractPrice(from line: String) -> String? {
+        guard let match = firstPriceMatch(in: line),
+              let range = Range(match.range, in: line) else { return nil }
+        return String(line[range]).trimmingCharacters(in: .whitespaces)
+    }
+
+    private func guessRestaurant(from lines: [String], dishEntries: [RawEntry]) -> String {
+        let dishNames = Set(dishEntries.map { $0.name.lowercased() })
+        for line in lines.prefix(3) {
+            let clean = line.trimmingCharacters(in: .whitespaces)
+            if clean.count >= 3 && clean.count <= 40
+                && !dishNames.contains(clean.lowercased())
+                && !hasPrice(clean)
+                && !looksLikeCategory(clean, nextLine: nil) {
+                return clean
+            }
+        }
+        return "Unknown"
+    }
+
+    private func fallbackSingleDish(from text: String) -> [Dish] {
+        let allergens = detectAllergens(in: text.lowercased())
+        return [Dish(
+            name: "Menu (OCR)",
+            description: String(text.prefix(200)),
+            price: nil,
+            category: nil,
+            ingredients: extractIngredientHints(from: text.lowercased()),
+            allergenIds: allergens
+        )]
+    }
+
+    // MARK: - Allergen Detection
+
+    private func detectAllergens(in text: String) -> [String] {
+        var found: [String] = []
+        for (allergenId, keywords) in Self.allergenKeywords {
+            if keywords.contains(where: { text.contains($0) }) {
+                found.append(allergenId)
+            }
+        }
+        return found
+    }
+
+    private func extractIngredientHints(from text: String) -> [String] {
+        var ingredients: [String] = []
+        for (_, keywords) in Self.allergenKeywords {
+            for keyword in keywords where text.contains(keyword) {
+                let capitalized = keyword.prefix(1).uppercased() + keyword.dropFirst()
+                if !ingredients.contains(capitalized) {
+                    ingredients.append(capitalized)
+                }
+            }
+        }
+        return ingredients
+    }
+
+    // MARK: - Keyword Database
+
+    private static let allergenKeywords: [String: [String]] = [
+        "gluten": ["wheat", "flour", "bread", "pasta", "barley", "rye", "oat", "semolina", "couscous", "noodle", "dough", "pastry", "cracker", "trigo", "harina", "pan ", "avena", "cebada", "centeno", "grano", "farina", "orzo", "segale"],
+        "dairy": ["milk", "cheese", "cream", "butter", "yogurt", "mozzarella", "parmesan", "cheddar", "ricotta", "mascarpone", "brie", "feta", "whey", "ghee", "paneer", "leche", "queso", "crema", "mantequilla", "yogur", "nata", "latte", "formaggio", "burro", "panna"],
+        "eggs": ["egg", "mayonnaise", "meringue", "aioli", "huevo", "mayonesa", "uovo", "uova", "maionese"],
+        "fish": ["fish", "salmon", "tuna", "cod", "anchovy", "sardine", "bass", "trout", "halibut", "swordfish", "mackerel", "pescado", "salmón", "atún", "bacalao", "anchoa", "sardina", "trucha", "pesce", "tonno", "merluzzo", "acciuga"],
+        "crustaceans": ["shrimp", "prawn", "crab", "lobster", "crawfish", "langoustine", "camarón", "gamba", "cangrejo", "langosta", "gambero", "granchio", "aragosta", "gambas"],
+        "peanuts": ["peanut", "cacahuete", "maní", "arachide"],
+        "soy": ["soy", "soja", "tofu", "edamame", "tempeh", "miso"],
+        "tree_nuts": ["almond", "walnut", "cashew", "pistachio", "pecan", "hazelnut", "macadamia", "chestnut", "pine nut", "almendra", "nuez", "avellana", "castaña", "pistacho", "mandorla", "noce", "nocciola", "pistacchio", "castagna"],
+        "celery": ["celery", "celeriac", "apio", "sedano"],
+        "mustard": ["mustard", "mostaza", "senape"],
+        "sesame": ["sesame", "tahini", "sésamo", "sesamo"],
+        "sulfites": ["wine", "vinegar", "sulfite", "vino", "vinagre", "aceto"],
+        "lupins": ["lupin", "lupini", "altramuz"],
+        "mollusks": ["mussel", "clam", "oyster", "squid", "octopus", "scallop", "calamari", "snail", "mejillón", "almeja", "ostra", "calamar", "pulpo", "cozza", "vongola", "ostrica", "polpo", "capesante"],
+        "lactose": ["milk", "cheese", "cream", "butter", "yogurt", "ice cream", "leche", "queso", "crema", "mantequilla", "yogur", "helado", "latte", "formaggio", "burro", "gelato"],
+        "fructose": ["honey", "apple", "pear", "mango", "agave", "miel", "manzana", "pera", "miele", "mela"],
+        "histamine": ["wine", "aged cheese", "fermented", "cured", "smoked", "vinegar", "vino", "ahumado", "curado", "fermentado", "affumicato", "stagionato"],
+        "fodmap": ["garlic", "onion", "wheat", "apple", "pear", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"]
+    ]
+}
