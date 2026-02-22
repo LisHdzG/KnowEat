@@ -121,6 +121,8 @@ struct MenuResultView: View {
                             .font(.system(size: 14, weight: .semibold))
                     }
                     .tint(Color("SecondaryGray"))
+                    .accessibilityLabel("Close")
+                    .accessibilityHint("Dismisses the menu results and returns to the previous screen")
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     if isReadOnly {
@@ -131,6 +133,8 @@ struct MenuResultView: View {
                                 .font(.system(size: 16, weight: .medium))
                         }
                         .tint(Color("PrimaryOrange"))
+                        .accessibilityLabel("Change language")
+                        .accessibilityHint("Opens the language picker to translate the menu")
                     } else {
                         Button {
                             handleSave()
@@ -139,6 +143,8 @@ struct MenuResultView: View {
                                 .font(.interMedium(size: 16))
                         }
                         .tint(Color("PrimaryOrange"))
+                        .accessibilityLabel("Save menu")
+                        .accessibilityHint("Saves this menu to your recent menus list")
                     }
                 }
             }
@@ -236,6 +242,7 @@ struct MenuResultView: View {
             Image(systemName: "apple.intelligence")
                 .font(.system(size: 18))
                 .foregroundStyle(.secondary)
+                .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text("Analyzed on your device")
@@ -246,6 +253,8 @@ struct MenuResultView: View {
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
+            .accessibilityElement(children: .combine)
+            .accessibilityLabel("Analysis notice. Menu was analyzed on your device. Always confirm with staff for severe allergies.")
 
             Spacer()
 
@@ -257,6 +266,8 @@ struct MenuResultView: View {
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(.quaternary)
             }
+            .accessibilityLabel("Dismiss disclaimer")
+            .accessibilityHint("Hides the analysis notice banner")
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
@@ -292,6 +303,9 @@ struct MenuResultView: View {
                         }
                         .buttonStyle(.plain)
                         .id(index)
+                        .accessibilityLabel(title)
+                        .accessibilityHint(selectedCategoryIndex == index ? "Selected. Filtering by \(title)" : "Filters dishes to show only \(title)")
+                        .accessibilityAddTraits(selectedCategoryIndex == index ? [.isButton, .isSelected] : .isButton)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -491,6 +505,34 @@ private struct DishCard: View {
                 .fill(Color(.systemBackground))
                 .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(dishAccessibilityLabel)
+        .accessibilityHint(dishAccessibilityHint)
+    }
+
+    private var dishAccessibilityLabel: String {
+        var label = "\(item.dish.name)"
+        if let price = item.dish.price, !price.isEmpty {
+            label += ", \(price)"
+        }
+        if item.isSafe {
+            label += ", safe to eat"
+        } else if item.isDanger {
+            label += ", not recommended. Contains allergens or not safe for your condition: \(dangerSummary)"
+        } else {
+            label += ", may cause intolerance or not compatible: \(advisorySummary)"
+        }
+        return label
+    }
+
+    private var dishAccessibilityHint: String {
+        if item.isSafe {
+            return "No dietary restrictions match this dish"
+        }
+        if item.isDanger {
+            return "Double-tap for more details. Contains ingredients that may cause an allergic reaction or are not safe for your medical condition"
+        }
+        return "Double-tap for more details. May cause intolerance or is not compatible with your diet or situation"
     }
 
     // MARK: - Warning Summaries

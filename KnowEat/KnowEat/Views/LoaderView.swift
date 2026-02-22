@@ -44,6 +44,9 @@ struct LoaderView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color(.systemBackground))
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Analyzing menu")
+        .accessibilityHint(currentPhrase)
         .onAppear {
             startPhraseRotation()
         }

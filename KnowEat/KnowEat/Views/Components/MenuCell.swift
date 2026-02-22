@@ -69,5 +69,7 @@ struct MenuCell: View {
                 .fill(Color(.systemBackground))
                 .shadow(color: .black.opacity(0.06), radius: 10, y: 3)
         )
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("\(menu.restaurant), \(menu.dishes.count) dishes, scanned \(formattedDate)")
     }
 }

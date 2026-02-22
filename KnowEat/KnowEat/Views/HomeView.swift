@@ -61,6 +61,8 @@ struct HomeView: View {
                             Image(systemName: "gearshape")
                         }
                         .tint(Color("SecondaryGray"))
+                        .accessibilityLabel("Settings")
+                        .accessibilityHint("Opens app settings and dietary profile")
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
@@ -69,6 +71,8 @@ struct HomeView: View {
                             Image(systemName: "doc.viewfinder")
                         }
                         .tint(Color("PrimaryOrange"))
+                        .accessibilityLabel("Scan menu")
+                        .accessibilityHint("Opens the camera to scan a restaurant menu")
                     }
                 }
                 .fullScreenCover(isPresented: $scanVM.isShowingScanner) {
@@ -187,6 +191,8 @@ struct HomeView: View {
                                     MenuCell(menu: menu)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityLabel("\(menu.restaurant), \(menu.dishes.count) dishes, \(menu.menuLanguage)")
+                                .accessibilityHint("Opens menu analysis and allergen check")
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     Button(role: .destructive) {
                                         withAnimation { menuStore.delete(menu) }
@@ -240,6 +246,8 @@ struct HomeView: View {
             }
             .buttonStyle(.borderedProminent)
             .tint(Color("PrimaryOrange"))
+            .accessibilityLabel("Scan menu")
+            .accessibilityHint("Opens the camera to scan your first restaurant menu")
         }
     }
 

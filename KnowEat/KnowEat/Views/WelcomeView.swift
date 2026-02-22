@@ -127,6 +127,8 @@ struct WelcomeView: View {
                 )
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Primary language, \(viewModel.selectedLanguage)")
+            .accessibilityHint("Opens language picker to set your native language")
         }
     }
 
@@ -176,6 +178,8 @@ struct WelcomeView: View {
                         .fill(Color("PrimaryOrange"))
                 )
         }
+        .accessibilityLabel("Continue")
+        .accessibilityHint("Saves your dietary profile and starts using KnowEat")
     }
 }
 

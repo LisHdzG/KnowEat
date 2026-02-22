@@ -148,6 +148,9 @@ struct LanguagePickerOverlay: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(language)\(isActive ? ", selected" : "")")
+        .accessibilityHint("Selects \(language) as the menu language")
+        .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
     }
 
     private func animateDismiss() {

@@ -65,6 +65,8 @@ struct SettingsView: View {
                 )
             }
             .buttonStyle(.plain)
+            .accessibilityLabel("Native language, \(viewModel.selectedLanguage)")
+            .accessibilityHint("Opens language picker for menu translations")
         }
     }
 
@@ -160,6 +162,8 @@ struct SettingsView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(title), \(count > 0 ? "\(count) selected" : "none selected")")
+        .accessibilityHint("Opens editor to configure your \(title.lowercased())")
     }
 
     private var sectionDivider: some View {
@@ -236,6 +240,8 @@ struct SettingsView: View {
                     Toggle("", isOn: saveHistoryBinding)
                         .labelsHidden()
                         .tint(Color("PrimaryOrange"))
+                        .accessibilityLabel("Save history")
+                        .accessibilityHint("When on, scanned menus are saved to your history")
                 }
                 .padding(.horizontal, 16)
                 .padding(.vertical, 12)
@@ -254,6 +260,8 @@ struct SettingsView: View {
                         )
                     }
                     .buttonStyle(.plain)
+                    .accessibilityLabel("Delete all menus, \(menuStore.menus.count) saved")
+                    .accessibilityHint("Permanently deletes all saved menus from history")
                     .alert("Delete All Menus?", isPresented: $showDeleteConfirmation) {
                         Button("Delete All", role: .destructive) {
                             showFinalConfirmation = true

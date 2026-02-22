@@ -41,5 +41,8 @@ struct AllergenChipView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(allergen.name), \(isSelected ? "selected" : "not selected")")
+        .accessibilityHint("Double-tap to \(isSelected ? "deselect" : "select") this dietary restriction")
+        .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
 }

@@ -8,6 +8,12 @@
 import SwiftUI
 import AVFoundation
 import PhotosUI
+import Photos
+
+private struct GalleryThumbnail: Identifiable {
+    let id: String
+    let thumbnail: UIImage
+}
 
 struct CameraView: View {
     let onPhotosReady: ([UIImage]) -> Void
@@ -16,9 +22,30 @@ struct CameraView: View {
     @State private var capturedPhotos: [UIImage] = []
     @State private var showFlash = false
     @State private var isTorchOn = false
+    @State private var showPreview = false
+    @State private var previewIndex = 0
+    @State private var recentThumbnails: [GalleryThumbnail] = []
     @State private var galleryItems: [PhotosPickerItem] = []
 
     var body: some View {
+        ZStack {
+            cameraMode
+
+            if showPreview && !capturedPhotos.isEmpty {
+                previewMode
+                    .transition(.opacity.combined(with: .move(edge: .bottom)))
+            }
+        }
+        .statusBarHidden()
+        .onAppear { loadRecentPhotos() }
+        .onChange(of: galleryItems) { _, items in
+            loadFromPicker(items)
+        }
+    }
+
+    // MARK: - Camera Mode
+
+    private var cameraMode: some View {
         ZStack {
             CameraPreviewLayer()
                 .ignoresSafeArea()
@@ -31,32 +58,22 @@ struct CameraView: View {
 
             viewfinderFrame
 
-            VStack {
-                topBar
+            VStack(spacing: 0) {
+                cameraTopBar
                 Spacer()
-                if !capturedPhotos.isEmpty {
-                    photoStrip
+
+                if !recentThumbnails.isEmpty {
+                    galleryStrip
                 }
-                bottomBar
-            }
-        }
-        .statusBarHidden()
-        .onChange(of: galleryItems) { _, items in
-            Task {
-                for item in items {
-                    if let data = try? await item.loadTransferable(type: Data.self),
-                       let image = UIImage(data: data) {
-                        withAnimation { capturedPhotos.append(image) }
-                    }
-                }
-                galleryItems = []
+
+                shutterBar
             }
         }
     }
 
-    // MARK: - Top Bar
+    // MARK: - Camera Top Bar
 
-    private var topBar: some View {
+    private var cameraTopBar: some View {
         HStack {
             Button {
                 CameraManager.shared.setTorch(false)
@@ -68,17 +85,8 @@ struct CameraView: View {
                     .padding(12)
                     .background(.ultraThinMaterial, in: Circle())
             }
-
-            Spacer()
-
-            if !capturedPhotos.isEmpty {
-                Text("\(capturedPhotos.count) photo\(capturedPhotos.count == 1 ? "" : "s")")
-                    .font(.system(size: 14, weight: .medium))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 7)
-                    .background(.ultraThinMaterial, in: Capsule())
-            }
+            .accessibilityLabel("Close camera")
+            .accessibilityHint("Dismisses the camera and returns without analyzing")
 
             Spacer()
 
@@ -92,49 +100,113 @@ struct CameraView: View {
                     .padding(12)
                     .background(.ultraThinMaterial, in: Circle())
             }
+            .accessibilityLabel(isTorchOn ? "Flash on" : "Flash off")
+            .accessibilityHint("Toggles the camera flash or torch")
         }
         .padding(.horizontal, 20)
         .padding(.top, 8)
     }
 
-    // MARK: - Photo Strip
+    // MARK: - Gallery Strip
 
-    private var photoStrip: some View {
+    private var galleryStrip: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                ForEach(capturedPhotos.indices, id: \.self) { index in
-                    ZStack(alignment: .topTrailing) {
-                        Image(uiImage: capturedPhotos[index])
+            HStack(spacing: 3) {
+                ForEach(Array(recentThumbnails.enumerated()), id: \.element.id) { index, item in
+                    Button {
+                        loadFullImage(identifier: item.id)
+                    } label: {
+                        Image(uiImage: item.thumbnail)
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 56, height: 56)
+                            .frame(width: 64, height: 64)
                             .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                        Button {
-                            let i = index
-                            withAnimation { _ = capturedPhotos.remove(at: i) }
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.system(size: 18))
-                                .foregroundStyle(.white, .black.opacity(0.5))
-                        }
-                        .offset(x: 6, y: -6)
                     }
+                    .accessibilityLabel("Recent photo \(index + 1) of \(recentThumbnails.count)")
+                    .accessibilityHint("Adds this photo from your gallery to the selection")
                 }
             }
-            .padding(.horizontal, 24)
+            .padding(.horizontal, 16)
         }
-        .padding(.bottom, 8)
+        .frame(height: 68)
+        .padding(.bottom, 12)
     }
 
-    // MARK: - Viewfinder
+    // MARK: - Shutter Bar
+
+    private var shutterBar: some View {
+        HStack {
+            PhotosPicker(selection: $galleryItems, matching: .images) {
+                Image(systemName: "photo.on.rectangle")
+                    .font(.system(size: 22))
+                    .foregroundStyle(.white)
+                    .frame(width: 48, height: 48)
+                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
+            }
+            .accessibilityLabel("Photo library")
+            .accessibilityHint("Opens your photo library to select menu images")
+
+            Spacer()
+
+            Button { takePhoto() } label: {
+                ZStack {
+                    Circle()
+                        .strokeBorder(.white, lineWidth: 4)
+                        .frame(width: 72, height: 72)
+
+                    Circle()
+                        .fill(.white)
+                        .frame(width: 60, height: 60)
+                }
+            }
+            .accessibilityLabel("Take photo")
+            .accessibilityHint("Captures a photo of the menu")
+
+            Spacer()
+
+            if capturedPhotos.isEmpty {
+                Color.clear.frame(width: 48, height: 48)
+            } else {
+                Button {
+                    previewIndex = capturedPhotos.count - 1
+                    withAnimation(.easeInOut(duration: 0.25)) { showPreview = true }
+                } label: {
+                    ZStack(alignment: .topTrailing) {
+                        Image(uiImage: capturedPhotos[capturedPhotos.count - 1])
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(.white, lineWidth: 2)
+                            )
+
+                        Text("\(capturedPhotos.count)")
+                            .font(.system(size: 11, weight: .bold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 5)
+                            .padding(.vertical, 2)
+                            .background(Color("PrimaryOrange"), in: Capsule())
+                            .offset(x: 6, y: -6)
+                    }
+                }
+                .accessibilityLabel("\(capturedPhotos.count) photo\(capturedPhotos.count == 1 ? "" : "s") selected")
+                .accessibilityHint("Opens preview to review photos or send for analysis")
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.bottom, 28)
+    }
+
+    // MARK: - Viewfinder Frame
 
     private var viewfinderFrame: some View {
         GeometryReader { geo in
             let w = geo.size.width * 0.78
             let h = w * 1.25
             let x = (geo.size.width - w) / 2
-            let y = (geo.size.height - h) / 2 - 40
+            let y = (geo.size.height - h) / 2 - 60
             let len: CGFloat = 26
             let r: CGFloat = 12
 
@@ -164,55 +236,165 @@ struct CameraView: View {
         .allowsHitTesting(false)
     }
 
-    // MARK: - Bottom Bar
+    // MARK: - Preview Mode
 
-    private var bottomBar: some View {
-        HStack {
-            PhotosPicker(selection: $galleryItems, matching: .images) {
-                Image(systemName: "photo.on.rectangle.angled")
-                    .font(.system(size: 20))
-                    .foregroundStyle(.white)
-                    .frame(width: 52, height: 52)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14))
+    private var previewMode: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
+
+            VStack(spacing: 0) {
+                previewTopBar
+
+                TabView(selection: $previewIndex) {
+                    ForEach(capturedPhotos.indices, id: \.self) { index in
+                        Image(uiImage: capturedPhotos[index])
+                            .resizable()
+                            .scaledToFit()
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .padding(.horizontal, 8)
+                            .tag(index)
+                    }
+                }
+                .tabViewStyle(.page(indexDisplayMode: capturedPhotos.count > 1 ? .automatic : .never))
+
+                if capturedPhotos.count > 1 {
+                    previewThumbnailStrip
+                }
+
+                previewActionBar
             }
+        }
+    }
+
+    // MARK: - Preview Top Bar
+
+    private var previewTopBar: some View {
+        HStack {
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) { showPreview = false }
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .padding(12)
+                    .background(.ultraThinMaterial, in: Circle())
+            }
+            .accessibilityLabel("Back to camera")
+            .accessibilityHint("Returns to camera to add more photos")
+
+            Spacer()
+
+            Text("\(capturedPhotos.count) photo\(capturedPhotos.count == 1 ? "" : "s")")
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.white.opacity(0.8))
 
             Spacer()
 
             Button {
-                takePhoto()
-            } label: {
-                ZStack {
-                    Circle()
-                        .strokeBorder(.white, lineWidth: 4)
-                        .frame(width: 72, height: 72)
-
-                    Circle()
-                        .fill(.white)
-                        .frame(width: 60, height: 60)
+                withAnimation {
+                    capturedPhotos.remove(at: previewIndex)
+                    if capturedPhotos.isEmpty {
+                        showPreview = false
+                    } else if previewIndex >= capturedPhotos.count {
+                        previewIndex = capturedPhotos.count - 1
+                    }
                 }
+            } label: {
+                Image(systemName: "trash")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(.white)
+                    .padding(12)
+                    .background(.ultraThinMaterial, in: Circle())
             }
+            .accessibilityLabel("Delete photo")
+            .accessibilityHint("Removes the current photo from the selection")
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+    }
+
+    // MARK: - Preview Thumbnails
+
+    private var previewThumbnailStrip: some View {
+        ScrollViewReader { proxy in
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 8) {
+                    ForEach(capturedPhotos.indices, id: \.self) { index in
+                        Image(uiImage: capturedPhotos[index])
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 52, height: 52)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(previewIndex == index ? .white : .clear, lineWidth: 2)
+                            )
+                            .scaleEffect(previewIndex == index ? 1.08 : 1.0)
+                            .animation(.easeOut(duration: 0.2), value: previewIndex)
+                            .onTapGesture {
+                                withAnimation { previewIndex = index }
+                            }
+                            .id(index)
+                            .accessibilityLabel("Photo \(index + 1) of \(capturedPhotos.count)")
+                            .accessibilityHint(previewIndex == index ? "Currently selected" : "Selects this photo")
+                            .accessibilityAddTraits(previewIndex == index ? [.isButton, .isSelected] : .isButton)
+                    }
+                }
+                .padding(.horizontal, 24)
+            }
+            .onChange(of: previewIndex) { _, newIndex in
+                withAnimation { proxy.scrollTo(newIndex, anchor: .center) }
+            }
+        }
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Preview Actions
+
+    private var previewActionBar: some View {
+        HStack(spacing: 16) {
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) { showPreview = false }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "plus")
+                        .font(.system(size: 14, weight: .bold))
+                    Text("Add more")
+                        .font(.system(size: 15, weight: .semibold))
+                }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
+                .background(.ultraThinMaterial, in: Capsule())
+            }
+            .accessibilityLabel("Add more photos")
+            .accessibilityHint("Returns to camera to capture or select more menu photos")
 
             Spacer()
 
-            if capturedPhotos.isEmpty {
-                Color.clear.frame(width: 52, height: 52)
-            } else {
-                Button {
-                    CameraManager.shared.setTorch(false)
-                    onPhotosReady(capturedPhotos)
-                } label: {
-                    Image(systemName: "arrow.right.circle.fill")
-                        .font(.system(size: 52))
-                        .symbolRenderingMode(.palette)
-                        .foregroundStyle(.white, Color("PrimaryOrange"))
+            Button {
+                CameraManager.shared.setTorch(false)
+                onPhotosReady(capturedPhotos)
+            } label: {
+                HStack(spacing: 6) {
+                    Text("Analyze")
+                        .font(.system(size: 15, weight: .semibold))
+                    Image(systemName: "arrow.right")
+                        .font(.system(size: 14, weight: .bold))
                 }
+                .foregroundStyle(.white)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 14)
+                .background(Color("PrimaryOrange"), in: Capsule())
             }
+            .accessibilityLabel("Analyze menu")
+            .accessibilityHint("Sends the selected photos for allergen and menu analysis")
         }
         .padding(.horizontal, 24)
-        .padding(.bottom, 20)
+        .padding(.bottom, 28)
     }
 
-    // MARK: - Take Photo
+    // MARK: - Actions
 
     private func takePhoto() {
         CameraManager.shared.capturePhoto { image in
@@ -220,10 +402,99 @@ struct CameraView: View {
                 withAnimation {
                     showFlash = true
                     capturedPhotos.append(image)
+                    previewIndex = capturedPhotos.count - 1
                 }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
                     withAnimation { showFlash = false }
                 }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                    withAnimation(.easeInOut(duration: 0.25)) { showPreview = true }
+                }
+            }
+        }
+    }
+
+    private func loadFromPicker(_ items: [PhotosPickerItem]) {
+        Task {
+            for item in items {
+                if let data = try? await item.loadTransferable(type: Data.self),
+                   let image = UIImage(data: data) {
+                    capturedPhotos.append(image)
+                }
+            }
+            galleryItems = []
+            if !capturedPhotos.isEmpty {
+                previewIndex = capturedPhotos.count - 1
+                withAnimation(.easeInOut(duration: 0.25)) { showPreview = true }
+            }
+        }
+    }
+
+    private func loadRecentPhotos() {
+        let currentStatus = PHPhotoLibrary.authorizationStatus(for: .readWrite)
+
+        switch currentStatus {
+        case .authorized, .limited:
+            fetchThumbnails()
+        case .notDetermined:
+            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
+                if status == .authorized || status == .limited {
+                    DispatchQueue.main.async { fetchThumbnails() }
+                }
+            }
+        default:
+            break
+        }
+    }
+
+    private func fetchThumbnails() {
+        let fetchOptions = PHFetchOptions()
+        fetchOptions.sortDescriptors = [NSSortDescriptor(key: "creationDate", ascending: false)]
+        fetchOptions.fetchLimit = 30
+
+        let results = PHAsset.fetchAssets(with: .image, options: fetchOptions)
+        let manager = PHImageManager.default()
+        let targetSize = CGSize(width: 200, height: 200)
+        let imageOptions = PHImageRequestOptions()
+        imageOptions.deliveryMode = .fastFormat
+        imageOptions.resizeMode = .fast
+        imageOptions.isNetworkAccessAllowed = false
+
+        results.enumerateObjects { asset, _, _ in
+            let identifier = asset.localIdentifier
+            manager.requestImage(for: asset, targetSize: targetSize, contentMode: .aspectFill, options: imageOptions) { image, _ in
+                guard let image else { return }
+                DispatchQueue.main.async {
+                    if !recentThumbnails.contains(where: { $0.id == identifier }) {
+                        recentThumbnails.append(GalleryThumbnail(id: identifier, thumbnail: image))
+                    }
+                }
+            }
+        }
+    }
+
+    private func loadFullImage(identifier: String) {
+        let results = PHAsset.fetchAssets(withLocalIdentifiers: [identifier], options: nil)
+        guard let asset = results.firstObject else { return }
+
+        let options = PHImageRequestOptions()
+        options.deliveryMode = .highQualityFormat
+        options.isNetworkAccessAllowed = true
+
+        PHImageManager.default().requestImage(
+            for: asset,
+            targetSize: CGSize(width: 2048, height: 2048),
+            contentMode: .aspectFit,
+            options: options
+        ) { image, info in
+            guard let image else { return }
+            let isDegraded = (info?[PHImageResultIsDegradedKey] as? Bool) ?? false
+            if isDegraded { return }
+
+            DispatchQueue.main.async {
+                capturedPhotos.append(image)
+                previewIndex = capturedPhotos.count - 1
+                withAnimation(.easeInOut(duration: 0.25)) { showPreview = true }
             }
         }
     }
