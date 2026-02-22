@@ -229,33 +229,38 @@ struct MenuResultView: View {
         }
     }
 
-    // MARK: - Offline Banner
-
     // MARK: - Disclaimer
 
     private var disclaimerBanner: some View {
-        HStack(alignment: .top, spacing: 10) {
+        HStack(spacing: 10) {
             Image(systemName: "apple.intelligence")
-                .foregroundStyle(.purple)
-                .font(.system(size: 16))
-                .padding(.top, 1)
-
-            Text("Analyzed with Apple Intelligence on your device. Results may not be fully accurate — always confirm with the restaurant staff if you have severe allergies.")
-                .font(.system(size: 12))
+                .font(.system(size: 18))
                 .foregroundStyle(.secondary)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text("Analyzed on your device")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(.secondary)
+
+                Text("Always confirm with staff for severe allergies.")
+                    .font(.system(size: 11))
+                    .foregroundStyle(.tertiary)
+            }
 
             Spacer()
 
             Button {
-                withAnimation { showDisclaimer = false }
+                withAnimation(.easeOut(duration: 0.2)) { showDisclaimer = false }
             } label: {
-                Image(systemName: "xmark")
-                    .font(.system(size: 10, weight: .bold))
-                    .foregroundStyle(.tertiary)
+                Image(systemName: "xmark.circle.fill")
+                    .font(.system(size: 18))
+                    .symbolRenderingMode(.hierarchical)
+                    .foregroundStyle(.quaternary)
             }
         }
-        .padding(12)
-        .background(.purple.opacity(0.06), in: RoundedRectangle(cornerRadius: 12))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Category Picker
@@ -395,7 +400,7 @@ private struct DishCard: View {
     private var accentColor: Color {
         if item.isSafe { return .green }
         if item.isDanger { return .red }
-        return .yellow
+        return .orange
     }
 
     private func nameFor(_ id: String) -> String {
@@ -406,139 +411,119 @@ private struct DishCard: View {
         HStack(spacing: 0) {
             RoundedRectangle(cornerRadius: 3)
                 .fill(accentColor)
-                .frame(width: 6)
-                .padding(.vertical, 8)
+                .frame(width: 5)
+                .padding(.vertical, 10)
 
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 3) {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(alignment: .firstTextBaseline) {
+                    VStack(alignment: .leading, spacing: 2) {
                         Text(item.dish.name)
                             .font(.interSemiBold(size: 16))
-                            .foregroundStyle(.primary)
 
                         if let description = item.dish.description, !description.isEmpty {
                             Text(description)
                                 .font(.interRegular(size: 13))
-                                .foregroundStyle(Color("SecondaryGray"))
-                                .italic()
+                                .foregroundStyle(.secondary)
                         }
                     }
 
-                    Spacer()
+                    Spacer(minLength: 8)
+
+                    if let price = item.dish.price, !price.isEmpty {
+                        Text(price)
+                            .font(.system(size: 14, weight: .medium, design: .rounded))
+                            .foregroundStyle(.tertiary)
+                    }
                 }
 
                 if !item.dish.ingredients.isEmpty {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Text("Ingredients")
-                            .font(.interMedium(size: 12))
-                            .foregroundStyle(Color("SecondaryGray").opacity(0.5))
-
-                        ingredientsText
-                            .font(.interRegular(size: 13))
-                            .lineLimit(2)
-                    }
+                    ingredientsText
+                        .font(.interRegular(size: 13))
+                        .lineLimit(2)
                 }
 
                 if !item.dish.inferredIngredients.isEmpty {
-                    VStack(alignment: .leading, spacing: 3) {
-                        HStack(spacing: 4) {
-                            Image(systemName: "apple.intelligence")
-                                .font(.system(size: 10))
-                                .foregroundStyle(.purple)
-                            Text("It may also contain")
-                                .font(.interMedium(size: 12))
-                                .foregroundStyle(.purple.opacity(0.7))
-                        }
+                    HStack(alignment: .top, spacing: 4) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 9))
+                            .padding(.top, 3)
 
                         inferredIngredientsText
-                            .font(.interRegular(size: 13))
+                            .font(.interRegular(size: 12))
                             .lineLimit(2)
                     }
+                    .foregroundStyle(.secondary.opacity(0.7))
                 }
 
-                if !item.matchedAllergenIds.isEmpty {
-                    reasonBanner(
-                        icon: "exclamationmark.triangle.fill",
-                        color: .red,
-                        text: "Contains allergens: \(item.matchedAllergenIds.map { nameFor($0) }.joined(separator: ", "))"
-                    )
-                }
+                if !item.isSafe {
+                    Divider()
 
-                if !item.matchedConditionIds.isEmpty {
-                    reasonBanner(
-                        icon: "heart.fill",
-                        color: .red,
-                        text: "Not safe for your condition: \(item.matchedConditionIds.map { nameFor($0) }.joined(separator: ", "))"
-                    )
-                }
+                    VStack(alignment: .leading, spacing: 4) {
+                        if item.isDanger {
+                            Label {
+                                Text(dangerSummary)
+                            } icon: {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                            }
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.red)
+                        }
 
-                if !item.matchedIntoleranceIds.isEmpty {
-                    reasonBanner(
-                        icon: "exclamationmark.circle.fill",
-                        color: .yellow,
-                        text: "May cause intolerance: \(item.matchedIntoleranceIds.map { nameFor($0) }.joined(separator: ", "))"
-                    )
-                }
-
-                if !item.matchedDietIds.isEmpty {
-                    reasonBanner(
-                        icon: "leaf.fill",
-                        color: .yellow,
-                        text: "Not compatible with your diet: \(item.matchedDietIds.map { nameFor($0) }.joined(separator: ", "))"
-                    )
-                }
-
-                if !item.matchedSituationIds.isEmpty {
-                    reasonBanner(
-                        icon: "person.fill",
-                        color: .yellow,
-                        text: "Not recommended for your situation: \(item.matchedSituationIds.map { nameFor($0) }.joined(separator: ", "))"
-                    )
-                }
-
-                if let price = item.dish.price, !price.isEmpty {
-                    HStack {
-                        Spacer()
-                        Text(price)
-                            .font(.interMedium(size: 14))
-                            .foregroundStyle(Color("SecondaryGray").opacity(0.45))
+                        if item.isAdvisory {
+                            Label {
+                                Text(advisorySummary)
+                            } icon: {
+                                Image(systemName: "info.circle.fill")
+                            }
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.orange)
+                        }
                     }
                 }
             }
             .padding(.leading, 12)
-            .padding(.vertical, 4)
+            .padding(.vertical, 6)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.06), radius: 8, y: 2)
+                .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
         )
     }
 
-    private func reasonBanner(icon: String, color: Color, text: String) -> some View {
-        HStack(alignment: .top, spacing: 6) {
-            Image(systemName: icon)
-                .font(.system(size: 11))
-                .foregroundStyle(color)
-                .padding(.top, 1)
+    // MARK: - Warning Summaries
 
-            Text(text)
-                .font(.system(size: 12))
-                .foregroundStyle(.secondary)
+    private var dangerSummary: String {
+        var parts: [String] = []
+        if !item.matchedAllergenIds.isEmpty {
+            parts.append(item.matchedAllergenIds.map { nameFor($0) }.joined(separator: ", "))
         }
-        .padding(8)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 8)
-                .fill(color.opacity(0.08))
-        )
-        .padding(.top, 2)
+        if !item.matchedConditionIds.isEmpty {
+            parts.append(item.matchedConditionIds.map { nameFor($0) }.joined(separator: ", "))
+        }
+        return parts.joined(separator: " · ")
     }
+
+    private var advisorySummary: String {
+        var parts: [String] = []
+        if !item.matchedIntoleranceIds.isEmpty {
+            parts.append(item.matchedIntoleranceIds.map { nameFor($0) }.joined(separator: ", "))
+        }
+        if !item.matchedDietIds.isEmpty {
+            parts.append(item.matchedDietIds.map { nameFor($0) }.joined(separator: ", "))
+        }
+        if !item.matchedSituationIds.isEmpty {
+            parts.append(item.matchedSituationIds.map { nameFor($0) }.joined(separator: ", "))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    // MARK: - Ingredients Text
 
     private var inferredIngredientsText: Text {
-        let base = Color.purple.opacity(0.6)
+        let base = Color.secondary.opacity(0.6)
         let inferred = item.dish.inferredIngredients
         var result = Text("")
         for (i, ingredient) in inferred.enumerated() {
@@ -552,7 +537,7 @@ private struct DishCard: View {
     }
 
     private var ingredientsText: Text {
-        let safe = Color("SecondaryGray").opacity(0.85)
+        let safe = Color.secondary.opacity(0.7)
         let ingredients = item.dish.ingredients
         var result = Text("")
         for (i, ingredient) in ingredients.enumerated() {
