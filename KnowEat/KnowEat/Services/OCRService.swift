@@ -56,13 +56,18 @@ final class OCRService {
                 }
 
                 let observations = request.results as? [VNRecognizedTextObservation] ?? []
-                let lines = observations.compactMap { $0.topCandidates(1).first?.string }
+                let lines = observations.compactMap { observation -> String? in
+                    guard let candidate = observation.topCandidates(1).first,
+                          candidate.confidence > 0.3 else { return nil }
+                    return candidate.string
+                }
                 continuation.resume(returning: lines.joined(separator: "\n"))
             }
 
             request.recognitionLevel = .accurate
             request.usesLanguageCorrection = true
-            request.recognitionLanguages = ["en", "es", "it", "fr", "de", "pt"]
+            request.automaticallyDetectsLanguage = true
+            request.revision = VNRecognizeTextRequest.currentRevision
 
             let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
             do {

@@ -51,7 +51,9 @@ struct MenuResultView: View {
     }
 
     private var filteredDishes: [AnalyzedDish] {
-        var result = activeDishes
+        var result = activeDishes.filter {
+            !$0.dish.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
 
         if let category = selectedCategory {
             result = result.filter { $0.dish.category == category }
@@ -417,6 +419,12 @@ private struct DishCard: View {
         return .orange
     }
 
+    private var isUnrecognizedDish: Bool {
+        item.dish.inferredIngredients.contains(where: {
+            $0.lowercased().contains("unrecognized")
+        })
+    }
+
     private func nameFor(_ id: String) -> String {
         allergens.first(where: { $0.id == id })?.name ?? id
     }
@@ -457,16 +465,22 @@ private struct DishCard: View {
                 }
 
                 if !item.dish.inferredIngredients.isEmpty {
-                    HStack(alignment: .top, spacing: 4) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 9))
-                            .padding(.top, 3)
-
-                        inferredIngredientsText
+                    if isUnrecognizedDish {
+                        Label("Unrecognized ingredients", systemImage: "questionmark.circle")
                             .font(.interRegular(size: 12))
-                            .lineLimit(2)
+                            .foregroundStyle(.secondary.opacity(0.6))
+                    } else {
+                        HStack(alignment: .top, spacing: 4) {
+                            Image(systemName: "sparkles")
+                                .font(.system(size: 9))
+                                .padding(.top, 3)
+
+                            inferredIngredientsText
+                                .font(.interRegular(size: 12))
+                                .lineLimit(2)
+                        }
+                        .foregroundStyle(.secondary.opacity(0.7))
                     }
-                    .foregroundStyle(.secondary.opacity(0.7))
                 }
 
                 if !item.isSafe {
