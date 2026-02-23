@@ -10,6 +10,7 @@ import Foundation
 @Observable
 final class UserProfileStore {
     private static let storageKey = "user_profile"
+    private static let disclaimerKey = "has_accepted_analysis_disclaimer"
 
     var profile: UserProfile? {
         didSet { persist() }
@@ -19,8 +20,32 @@ final class UserProfileStore {
         profile != nil
     }
 
+    private(set) var hasAcceptedAnalysisDisclaimer: Bool = false {
+        didSet {
+            UserDefaults.standard.set(hasAcceptedAnalysisDisclaimer, forKey: Self.disclaimerKey)
+        }
+    }
+
     init() {
         load()
+        loadDisclaimerState()
+        migrateExistingUserDisclaimer()
+    }
+
+    private func loadDisclaimerState() {
+        hasAcceptedAnalysisDisclaimer = UserDefaults.standard.bool(forKey: Self.disclaimerKey)
+    }
+
+    /// Existing users (profile loaded from storage before disclaimer feature) skip the disclaimer.
+    private func migrateExistingUserDisclaimer() {
+        guard profile != nil else { return }
+        if UserDefaults.standard.object(forKey: Self.disclaimerKey) == nil {
+            hasAcceptedAnalysisDisclaimer = true
+        }
+    }
+
+    func acceptAnalysisDisclaimer() {
+        hasAcceptedAnalysisDisclaimer = true
     }
 
     private func load() {
