@@ -7,5 +7,5 @@
 # Node
 functions/node_modules/
 
-# Secrets (ya no se usa, pero por seguridad)
+# Secrets (no usado actualmente; mantener por seguridad si se añaden en el futuro)
 Secrets.plist
