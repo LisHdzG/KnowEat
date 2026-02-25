@@ -19,6 +19,7 @@ final class OfflineMenuAnalyzer {
             .components(separatedBy: .newlines)
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
+            .filter { !isGarbageLine($0) }
 
         let rawEntries = extractDishEntries(from: lines)
         let dishes = rawEntries.map { buildDish(from: $0) }
@@ -131,16 +132,80 @@ final class OfflineMenuAnalyzer {
     private func looksLikeDish(_ line: String) -> Bool {
         if line.count < 3 { return false }
         if looksLikeCategory(line, nextLine: nil) { return false }
-        if hasPrice(line) { return true }
-        let wordCount = line.split(separator: " ").count
-        return wordCount >= 1 && wordCount <= 12 && line.first?.isUppercase == true
+        if isGarbageLine(line) { return false }
+
+        let words = line.split(separator: " ")
+        let wordCount = words.count
+
+        if hasPrice(line) {
+            let nameOnly = extractName(from: line)
+            return !nameOnly.isEmpty && nameOnly.count >= 3 && !isGarbageLine(nameOnly)
+        }
+
+        if wordCount == 1 {
+            let lower = line.lowercased()
+            return Self.knownSingleWordDishes.contains(where: { lower.contains($0) })
+        }
+
+        return wordCount >= 2 && wordCount <= 12 && line.first?.isUppercase == true
     }
+
+    private func isGarbageLine(_ line: String) -> Bool {
+        let lower = line.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
+        if lower.count < 2 { return true }
+
+        let garbagePatterns = [
+            "google maps", "touchprint", "zte blade", "foto -",
+            "fecha de la imagen", "protegidas por derechos",
+            "las imágenes pueden", "copyright",
+            "www.", ".com", ".it", ".es", "http",
+            "facebook", "instagram", "tel:", "tel.",
+            "con aggiunta", "ogni aggiunta", "variazione",
+            "coperto", "servizio", "cover charge",
+            "sala interna", "sala esterna", "asporto",
+            "allergeni sono", "contiene glutine",
+            "prezzi vari", "tutti i gusti", "n.b.",
+            "via ", "p.iva", "c.f."
+        ]
+        if garbagePatterns.contains(where: { lower.contains($0) }) { return true }
+
+        let junkExact: Set<String> = [
+            "menù", "menu", "carta", "prezzario", "speciale",
+            "classiche", "grande", "piccola", "media",
+            "aggiunta", "note", "small", "medium", "large"
+        ]
+        if junkExact.contains(lower) { return true }
+
+        if lower.allSatisfy({ $0.isNumber || $0 == " " || $0 == "-" || $0 == "+" || $0 == "." }) {
+            return true
+        }
+
+        let digits = line.filter { $0.isNumber }
+        if digits.count > 5 && !line.contains("€") && !line.contains("$") { return true }
+
+        return false
+    }
+
+    private static let knownSingleWordDishes: Set<String> = [
+        "lasagna", "carbonara", "tiramisù", "tiramisu", "bruschetta", "polenta",
+        "risotto", "arancino", "arancini", "focaccia", "piadina", "calzone",
+        "gnocchi", "ravioli", "tortellini", "cannelloni", "bresaola",
+        "carpaccio", "prosciutto", "caprese", "minestrone", "ribollita",
+        "ossobuco", "saltimbocca", "parmigiana", "crostini", "gazpacho",
+        "paella", "churros", "empanada", "taco", "burrito", "quesadilla",
+        "guacamole", "nachos", "enchilada", "falafel", "hummus", "kebab",
+        "gyoza", "ramen", "sushi", "tempura", "edamame", "couscous",
+        "croissant", "quiche", "ratatouille", "crêpe", "fondue",
+        "hamburger", "cheeseburger", "hotdog", "hot-dog", "sandwich",
+        "frittatina", "crocchè", "mozzarelline", "supplì"
+    ]
 
     private func looksLikeDescription(_ line: String) -> Bool {
         if hasPrice(line) { return false }
         if looksLikeCategory(line, nextLine: nil) { return false }
+        if isGarbageLine(line) { return false }
         let wordCount = line.split(separator: " ").count
-        return wordCount >= 3 && line.first?.isLowercase == true || line.contains(",")
+        return (wordCount >= 3 && line.first?.isLowercase == true) || line.contains(",")
     }
 
     private func extractName(from line: String) -> String {

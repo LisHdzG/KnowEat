@@ -425,6 +425,14 @@ private struct DishCard: View {
         })
     }
 
+    private var hasExplicitIngredients: Bool {
+        !item.dish.ingredients.isEmpty
+    }
+
+    private var hasInferredIngredients: Bool {
+        !item.dish.inferredIngredients.isEmpty && !isUnrecognizedDish
+    }
+
     private func nameFor(_ id: String) -> String {
         allergens.first(where: { $0.id == id })?.name ?? id
     }
@@ -464,12 +472,19 @@ private struct DishCard: View {
                         .lineLimit(2)
                 }
 
-                if !item.dish.inferredIngredients.isEmpty {
-                    if isUnrecognizedDish {
-                        Label("Unrecognized ingredients", systemImage: "questionmark.circle")
+                if isUnrecognizedDish {
+                    HStack(alignment: .top, spacing: 4) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 9))
+                            .padding(.top, 3)
+
+                        Text("Unknown dish — please ask staff about ingredients")
                             .font(.interRegular(size: 12))
-                            .foregroundStyle(.secondary.opacity(0.6))
-                    } else {
+                            .lineLimit(2)
+                    }
+                    .foregroundStyle(.orange.opacity(0.8))
+                } else if hasInferredIngredients {
+                    VStack(alignment: .leading, spacing: 4) {
                         HStack(alignment: .top, spacing: 4) {
                             Image(systemName: "sparkles")
                                 .font(.system(size: 9))
@@ -480,7 +495,31 @@ private struct DishCard: View {
                                 .lineLimit(2)
                         }
                         .foregroundStyle(.secondary.opacity(0.7))
+
+                        if !hasExplicitIngredients {
+                            HStack(alignment: .top, spacing: 4) {
+                                Image(systemName: "sparkles")
+                                    .font(.system(size: 9))
+                                    .padding(.top, 3)
+
+                                Text("Ingredients not listed on menu — confirm with staff")
+                                    .font(.interRegular(size: 11))
+                                    .lineLimit(2)
+                            }
+                            .foregroundStyle(.orange.opacity(0.7))
+                        }
                     }
+                } else if !hasExplicitIngredients {
+                    HStack(alignment: .top, spacing: 4) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 9))
+                            .padding(.top, 3)
+
+                        Text("No ingredients available — please ask staff")
+                            .font(.interRegular(size: 12))
+                            .lineLimit(2)
+                    }
+                    .foregroundStyle(.orange.opacity(0.7))
                 }
 
                 if !item.isSafe {
@@ -529,24 +568,32 @@ private struct DishCard: View {
         if let price = item.dish.price, !price.isEmpty {
             label += ", \(price)"
         }
+        if isUnrecognizedDish {
+            label += ". Unknown dish, please ask staff about ingredients"
+        } else if !hasExplicitIngredients && hasInferredIngredients {
+            label += ". Ingredients not listed on menu, AI suggests: \(item.dish.inferredIngredients.joined(separator: ", "))"
+        }
         if item.isSafe {
             label += ", safe to eat"
         } else if item.isDanger {
             label += ", not recommended. Contains allergens or not safe for your condition: \(dangerSummary)"
-        } else {
+        } else if item.isAdvisory {
             label += ", may cause intolerance or not compatible: \(advisorySummary)"
         }
         return label
     }
 
     private var dishAccessibilityHint: String {
+        if isUnrecognizedDish || !hasExplicitIngredients {
+            return "Ingredients were not listed on the menu. Please confirm with restaurant staff"
+        }
         if item.isSafe {
             return "No dietary restrictions match this dish"
         }
         if item.isDanger {
-            return "Double-tap for more details. Contains ingredients that may cause an allergic reaction or are not safe for your medical condition"
+            return "Contains ingredients that may cause an allergic reaction or are not safe for your medical condition"
         }
-        return "Double-tap for more details. May cause intolerance or is not compatible with your diet or situation"
+        return "May cause intolerance or is not compatible with your diet or situation"
     }
 
     // MARK: - Warning Summaries

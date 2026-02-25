@@ -24,22 +24,22 @@ struct GeneratedMenu {
 
 @Generable
 struct GeneratedDish {
-    @Guide(description: "Short dish name in original language (max 8 words). Must be a real dish name, never a long description.")
+    @Guide(description: "Short dish name in original language (max 8 words). Must be a real, recognizable food or drink item. Never a description, address, phone, or decoration. Single-word names are OK only for well-known dishes (e.g. Lasagna, Carbonara, Tiramisù, Arancino).")
     var name: String
 
-    @Guide(description: "Brief description translated to the user's language explaining what the dish is.")
+    @Guide(description: "Brief description translated to the user's language explaining what the dish is and its main components.")
     var dishDescription: String
 
     @Guide(description: "Price with currency symbol as shown on the menu. Empty if not visible.")
     var price: String
 
-    @Guide(description: "Menu section or category this dish belongs to, in original language. Example: Antipasti, Primi, Arepas, Bebidas. Use 'Other' if no section.")
+    @Guide(description: "Culinary category assigned by AI based on the type of dish. Use standardized categories: Appetizers, Soups, Salads, Pasta, Pizza, Rice, Meat, Fish & Seafood, Vegetarian, Sandwiches, Burgers, Fried, Desserts, Drinks, Sides. Pick the best match. Use 'Other' only if nothing fits.")
     var category: String
 
-    @Guide(description: "Ingredients EXPLICITLY written on the menu for this dish. Only what the menu says. Empty if none listed.")
+    @Guide(description: "Ingredients EXPLICITLY written on the menu for this dish. Only what the menu text says. Empty array if none listed.")
     var ingredients: [String]
 
-    @Guide(description: "Ingredients NOT on the menu but commonly present in this dish based on culinary knowledge. If you don't recognize the dish at all, put 'Unrecognized dish' as the only item.")
+    @Guide(description: "Ingredients NOT on the menu but commonly present in this dish based on culinary knowledge. ALWAYS infer likely ingredients even if some are listed. For example, if menu says 'Carbonara: guanciale, pecorino' you should still infer 'pasta, eggs, black pepper'. If you truly cannot recognize the dish at all, put 'Unrecognized dish' as the only item.")
     var inferredIngredients: [String]
 
     @Guide(description: "Allergen IDs from ALL ingredients (explicit + inferred). Only use: gluten, dairy, eggs, fish, crustaceans, peanuts, soy, tree_nuts, celery, mustard, sesame, sulfites, lupins, mollusks, lactose, fructose, histamine, fodmap")
@@ -92,27 +92,49 @@ final class FoundationModelAnalyzer {
 
         let session = LanguageModelSession(
             instructions: """
-            You are a restaurant menu reader. You receive text extracted from a menu photo via OCR. \
+            You are an expert restaurant menu reader. You receive text extracted from a menu photo via OCR. \
             The text may have OCR errors — use your food knowledge to fix them. \
             \
             Your job: \
-            1. Find the restaurant name if visible (logo, header). If not clear, say "Unknown". \
-            2. Identify the menu's categories/sections (Antipasti, Primi, Arepas, Drinks, etc.). \
-            If the menu has no sections, use "Other" for all dishes. \
-            3. Extract EVERY individual dish and drink. Each one is a separate entry. \
+            1. Find the restaurant name if visible (logo, header, branding). If not clear, say "Unknown". \
+            2. Classify each dish into a standardized culinary category based on what the dish IS, \
+            NOT based on what the menu's section headers say. Use these categories: \
+            Appetizers, Soups, Salads, Pasta, Pizza, Rice, Meat, Fish & Seafood, Vegetarian, \
+            Sandwiches, Burgers, Fried, Desserts, Drinks, Sides. Use "Other" only if nothing fits. \
+            For example: "Spaghetti alla Carbonara" → "Pasta", "Pizza Margherita" → "Pizza", \
+            "Arancino" → "Fried", "Tiramisù" → "Desserts", "Birra Peroni" → "Drinks". \
+            3. Extract EVERY individual dish and drink that is a REAL, recognizable food or beverage item. \
             \
-            Important: \
+            QUALITY RULES (critical): \
+            - ONLY include entries that are clearly a dish or drink. A valid entry must be a recognizable \
+            food item that a diner could order. \
+            - NEVER include: addresses, phone numbers, social media handles, slogans, decorative text, \
+            page numbers, photographer credits, "Google Maps", "TouchPrint", dates, watermarks, \
+            website URLs, QR labels, copyright notices, "Menu" alone, allergen disclaimers, \
+            "Coperto", "Cover charge", or service notes. \
+            - If an OCR line is garbled, unreadable, or you cannot determine it is a real dish, SKIP it. \
+            Do not guess random food names from garbage text. \
+            - Single-word entries are ONLY valid if they are well-known dish names \
+            (e.g. Lasagna, Carbonara, Tiramisù, Arancino, Bruschetta, Polenta, Risotto). \
+            Reject vague single words like "Special", "Classic", "Grande", "Piccola". \
+            - Two-word entries must clearly be a dish (e.g. "Pizza Margherita", "Insalata Verde"). \
+            Reject fragments like "Con Aggiunta", "E Provola", "Al Forno" alone. \
+            \
+            INGREDIENT RULES: \
+            - If a dish has ingredients listed on the menu, include them ALL as explicit ingredients. \
+            - ALWAYS use your culinary knowledge to infer ADDITIONAL ingredients the dish likely contains \
+            that are NOT written on the menu. Put those in inferredIngredients. \
+            For example: "Carbonara" with listed "guanciale, pecorino" → inferredIngredients: [pasta, eggs, black pepper]. \
+            For example: "Margherita" with no ingredients listed → inferredIngredients: [pizza dough, tomato sauce, mozzarella, basil, olive oil]. \
+            - If you recognize the dish but no ingredients are listed, infer ALL its typical ingredients. \
+            - If you truly cannot recognize a dish at all, set inferredIngredients to ["Unrecognized dish"]. \
+            \
+            NAMING RULES: \
             - If a section lists multiple items (e.g. under "Empanadas": Carne Mechada, Pollo, Queso), \
             each item is its OWN dish. Use a natural name: "Empanada de Carne Mechada". \
-            - If a dish has ingredients listed on the menu, include them as explicit ingredients. \
-            - ALWAYS use your culinary knowledge to infer what other ingredients the dish likely contains \
-            that are NOT written on the menu. Put those in inferredIngredients. \
-            For example: "Carbonara" with no ingredients listed → infer: pasta, eggs, guanciale, pecorino, black pepper. \
-            - If you don't recognize a dish at all, set inferredIngredients to ["Unrecognized dish"]. \
             - Keep dish names SHORT (max 8 words) in the ORIGINAL menu language. \
             - Translate ONLY the dishDescription to \(userLanguage). Use proper culinary translations. \
-            - SKIP non-food items: service charges, addresses, phone numbers, slogans, social media, \
-            quotes, decorative text, QR labels, the word "Menu" alone.
+            - The dishDescription should briefly explain what the dish is (e.g. "Pasta with eggs, cured pork cheek and pecorino cheese").
             """
         )
 
@@ -233,18 +255,33 @@ final class FoundationModelAnalyzer {
     private static func isJunkEntry(_ name: String) -> Bool {
         let lower = name.lowercased().trimmingCharacters(in: .whitespacesAndNewlines)
 
+        if lower.count < 2 { return true }
+
         let junkExact: Set<String> = [
-            "menù", "menu", "carta", "the menu", "la carta", "conto", "receipt"
+            "menù", "menu", "carta", "the menu", "la carta", "conto", "receipt",
+            "prezzario", "prezzi", "listino", "price list",
+            "speciale", "special", "classiche", "classico", "particolare",
+            "grande", "piccola", "media", "small", "medium", "large",
+            "con aggiunta", "aggiunta", "variazione",
+            "google maps", "touchprint", "foto", "image",
+            "sala interna", "sala esterna", "asporto", "takeaway",
+            "allergeni", "allergens", "contiene glutine",
+            "n.b.", "nota bene", "note"
         ]
         if junkExact.contains(lower) { return true }
 
         let junkContains = [
             "servizio", "coperto", "cover charge", "service charge",
-            "www.", ".com", ".it", ".es", ".org",
-            "facebook", "instagram", "tiktok", "tripadvisor",
+            "www.", ".com", ".it", ".es", ".org", "http",
+            "facebook", "instagram", "tiktok", "tripadvisor", "twitter",
             "follow us", "síguenos", "seguici",
             "iva inclusa", "iva incluida", "tax included",
-            "tel:", "tel.", "horario"
+            "tel:", "tel.", "horario", "orario",
+            "google maps", "touchprint",
+            "tutti i gusti", "prezzi vari",
+            "la nostra pasta contiene", "allergeni sono indicati",
+            "protegidas por derechos", "fecha de la imagen",
+            "zte blade", "copyright"
         ]
         if junkContains.contains(where: { lower.contains($0) }) { return true }
 
@@ -252,17 +289,25 @@ final class FoundationModelAnalyzer {
         let nonAlpha = nonSpace.filter { !$0.isLetter }
         if !nonSpace.isEmpty && nonAlpha.count == nonSpace.count { return true }
 
-        if name.count < 2 { return true }
+        let words = name.split(separator: " ")
+        if words.count == 1 && lower.count < 4 { return true }
+
+        let digits = name.filter { $0.isNumber }
+        if digits.count > 5 { return true }
+
+        if lower.hasPrefix("+") || lower.allSatisfy({ $0.isNumber || $0 == " " || $0 == "-" || $0 == "+" }) {
+            return true
+        }
 
         return false
     }
 
     private static func sanitizeRestaurantName(_ name: String) -> String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty || trimmed.lowercased() == "unknown" { return "Restaurant" }
-        if !trimmed.contains(where: { $0.isLetter }) { return "Restaurant" }
-        let junk = ["menù", "menu", "la carta", "the menu"]
-        if junk.contains(trimmed.lowercased()) { return "Restaurant" }
+        if trimmed.isEmpty || trimmed.lowercased() == "unknown" { return "Unknown" }
+        if !trimmed.contains(where: { $0.isLetter }) { return "Unknown" }
+        let junk = ["menù", "menu", "la carta", "the menu", "restaurant", "ristorante", "restaurante"]
+        if junk.contains(trimmed.lowercased()) { return "Unknown" }
         if trimmed.count > 40 { return String(trimmed.prefix(40)) }
         return trimmed
     }
@@ -277,12 +322,19 @@ final class FoundationModelAnalyzer {
         lines = lines.filter { line in
             let lower = line.lowercased()
             if lower.contains("www.") || lower.contains("http") { return false }
-            if lower.contains(".com") || lower.contains(".org") { return false }
-            if ["facebook", "instagram", "tiktok", "tripadvisor", "twitter", "follow us", "síguenos", "seguici"]
+            if lower.contains(".com") || lower.contains(".org") || lower.contains(".it") || lower.contains(".es") { return false }
+            if ["facebook", "instagram", "tiktok", "tripadvisor", "twitter",
+                "follow us", "síguenos", "seguici", "whatsapp"]
                 .contains(where: { lower.contains($0) }) { return false }
             if lower.hasPrefix("tel") || lower.hasPrefix("+") { return false }
             let digits = line.filter { $0.isNumber }
-            if digits.count > 8 && !line.contains("$") && !line.contains("€") { return false }
+            if digits.count > 8 && !line.contains("$") && !line.contains("€") && !line.contains("£") { return false }
+            if ["google maps", "touchprint", "zte blade", "fecha de la imagen",
+                "protegidas por derechos", "las imágenes pueden",
+                "foto -", "copyright", "todos los derechos"]
+                .contains(where: { lower.contains($0) }) { return false }
+            if lower.hasPrefix("via ") || lower.hasPrefix("calle ") || lower.hasPrefix("c/") { return false }
+            if lower.hasPrefix("p.iva") || lower.hasPrefix("c.f.") { return false }
             return true
         }
 
@@ -298,8 +350,17 @@ final class FoundationModelAnalyzer {
 
         lines = lines.filter { line in
             let lower = line.lowercased()
-            return !["servizio e coperto", "servicio y cubierto", "cover charge", "service charge"]
+            return !["servizio e coperto", "servicio y cubierto", "cover charge", "service charge",
+                      "ogni aggiunta o variazione", "sala interna coperto", "la nostra pasta contiene glutine",
+                      "allergeni sono indicati"]
                 .contains(where: { lower.contains($0) })
+        }
+
+        lines = lines.filter { line in
+            let stripped = line.replacingOccurrences(of: " ", with: "")
+            if stripped.allSatisfy({ $0.isPunctuation || $0.isSymbol }) && !stripped.isEmpty { return false }
+            if line.count == 1 { return false }
+            return true
         }
 
         return lines.joined(separator: "\n")
