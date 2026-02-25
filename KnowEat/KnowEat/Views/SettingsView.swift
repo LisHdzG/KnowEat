@@ -6,10 +6,13 @@
 //
 
 import SwiftUI
+import StoreKit
 
 struct SettingsView: View {
     @Environment(UserProfileStore.self) private var profileStore
     @Environment(MenuStore.self) private var menuStore
+    @Environment(\.openURL) private var openURL
+    @Environment(\.requestReview) private var requestReview
     @State private var viewModel = SettingsViewModel()
     @State private var showDeleteConfirmation = false
     @State private var showFinalConfirmation = false
@@ -286,20 +289,36 @@ struct SettingsView: View {
     private var aboutSection: some View {
         sectionContainer(header: "About") {
             VStack(spacing: 0) {
-                settingsRow(
-                    icon: "lock.fill",
-                    title: "Privacy Policy",
-                    showChevron: true
-                )
+                Button {
+                    if let urlString = PrivacyConfigService.shared.privacyNotice?.url,
+                       let url = URL(string: urlString) {
+                        openURL(url)
+                    }
+                } label: {
+                    settingsRow(
+                        icon: "lock.fill",
+                        title: "Privacy Policy",
+                        showChevron: true
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Privacy Policy")
+                .accessibilityHint("Opens the privacy policy in Safari")
 
                 Divider()
                     .padding(.leading, 62)
 
-                settingsRow(
-                    icon: "star.fill",
-                    title: "Rate KnowEat",
-                    showChevron: true
-                )
+                Button {
+                    requestReview()
+                } label: {
+                    settingsRow(
+                        icon: "star.fill",
+                        title: "Rate KnowEat"
+                    )
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Rate KnowEat")
+                .accessibilityHint("Shows the rating dialog")
             }
         }
     }

@@ -9,27 +9,60 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(UserProfileStore.self) private var profileStore
+    @State private var showSplash = true
+    @State private var privacyConfig = PrivacyConfigService.shared
 
     private var showAnalysisDisclaimer: Bool {
         profileStore.hasCompletedOnboarding && !profileStore.hasAcceptedAnalysisDisclaimer
     }
 
+    private var showPrivacyUpdate: Bool {
+        profileStore.hasCompletedOnboarding
+        && profileStore.hasAcceptedAnalysisDisclaimer
+        && privacyConfig.isLoaded
+        && profileStore.needsPrivacyUpdate(remoteVersion: privacyConfig.privacyNotice?.version)
+    }
+
     var body: some View {
-        Group {
-            if profileStore.hasCompletedOnboarding {
-                HomeView()
-            } else {
-                WelcomeView()
+        ZStack {
+            Group {
+                if profileStore.hasCompletedOnboarding {
+                    HomeView()
+                } else {
+                    WelcomeView()
+                }
             }
-        }
-        .sheet(isPresented: .constant(showAnalysisDisclaimer)) {
-            AnalysisDisclaimerView {
-                profileStore.acceptAnalysisDisclaimer()
+            .task {
+                await PrivacyConfigService.shared.fetch()
             }
-            .presentationDetents([.large])
-            .presentationDragIndicator(.visible)
-            .presentationCornerRadius(24)
-            .interactiveDismissDisabled()
+            .sheet(isPresented: .constant(showAnalysisDisclaimer && !showSplash)) {
+                AnalysisDisclaimerView {
+                    profileStore.acceptAnalysisDisclaimer()
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(24)
+                .interactiveDismissDisabled()
+            }
+            .sheet(isPresented: .constant(showPrivacyUpdate && !showSplash)) {
+                AnalysisDisclaimerView(isPrivacyUpdate: true) {
+                    profileStore.acceptAnalysisDisclaimer()
+                }
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
+                .presentationCornerRadius(24)
+                .interactiveDismissDisabled()
+            }
+
+            if showSplash {
+                SplashView {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        showSplash = false
+                    }
+                }
+                .transition(.opacity)
+                .zIndex(1)
+            }
         }
     }
 }

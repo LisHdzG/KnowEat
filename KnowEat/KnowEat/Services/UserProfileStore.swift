@@ -11,6 +11,7 @@ import Foundation
 final class UserProfileStore {
     private static let storageKey = "user_profile"
     private static let disclaimerKey = "has_accepted_analysis_disclaimer"
+    private static let privacyVersionKey = "accepted_privacy_version"
 
     var profile: UserProfile? {
         didSet { persist() }
@@ -26,14 +27,31 @@ final class UserProfileStore {
         }
     }
 
+    private(set) var acceptedPrivacyVersion: String? {
+        didSet {
+            UserDefaults.standard.set(acceptedPrivacyVersion, forKey: Self.privacyVersionKey)
+        }
+    }
+
+    func needsPrivacyUpdate(remoteVersion: String?) -> Bool {
+        guard let remoteVersion else { return false }
+        guard let accepted = acceptedPrivacyVersion else { return true }
+        return accepted != remoteVersion
+    }
+
     init() {
         load()
         loadDisclaimerState()
+        loadAcceptedPrivacyVersion()
         migrateExistingUserDisclaimer()
     }
 
     private func loadDisclaimerState() {
         hasAcceptedAnalysisDisclaimer = UserDefaults.standard.bool(forKey: Self.disclaimerKey)
+    }
+
+    private func loadAcceptedPrivacyVersion() {
+        acceptedPrivacyVersion = UserDefaults.standard.string(forKey: Self.privacyVersionKey)
     }
 
     /// Existing users (profile loaded from storage before disclaimer feature) skip the disclaimer.
@@ -46,6 +64,9 @@ final class UserProfileStore {
 
     func acceptAnalysisDisclaimer() {
         hasAcceptedAnalysisDisclaimer = true
+        if let version = PrivacyConfigService.shared.privacyNotice?.version {
+            acceptedPrivacyVersion = version
+        }
     }
 
     private func load() {
