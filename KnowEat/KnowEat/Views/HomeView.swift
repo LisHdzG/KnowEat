@@ -125,22 +125,6 @@ struct HomeView: View {
                         SettingsView()
                     }
                 }
-                .alert(scanVM.errorTitle, isPresented: .init(
-                    get: { scanVM.errorMessage != nil },
-                    set: { if !$0 { scanVM.errorMessage = nil } }
-                )) {
-                    if scanVM.canRetry {
-                        Button("Try Again") {
-                            scanVM.errorMessage = nil
-                            scanVM.retry()
-                        }
-                    }
-                    Button(scanVM.canRetry ? "Cancel" : "OK", role: .cancel) {
-                        scanVM.errorMessage = nil
-                    }
-                } message: {
-                    Text(scanVM.errorMessage ?? "")
-                }
                 .alert("Camera Access Required", isPresented: $scanVM.showPermissionDeniedAlert) {
                     Button("Open Settings") {
                         scanVM.openAppSettings()
@@ -165,10 +149,20 @@ struct HomeView: View {
             }
 
             if scanVM.isAnalyzing {
-                LoaderView()
+                LoaderView(progress: scanVM.analysisProgress, stage: scanVM.analysisStage)
                     .transition(.opacity)
                     .ignoresSafeArea()
             }
+
+        }
+        .sheet(isPresented: Binding(
+            get: { scanVM.errorMessage != nil },
+            set: { if !$0 { scanVM.errorMessage = nil } }
+        )) {
+            scanErrorSheet
+                .presentationDetents([.medium])
+                .presentationDragIndicator(.visible)
+                .interactiveDismissDisabled(false)
         }
     }
 
@@ -239,6 +233,92 @@ struct HomeView: View {
             }
         }
         .frame(maxHeight: .infinity)
+    }
+
+    // MARK: - Scan Error Sheet
+
+    private var scanErrorSheet: some View {
+        VStack(spacing: 0) {
+            VStack(spacing: 24) {
+                Circle()
+                    .fill(Color.orange.opacity(0.1))
+                    .frame(width: 64, height: 64)
+                    .overlay(
+                        Image(systemName: errorIcon)
+                            .font(.system(size: 28))
+                            .foregroundStyle(.orange)
+                    )
+                    .padding(.top, 8)
+
+                VStack(spacing: 10) {
+                    Text(scanVM.errorTitle)
+                        .font(.interSemiBold(size: 20))
+
+                    Text(scanVM.errorMessage ?? "")
+                        .font(.interRegular(size: 14))
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                VStack(alignment: .leading, spacing: 10) {
+                    errorTipRow(icon: "menucard", text: "Photograph a food menu with text")
+                    errorTipRow(icon: "sun.max", text: "Use good lighting, avoid shadows")
+                    errorTipRow(icon: "camera.metering.center.weighted", text: "Keep text in focus and fully visible")
+                }
+                .padding(16)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color(.secondarySystemBackground))
+                )
+            }
+            .padding(.horizontal, 24)
+            .padding(.top, 40)
+
+            Spacer()
+
+            VStack(spacing: 10) {
+                Button {
+                    scanVM.retakePhoto()
+                } label: {
+                    HStack(spacing: 8) {
+                        Image(systemName: "camera.fill")
+                            .font(.system(size: 14, weight: .semibold))
+                        Text("Retake Photo")
+                            .font(.interSemiBold(size: 16))
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 52)
+                    .background(Color("PrimaryOrange"), in: RoundedRectangle(cornerRadius: 14))
+                }
+            }
+            .padding(.horizontal, 24)
+            .padding(.bottom, 16)
+        }
+    }
+
+    private var errorIcon: String {
+        switch scanVM.errorTitle {
+        case "No Menu Text Found": return "doc.text.magnifyingglass"
+        case "Couldn't Read Text": return "text.magnifyingglass"
+        case "Analysis Failed": return "fork.knife.circle"
+        default: return "exclamationmark.triangle"
+        }
+    }
+
+    private func errorTipRow(icon: String, text: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundStyle(Color("PrimaryOrange"))
+                .frame(width: 22)
+
+            Text(text)
+                .font(.interRegular(size: 14))
+                .foregroundStyle(.primary)
+        }
     }
 
     private var emptyMenuPlaceholder: some View {

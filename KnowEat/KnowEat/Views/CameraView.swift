@@ -32,6 +32,7 @@ struct CameraView: View {
     @State private var showZoomLabel = false
 
     @State private var showCrop = false
+    @State private var isCapturing = false
 
     var body: some View {
         ZStack {
@@ -199,8 +200,11 @@ struct CameraView: View {
                         .frame(width: 60, height: 60)
                 }
             }
+            .disabled(isCapturing)
+            .opacity(isCapturing ? 0.6 : 1)
+            .animation(.easeInOut(duration: 0.2), value: isCapturing)
             .accessibilityLabel("Take photo")
-            .accessibilityHint("Captures a photo of the menu")
+            .accessibilityHint(isCapturing ? "Capturing…" : "Captures a photo of the menu")
 
             Spacer()
 
@@ -461,8 +465,15 @@ struct CameraView: View {
     // MARK: - Actions
 
     private func takePhoto() {
+        guard !isCapturing else { return }
+        isCapturing = true
+
         CameraManager.shared.capturePhoto { image in
-            if let image {
+            DispatchQueue.main.async {
+                isCapturing = false
+            }
+            guard let image else { return }
+            DispatchQueue.main.async {
                 withAnimation {
                     showFlash = true
                     capturedPhotos.append(image)
@@ -638,6 +649,32 @@ final class CameraManager: NSObject {
         return min(device.activeFormat.videoMaxZoomFactor, 10.0)
     }
 
+    static func cropToPreviewAspect(_ image: UIImage) -> UIImage {
+        let screenSize = UIScreen.main.bounds.size
+        let targetRatio = screenSize.height / screenSize.width
+        let imageRatio = image.size.height / image.size.width
+
+        guard abs(imageRatio - targetRatio) > 0.01 else { return image }
+
+        var cropSize: CGSize
+        if imageRatio > targetRatio {
+            cropSize = CGSize(width: image.size.width, height: image.size.width * targetRatio)
+        } else {
+            cropSize = CGSize(width: image.size.height / targetRatio, height: image.size.height)
+        }
+
+        let origin = CGPoint(
+            x: (image.size.width - cropSize.width) / 2,
+            y: (image.size.height - cropSize.height) / 2
+        )
+
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        let renderer = UIGraphicsImageRenderer(size: cropSize, format: format)
+        return renderer.image { _ in
+            image.draw(at: CGPoint(x: -origin.x, y: -origin.y))
+        }
+    }
 }
 
 extension CameraManager: AVCapturePhotoCaptureDelegate {
@@ -647,8 +684,9 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
             completion?(nil)
             return
         }
+        let cropped = Self.cropToPreviewAspect(image)
         DispatchQueue.main.async { [weak self] in
-            self?.completion?(image)
+            self?.completion?(cropped)
         }
     }
 }

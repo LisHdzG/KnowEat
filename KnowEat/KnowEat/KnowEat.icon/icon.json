@@ -1,26 +1,44 @@
 {
-  "fill-specializations" : [
-    {
-      "value" : "automatic"
-    },
-    {
-      "appearance" : "dark",
-      "value" : {
-        "linear-gradient" : [
-          "display-p3:0.00000,0.00000,0.00000,1.00000",
-          "srgb:0.00000,0.00000,0.00000,1.00000"
-        ]
-      }
-    }
-  ],
+  "fill" : "automatic",
   "groups" : [
     {
       "layers" : [
         {
-          "blend-mode" : "darken",
-          "glass" : false,
-          "image-name" : "pencil.circle 1.svg",
-          "name" : "Check"
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : "automatic"
+            }
+          ],
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "fork.svg",
+          "name" : "fork",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              -113,
+              156
+            ]
+          }
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : "automatic"
+            }
+          ],
+          "hidden" : false,
+          "image-name" : "Search.svg",
+          "name" : "Search",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              40,
+              46
+            ]
+          }
         }
       ],
       "shadow" : {
@@ -35,10 +53,22 @@
     {
       "layers" : [
         {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : "automatic"
+            }
+          ],
           "glass" : true,
-          "image-name" : "Vector.svg",
-          "name" : "Star1",
-          "opacity" : 0.95
+          "image-name" : "Heart.svg",
+          "name" : "Heart",
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
         }
       ],
       "shadow" : {
@@ -51,15 +81,36 @@
       }
     },
     {
+      "blur-material" : null,
       "layers" : [
         {
-          "glass" : true,
-          "image-name" : "Vector-1.svg",
-          "name" : "Star2"
+          "hidden" : false,
+          "image-name" : "VectorYellow.svg",
+          "name" : "VectorYellow"
         }
       ],
       "shadow" : {
-        "kind" : "neutral",
+        "kind" : "layer-color",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    },
+    {
+      "blur-material" : null,
+      "layers" : [
+        {
+          "blend-mode" : "normal",
+          "glass" : true,
+          "hidden" : false,
+          "image-name" : "VectorOrange.svg",
+          "name" : "VectorOrange"
+        }
+      ],
+      "shadow" : {
+        "kind" : "layer-color",
         "opacity" : 0.5
       },
       "translucency" : {
