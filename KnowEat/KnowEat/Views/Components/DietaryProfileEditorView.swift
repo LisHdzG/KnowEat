@@ -48,7 +48,7 @@ struct DietaryProfileEditorView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 32)
             }
-            .background(Color(.systemGroupedBackground))
+            .background(Color(.systemBackground))
             .navigationTitle("Dietary Profile")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {

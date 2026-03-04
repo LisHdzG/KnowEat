@@ -13,6 +13,7 @@ struct SettingsView: View {
     @Environment(MenuStore.self) private var menuStore
     @Environment(\.openURL) private var openURL
     @Environment(\.requestReview) private var requestReview
+    @Environment(\.dismiss) private var dismiss
     @State private var viewModel = SettingsViewModel()
     @State private var showDeleteConfirmation = false
     @State private var showFinalConfirmation = false
@@ -30,10 +31,21 @@ struct SettingsView: View {
             .padding(.top, 8)
             .padding(.bottom, 32)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color(.systemBackground))
         .navigationTitle("Settings")
         .navigationBarTitleDisplayMode(.large)
         .tint(Color("PrimaryOrange"))
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button { dismiss() } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 14, weight: .semibold))
+                }
+                .tint(Color("SecondaryGray"))
+                .accessibilityLabel("Close")
+                .accessibilityHint("Closes settings and returns to home")
+            }
+        }
         .onAppear {
             if let profile = profileStore.profile {
                 viewModel.load(from: profile)
@@ -213,7 +225,7 @@ struct SettingsView: View {
             .padding(.top, 8)
             .padding(.bottom, 32)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color(.systemBackground))
         .navigationTitle(title)
         .navigationBarTitleDisplayMode(.large)
     }
@@ -345,11 +357,9 @@ struct SettingsView: View {
                 .padding(.leading, 4)
 
             content()
-                .background(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color(.systemBackground))
-                )
+                .background(Color(.systemBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
+                .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
 
             if let footer {
                 Text(footer)

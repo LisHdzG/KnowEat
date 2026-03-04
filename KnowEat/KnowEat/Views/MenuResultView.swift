@@ -13,7 +13,8 @@ struct MenuResultView: View {
     let allergens: [Allergen]
     let filterGroups: [DietaryFilterGroup]
     var onSave: ((ScannedMenu) -> Void)? = nil
-    let onDismiss: () -> Void
+    var onDismiss: () -> Void = {}
+    var isPushed: Bool = false
 
     @Environment(UserProfileStore.self) private var profileStore
     @Environment(MenuStore.self) private var menuStore
@@ -80,40 +81,74 @@ struct MenuResultView: View {
 
     var body: some View {
         ZStack {
-        NavigationStack {
-            VStack(spacing: 0) {
-                if categories.count > 2 {
-                    categoryPicker
-                }
-
-                ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 16) {
-                        headerSection
-                            .padding(.horizontal, 24)
-
-                        if showDisclaimer {
-                            disclaimerBanner
-                                .padding(.horizontal, 24)
-                        }
-
-                        ActiveFiltersCard(
-                            groups: currentFilterGroups ?? filterGroups,
-                            showChevron: true,
-                            onTap: { showDietaryEditor = true }
-                        )
-                        .padding(.horizontal, 24)
-
-                        dishList
-                            .padding(.horizontal, 24)
-                    }
-                    .padding(.top, 8)
-                    .padding(.bottom, 24)
+            if isPushed {
+                mainContent
+            } else {
+                NavigationStack {
+                    mainContent
                 }
             }
-            .background(Color(.systemBackground))
-            .searchable(text: $searchText, prompt: "Search dishes...")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
+
+            if isTranslating {
+                LoaderView(phrases: [
+                    "Translating dishes…",
+                    "Adapting ingredients…",
+                    "Updating your menu…",
+                    "Almost ready…"
+                ])
+                .transition(.opacity)
+                .ignoresSafeArea()
+            }
+        }
+        .sheet(isPresented: $showLanguagePicker) {
+            LanguagePickerOverlay(
+                selectedLanguage: $selectedLanguage,
+                languages: availableLanguages,
+                isPresented: $showLanguagePicker,
+                presentedAsSheet: true
+            )
+            .presentationDetents([.medium])
+            .presentationDragIndicator(.visible)
+        }
+    }
+
+    private var mainContent: some View {
+        VStack(spacing: 0) {
+            if categories.count > 2 {
+                categoryPicker
+            }
+
+            searchField
+
+            ScrollView(showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 16) {
+                    headerSection
+                        .padding(.horizontal, 24)
+
+                    if showDisclaimer {
+                        disclaimerBanner
+                            .padding(.horizontal, 24)
+                    }
+
+                    ActiveFiltersCard(
+                        groups: currentFilterGroups ?? filterGroups,
+                        showChevron: true,
+                        onTap: { showDietaryEditor = true }
+                    )
+                    .padding(.horizontal, 24)
+
+                    dishList
+                        .padding(.horizontal, 24)
+                }
+                .padding(.top, 8)
+                .padding(.bottom, 24)
+            }
+        }
+        .background(Color(.systemBackground))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar(isTranslating ? .hidden : .automatic, for: .navigationBar)
+        .toolbar {
+            if !isPushed {
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
                         dismiss()
@@ -126,96 +161,104 @@ struct MenuResultView: View {
                     .accessibilityLabel("Close")
                     .accessibilityHint("Dismisses the menu results and returns to the previous screen")
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    if isReadOnly {
-                        Button {
-                            showLanguagePicker = true
-                        } label: {
-                            Image(systemName: "character.bubble")
-                                .font(.system(size: 16, weight: .medium))
-                        }
-                        .tint(Color("PrimaryOrange"))
-                        .accessibilityLabel("Change language")
-                        .accessibilityHint("Opens the language picker to translate the menu")
-                    } else {
-                        Button {
-                            handleSave()
-                        } label: {
-                            Text("Save")
-                                .font(.interMedium(size: 16))
-                        }
-                        .tint(Color("PrimaryOrange"))
-                        .accessibilityLabel("Save menu")
-                        .accessibilityHint("Saves this menu to your recent menus list")
+            }
+            ToolbarItem(placement: .topBarTrailing) {
+                if isReadOnly {
+                    Button {
+                        showLanguagePicker = true
+                    } label: {
+                        Image(systemName: "character.bubble")
+                            .font(.system(size: 16, weight: .medium))
                     }
-                }
-            }
-            .onAppear {
-                if selectedLanguage.isEmpty {
-                    let menuLang = menu.menuLanguage
-                    if menuLang != "Unknown" && !menuLang.isEmpty {
-                        selectedLanguage = menuLang
-                    } else {
-                        selectedLanguage = profileStore.profile?.nativeLanguage ?? "English"
+                    .tint(Color("PrimaryOrange"))
+                    .accessibilityLabel("Change language")
+                    .accessibilityHint("Opens the language picker to translate the menu")
+                } else {
+                    Button {
+                        handleSave()
+                    } label: {
+                        Text("Save")
+                            .font(.interMedium(size: 16))
                     }
+                    .tint(Color("PrimaryOrange"))
+                    .accessibilityLabel("Save menu")
+                    .accessibilityHint("Saves this menu to your recent menus list")
                 }
-            }
-            .onChange(of: selectedLanguage) { oldValue, newValue in
-                guard !oldValue.isEmpty, oldValue != newValue else { return }
-                handleRetranslation(to: newValue)
-            }
-            .sheet(isPresented: $showDietaryEditor) {
-                DietaryProfileEditorView {
-                    reAnalyzeWithUpdatedProfile()
-                }
-            }
-            .alert("Restaurant Name", isPresented: $showNamePrompt) {
-                TextField("Enter restaurant name", text: $alertNameInput)
-                    .onChange(of: alertNameInput) { _, newValue in
-                        if newValue.count > 20 { alertNameInput = String(newValue.prefix(20)) }
-                    }
-                Button("Save") {
-                    let name = alertNameInput.trimmingCharacters(in: .whitespaces)
-                    if !name.isEmpty {
-                        let savedMenu = ScannedMenu(restaurant: name, dishes: activeMenu.dishes, categoryIcon: activeMenu.categoryIcon, menuLanguage: activeMenu.menuLanguage)
-                        onSave?(savedMenu)
-                    }
-                }
-                Button("Cancel", role: .cancel) {
-                    alertNameInput = ""
-                }
-            } message: {
-                Text("We couldn't detect the restaurant name. Please enter it to save this menu.")
-            }
-            .alert("Translation Error", isPresented: .init(
-                get: { translationError != nil },
-                set: { if !$0 { translationError = nil } }
-            )) {
-                Button("OK") { translationError = nil }
-            } message: {
-                Text(translationError ?? "")
             }
         }
+        .onAppear {
+            if selectedLanguage.isEmpty {
+                let menuLang = menu.menuLanguage
+                if menuLang != "Unknown" && !menuLang.isEmpty {
+                    selectedLanguage = menuLang
+                } else {
+                    selectedLanguage = profileStore.profile?.nativeLanguage ?? "English"
+                }
+            }
+        }
+        .onChange(of: selectedLanguage) { oldValue, newValue in
+            guard !oldValue.isEmpty, oldValue != newValue else { return }
+            handleRetranslation(to: newValue)
+        }
+        .sheet(isPresented: $showDietaryEditor) {
+            DietaryProfileEditorView {
+                reAnalyzeWithUpdatedProfile()
+            }
+        }
+        .alert("Restaurant Name", isPresented: $showNamePrompt) {
+            TextField("Enter restaurant name", text: $alertNameInput)
+                .onChange(of: alertNameInput) { _, newValue in
+                    if newValue.count > 20 { alertNameInput = String(newValue.prefix(20)) }
+                }
+            Button("Save") {
+                let name = alertNameInput.trimmingCharacters(in: .whitespaces)
+                if !name.isEmpty {
+                    let savedMenu = ScannedMenu(restaurant: name, dishes: activeMenu.dishes, categoryIcon: activeMenu.categoryIcon, menuLanguage: activeMenu.menuLanguage)
+                    onSave?(savedMenu)
+                }
+            }
+            Button("Cancel", role: .cancel) {
+                alertNameInput = ""
+            }
+        } message: {
+            Text("We couldn't detect the restaurant name. Please enter it to save this menu.")
+        }
+        .alert("Translation Error", isPresented: .init(
+            get: { translationError != nil },
+            set: { if !$0 { translationError = nil } }
+        )) {
+            Button("OK") { translationError = nil }
+        } message: {
+            Text(translationError ?? "")
+        }
+    }
 
-        if showLanguagePicker {
-            LanguagePickerOverlay(
-                selectedLanguage: $selectedLanguage,
-                languages: availableLanguages,
-                isPresented: $showLanguagePicker
-            )
-        }
+    // MARK: - Search Field
 
-        if isTranslating {
-            LoaderView(phrases: [
-                "Translating dishes…",
-                "Adapting ingredients…",
-                "Updating your menu…",
-                "Almost ready…"
-            ])
-            .transition(.opacity)
-            .ignoresSafeArea()
+    private var searchField: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .font(.system(size: 15))
+                .foregroundStyle(.secondary)
+
+            TextField("Search dishes...", text: $searchText)
+                .font(.interRegular(size: 16))
+
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 16))
+                        .foregroundStyle(Color(.systemGray3))
+                }
+                .accessibilityLabel("Clear search")
+            }
         }
-        }
+        .padding(10)
+        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal, 24)
+        .padding(.vertical, 8)
     }
 
     // MARK: - Header
@@ -241,7 +284,7 @@ struct MenuResultView: View {
 
     private var disclaimerBanner: some View {
         HStack(spacing: 10) {
-            Image(systemName: "apple.intelligence")
+            Image(systemName: "sparkles")
                 .font(.system(size: 18))
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)

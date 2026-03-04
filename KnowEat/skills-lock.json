@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "skills": {
+    "apple-developer-toolkit": {
+      "source": "abdullah4ai/apple-developer-toolkit",
+      "sourceType": "github",
+      "computedHash": "92fa6a22a97913946fdc4880f3b7c1ff4880959d701952654fb7c70194e0fadb"
+    },
+    "apple-intelligence": {
+      "source": "rshankras/claude-code-apple-skills",
+      "sourceType": "github",
+      "computedHash": "86787eff2e351561b5ca78c6c06a6f31d2c58447611f45a22c99ef3fea26b521"
+    },
+    "ios-developer": {
+      "source": "sickn33/antigravity-awesome-skills",
+      "sourceType": "github",
+      "computedHash": "e721c9155b4f3ffecaaca7eeb7a8a876e5636067078a033466ab61343cd310ec"
+    }
+  }
+}

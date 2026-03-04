@@ -11,6 +11,7 @@ struct LanguagePickerOverlay: View {
     @Binding var selectedLanguage: String
     let languages: [String]
     @Binding var isPresented: Bool
+    var presentedAsSheet: Bool = false
 
     @State private var dragOffset: CGFloat = 0
     @State private var sheetAppeared = false
@@ -19,28 +20,33 @@ struct LanguagePickerOverlay: View {
     private let dismissThreshold: CGFloat = 100
 
     var body: some View {
-        ZStack(alignment: .bottom) {
-            Color.black
-                .opacity(sheetAppeared ? Double(0.35 * max(0, 1 - dragOffset / sheetHeight)) : 0)
-                .ignoresSafeArea()
-                .onTapGesture { animateDismiss() }
+        if presentedAsSheet {
+            pickerContent
+                .padding(.top, 24)
+                .padding(.bottom, 40)
+                .frame(maxWidth: .infinity)
+        } else {
+            ZStack(alignment: .bottom) {
+                Color.black
+                    .opacity(sheetAppeared ? Double(0.35 * max(0, 1 - dragOffset / sheetHeight)) : 0)
+                    .ignoresSafeArea()
+                    .onTapGesture { animateDismiss() }
 
-            sheetContent
-                .offset(y: sheetAppeared ? max(0, dragOffset) : sheetHeight)
-                .gesture(dragGesture)
-        }
-        .ignoresSafeArea()
-        .onAppear {
-            withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
-                sheetAppeared = true
+                sheetContent
+                    .offset(y: sheetAppeared ? max(0, dragOffset) : sheetHeight)
+                    .gesture(dragGesture)
+            }
+            .ignoresSafeArea()
+            .onAppear {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+                    sheetAppeared = true
+                }
             }
         }
     }
 
-    private var sheetContent: some View {
+    private var pickerContent: some View {
         VStack(spacing: 0) {
-            grabHandle
-
             Image(systemName: "globe")
                 .font(.system(size: 32, weight: .light))
                 .foregroundStyle(Color("PrimaryOrange"))
@@ -61,6 +67,13 @@ struct LanguagePickerOverlay: View {
                 }
             }
             .padding(.horizontal, 20)
+        }
+    }
+
+    private var sheetContent: some View {
+        VStack(spacing: 0) {
+            grabHandle
+            pickerContent
         }
         .padding(.bottom, 40)
         .frame(maxWidth: .infinity)
@@ -154,6 +167,10 @@ struct LanguagePickerOverlay: View {
     }
 
     private func animateDismiss() {
+        if presentedAsSheet {
+            isPresented = false
+            return
+        }
         withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
             sheetAppeared = false
             dragOffset = sheetHeight

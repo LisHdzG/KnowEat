@@ -13,6 +13,7 @@ struct HomeView: View {
     @State private var viewModel = HomeViewModel()
     @State private var scanVM = MenuScanViewModel()
     @State private var selectedMenu: ScannedMenu?
+    @State private var showSettings = false
     @State private var menuToRename: ScannedMenu?
     @State private var renameText = ""
     @State private var showRenameAlert = false
@@ -55,8 +56,8 @@ struct HomeView: View {
                 .background(Color(.systemBackground))
                 .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
-                        NavigationLink {
-                            SettingsView()
+                        Button {
+                            showSettings = true
                         } label: {
                             Image(systemName: "gearshape")
                         }
@@ -102,16 +103,27 @@ struct HomeView: View {
                         )
                     }
                 }
-                .fullScreenCover(item: $selectedMenu) { menu in
-                    let profile = profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])
-                    let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
-                    MenuResultView(
-                        menu: menu,
-                        analyzedDishes: analyzed,
-                        allergens: viewModel.allDietaryItems,
-                        filterGroups: viewModel.groupedFilters(for: profile),
-                        onDismiss: { selectedMenu = nil }
-                    )
+                .navigationDestination(isPresented: Binding(
+                    get: { selectedMenu != nil },
+                    set: { if !$0 { selectedMenu = nil } }
+                )) {
+                    if let menu = selectedMenu {
+                        let profile = profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])
+                        let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
+                        MenuResultView(
+                            menu: menu,
+                            analyzedDishes: analyzed,
+                            allergens: viewModel.allDietaryItems,
+                            filterGroups: viewModel.groupedFilters(for: profile),
+                            onDismiss: { selectedMenu = nil },
+                            isPushed: true
+                        )
+                    }
+                }
+                .fullScreenCover(isPresented: $showSettings) {
+                    NavigationStack {
+                        SettingsView()
+                    }
                 }
                 .alert(scanVM.errorTitle, isPresented: .init(
                     get: { scanVM.errorMessage != nil },
