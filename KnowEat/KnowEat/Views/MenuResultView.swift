@@ -80,24 +80,13 @@ struct MenuResultView: View {
     }
 
     var body: some View {
-        ZStack {
+        Group {
             if isPushed {
                 mainContent
             } else {
                 NavigationStack {
                     mainContent
                 }
-            }
-
-            if isTranslating {
-                LoaderView(phrases: [
-                    "Translating dishes…",
-                    "Adapting ingredients…",
-                    "Updating your menu…",
-                    "Almost ready…"
-                ])
-                .transition(.opacity)
-                .ignoresSafeArea()
             }
         }
         .sheet(isPresented: $showLanguagePicker) {
@@ -110,6 +99,14 @@ struct MenuResultView: View {
             .presentationDetents([.medium])
             .presentationDragIndicator(.visible)
         }
+        .fullScreenCover(isPresented: $isTranslating) {
+            LoaderView(phrases: [
+                "Translating dishes…",
+                "Adapting ingredients…",
+                "Updating your menu…",
+                "Almost ready…"
+            ])
+        }
     }
 
     private var mainContent: some View {
@@ -117,8 +114,6 @@ struct MenuResultView: View {
             if categories.count > 2 {
                 categoryPicker
             }
-
-            searchField
 
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
@@ -145,8 +140,8 @@ struct MenuResultView: View {
             }
         }
         .background(Color(.systemBackground))
+        .searchable(text: $searchText, prompt: "Search dishes...")
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar(isTranslating ? .hidden : .automatic, for: .navigationBar)
         .toolbar {
             if !isPushed {
                 ToolbarItem(placement: .topBarLeading) {
@@ -233,34 +228,6 @@ struct MenuResultView: View {
         }
     }
 
-    // MARK: - Search Field
-
-    private var searchField: some View {
-        HStack(spacing: 8) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 15))
-                .foregroundStyle(.secondary)
-
-            TextField("Search dishes...", text: $searchText)
-                .font(.interRegular(size: 16))
-
-            if !searchText.isEmpty {
-                Button {
-                    searchText = ""
-                } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color(.systemGray3))
-                }
-                .accessibilityLabel("Clear search")
-            }
-        }
-        .padding(10)
-        .background(Color(.systemGray6), in: RoundedRectangle(cornerRadius: 10))
-        .padding(.horizontal, 24)
-        .padding(.vertical, 8)
-    }
-
     // MARK: - Header
 
     private var headerSection: some View {
@@ -284,7 +251,7 @@ struct MenuResultView: View {
 
     private var disclaimerBanner: some View {
         HStack(spacing: 10) {
-            Image(systemName: "sparkles")
+            Image(systemName: "apple.intelligence")
                 .font(.system(size: 18))
                 .foregroundStyle(.secondary)
                 .accessibilityHidden(true)
@@ -416,11 +383,12 @@ struct MenuResultView: View {
 
     private func handleRetranslation(to language: String) {
         showLanguagePicker = false
-        isTranslating = true
         selectedCategoryIndex = 0
         let currentMenu = activeMenu
 
         Task { @MainActor in
+            try? await Task.sleep(for: .milliseconds(400))
+            isTranslating = true
             do {
                 let result = try await FoundationModelAnalyzer.shared.translateMenu(
                     dishes: currentMenu.dishes,
