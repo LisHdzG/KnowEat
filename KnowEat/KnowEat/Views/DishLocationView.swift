@@ -13,6 +13,7 @@ struct DishLocationView: View {
 
     @Environment(\.dismiss) private var dismiss
     @State private var scale: CGFloat = 1.0
+    @State private var lastScale: CGFloat = 1.0
 
     private var dish: Dish { item.dish }
 
@@ -50,47 +51,55 @@ struct DishLocationView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                GeometryReader { geo in
-                    let images = menuImages
-                    if images.isEmpty {
-                        noImagePlaceholder
-                    } else if targetImageIndex < images.count {
-                        imageWithHighlight(image: images[targetImageIndex], size: geo.size)
-                    } else {
-                        noImagePlaceholder
+        GeometryReader { geo in
+            let images = menuImages
+            ZStack(alignment: .topTrailing) {
+                ZStack(alignment: .bottom) {
+                    Group {
+                        if images.isEmpty {
+                            noImagePlaceholder
+                        } else if targetImageIndex < images.count {
+                            imageWithHighlight(image: images[targetImageIndex], size: geo.size)
+                        } else {
+                            noImagePlaceholder
+                        }
                     }
-                }
-                .background(Color.black)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .background(Color.black)
+                    .ignoresSafeArea()
 
-                dishInfoPanel
-            }
-            .background(Color.black)
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .principal) {
-                    Text(dish.name)
-                        .font(.interSemiBold(size: 14))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
+                    LinearGradient(
+                        stops: [
+                            .init(color: .clear, location: 0),
+                            .init(color: .black.opacity(0.4), location: 0.4),
+                            .init(color: .black.opacity(0.9), location: 1)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 260)
+                    .allowsHitTesting(false)
+
+                    dishInfoPanel
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .bold))
-                            .foregroundStyle(.white.opacity(0.8))
-                            .frame(width: 28, height: 28)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                    .accessibilityLabel(strings.close)
+
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark")
+                        .font(.system(size: 16, weight: .medium))
+                        .frame(width: 36, height: 36)
+                        .contentShape(Circle())
                 }
+                .buttonStyle(.glass)
+                .buttonBorderShape(.circle)
+                .padding(.top, 12)
+                .padding(.trailing, 16)
+                .accessibilityLabel(strings.close)
             }
-            .toolbarBackground(.black, for: .navigationBar)
-            .toolbarColorScheme(.dark, for: .navigationBar)
         }
+        .background(Color.black)
+        .ignoresSafeArea()
     }
 
     // MARK: - Dish Info Panel
@@ -102,10 +111,19 @@ struct DishLocationView: View {
                     .fill(accentColor)
                     .frame(width: 4, height: 18)
 
-                Text(dish.name)
-                    .font(.interSemiBold(size: 15))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(dish.name)
+                        .font(.interSemiBold(size: 15))
+                        .foregroundStyle(.white)
+                        .lineLimit(1)
+
+                    if let translated = dish.translatedName, !translated.isEmpty {
+                        Text(translated)
+                            .font(.interRegular(size: 12))
+                            .foregroundStyle(Color("PrimaryOrange").opacity(0.8))
+                            .lineLimit(1)
+                    }
+                }
             }
 
             if let description = dish.description, !description.isEmpty {
@@ -170,10 +188,10 @@ struct DishLocationView: View {
                 }
             }
         }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 12)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 20)
+        .padding(.bottom, 8)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemBackground).opacity(0.12))
     }
 
     // MARK: - Image
@@ -187,71 +205,35 @@ struct DishLocationView: View {
 
         let regionsForThisImage = matchedRegions.filter { $0.imageIndex == targetImageIndex }
 
-        ZStack {
-            ScrollView([.horizontal, .vertical], showsIndicators: false) {
-                ZStack(alignment: .topLeading) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(width: fitWidth * scale, height: fitHeight * scale)
+        ScrollView([.horizontal, .vertical], showsIndicators: false) {
+            ZStack(alignment: .topLeading) {
+                Image(uiImage: image)
+                    .resizable()
+                    .aspectRatio(contentMode: .fit)
+                    .frame(width: fitWidth * scale, height: fitHeight * scale)
 
-                    ForEach(Array(regionsForThisImage.enumerated()), id: \.offset) { _, region in
-                        let rect = convertBoundingBox(region, imageWidth: fitWidth * scale, imageHeight: fitHeight * scale)
-                        RoundedRectangle(cornerRadius: 4)
-                            .stroke(Color.orange, lineWidth: 3)
-                            .background(
-                                RoundedRectangle(cornerRadius: 4)
-                                    .fill(Color.orange.opacity(0.15))
-                            )
-                            .frame(width: rect.width + 8, height: rect.height + 6)
-                            .offset(x: rect.minX - 4, y: rect.minY - 3)
-                    }
+                ForEach(Array(regionsForThisImage.enumerated()), id: \.offset) { _, region in
+                    let rect = convertBoundingBox(region, imageWidth: fitWidth * scale, imageHeight: fitHeight * scale)
+                    RoundedRectangle(cornerRadius: 4)
+                        .stroke(Color.orange, lineWidth: 3)
+                        .background(
+                            RoundedRectangle(cornerRadius: 4)
+                                .fill(Color.orange.opacity(0.15))
+                        )
+                        .frame(width: rect.width + 8, height: rect.height + 6)
+                        .offset(x: rect.minX - 4, y: rect.minY - 3)
                 }
-                .frame(width: fitWidth * scale, height: fitHeight * scale)
             }
-
-            VStack {
-                Spacer()
-                HStack(spacing: 16) {
-                    Button {
-                        withAnimation { scale = max(1.0, scale - 0.5) }
-                    } label: {
-                        Image(systemName: "minus.magnifyingglass")
-                            .font(.system(size: 20))
-                            .foregroundStyle(.white)
-                            .padding(10)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-
-                    Button {
-                        withAnimation { scale = min(4.0, scale + 0.5) }
-                    } label: {
-                        Image(systemName: "plus.magnifyingglass")
-                            .font(.system(size: 20))
-                            .foregroundStyle(.white)
-                            .padding(10)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-
-                    if scale != 1.0 {
-                        Button {
-                            withAnimation { scale = 1.0 }
-                        } label: {
-                            Image(systemName: "arrow.counterclockwise")
-                                .font(.system(size: 20))
-                                .foregroundStyle(.white)
-                                .padding(10)
-                                .background(.ultraThinMaterial, in: Circle())
-                        }
-                    }
-                }
-                .padding(.bottom, 12)
-            }
+            .frame(width: fitWidth * scale, height: fitHeight * scale)
         }
-        .gesture(
+        .contentShape(Rectangle())
+        .simultaneousGesture(
             MagnificationGesture()
                 .onChanged { value in
-                    scale = min(4.0, max(1.0, value))
+                    scale = min(4.0, max(1.0, lastScale * value))
+                }
+                .onEnded { _ in
+                    lastScale = scale
                 }
         )
     }

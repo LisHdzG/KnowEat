@@ -23,10 +23,9 @@ final class OfflineMenuAnalyzer {
 
         let rawEntries = extractDishEntries(from: lines)
         let dishes = rawEntries.map { buildDish(from: $0) }
-        let restaurant = guessRestaurant(from: lines, dishEntries: rawEntries)
 
         return ScannedMenu(
-            restaurant: restaurant,
+            restaurant: "Unknown",
             dishes: dishes,
             categoryIcon: "restaurant",
             menuLanguage: userLanguage
@@ -234,21 +233,6 @@ final class OfflineMenuAnalyzer {
               let range = Range(match.range, in: line) else { return nil }
         return String(line[range]).trimmingCharacters(in: .whitespaces)
     }
-
-    private func guessRestaurant(from lines: [String], dishEntries: [RawEntry]) -> String {
-        let dishNames = Set(dishEntries.map { $0.name.lowercased() })
-        for line in lines.prefix(3) {
-            let clean = line.trimmingCharacters(in: .whitespaces)
-            if clean.count >= 3 && clean.count <= 40
-                && !dishNames.contains(clean.lowercased())
-                && !hasPrice(clean)
-                && !looksLikeCategory(clean, nextLine: nil) {
-                return clean
-            }
-        }
-        return "Unknown"
-    }
-
 
     // MARK: - Allergen Detection
 

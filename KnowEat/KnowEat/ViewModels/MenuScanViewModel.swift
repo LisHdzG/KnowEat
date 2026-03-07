@@ -69,7 +69,10 @@ final class MenuScanViewModel {
         analysisProgress = 0.05
         analysisStage = strings.preparingImages
         isShowingScanner = false
-        performAnalysis(images: images, profile: profile)
+        // Defer analysis to next run loop so the loader is visible immediately
+        DispatchQueue.main.async { [weak self] in
+            self?.performAnalysis(images: images, profile: profile)
+        }
     }
 
     func retry() {
@@ -134,16 +137,32 @@ final class MenuScanViewModel {
 
                 analysisProgress = 0.40
                 analysisStage = strings.analyzingDishes
-                startProgressDrift(from: 0.40, to: 0.72, over: 18)
+                startProgressDrift(from: 0.40, to: 0.70, over: 15)
 
                 var menu: ScannedMenu
 
                 let nativeLang = profile.nativeLanguage
+                let currentStrings = self.strings
 
                 if FoundationModelAnalyzer.shared.isAvailable {
                     menu = try await FoundationModelAnalyzer.shared.analyze(
                         ocrText: ocrResult.text,
-                        userLanguage: nativeLang
+                        userLanguage: nativeLang,
+                        onPhaseChange: { [weak self] phase in
+                            Task { @MainActor in
+                                guard let self else { return }
+                                switch phase {
+                                case .extracting:
+                                    break
+                                case .translating(let current, let total):
+                                    self.stopProgressDrift()
+                                    let base = 0.70
+                                    let translationRange = 0.15
+                                    self.analysisProgress = base + translationRange * Double(current) / Double(total)
+                                    self.analysisStage = currentStrings.translatingDish(current, total)
+                                }
+                            }
+                        }
                     )
                 } else {
                     let offlineMenu = OfflineMenuAnalyzer.shared.analyze(
@@ -306,6 +325,7 @@ final class MenuScanViewModel {
 
             return Dish(
                 name: dish.name,
+                translatedName: dish.translatedName,
                 description: dish.description,
                 price: dish.price,
                 category: dish.category,

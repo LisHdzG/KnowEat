@@ -8,42 +8,56 @@
 import Foundation
 import FoundationModels
 
-// MARK: - Generable Structs
+// MARK: - Generable Structs (Pass 1: Extraction — always in English)
 
 @Generable
 struct GeneratedMenu {
-    @Guide(description: "Restaurant name from branding/logo/header text. Use 'Unknown' if not visible. Use 'NOT_A_MENU' if the text is clearly NOT a restaurant food menu.")
+    @Guide(description: "Restaurant name from branding/logo/header. 'Unknown' if not visible. 'NOT_A_MENU' if not a food menu.")
     var restaurant: String
 
     @Guide(description: "Icon: beer, dinner, fried-rice, lasagna, lunch-bag, nachos, pancake, pasta, pastry, pizza-slice, ramen, restaurant, rice, salad, sausage, shrimp, taco")
     var categoryIcon: String
 
-    @Guide(description: "Every dish and drink extracted from the menu, in the same order as the original text. Empty array if this is not a menu.")
+    @Guide(description: "Every dish and drink, in the same order as the original text. Empty if not a menu.")
     var dishes: [GeneratedDish]
 }
 
 @Generable
 struct GeneratedDish {
-    @Guide(description: "Dish name exactly as written on the menu, in the original language. Max 8 words.")
+    @Guide(description: "The dish name exactly as printed on the menu, in the menu's original language. Do NOT include ingredients or descriptions in this field.")
     var name: String
 
-    @Guide(description: "Brief description in the user's language. Include any description or subtitle text from the menu that appears below the dish name. Explain what the dish is and its main components.")
+    @Guide(description: "English description of this dish. Include any subtitle or secondary text from the menu that describes this dish.")
     var dishDescription: String
 
-    @Guide(description: "true ONLY for orderable food/drink items a customer can order by name. false for section headers, category titles, subtitles, translations of sections, restaurant names, decorative text, disclaimers, descriptions of other dishes, or any non-orderable text.")
+    @Guide(description: "true if a customer can order this item. false for section headers, categories, subtitles, translations, restaurant name, or decorative text.")
     var isActualDish: Bool
 
-    @Guide(description: "ONLY ingredients explicitly written on the menu text for this dish, translated to the user's language. Do NOT decompose or guess from the dish name. If the menu does not list ingredients for this dish, this MUST be an empty array.")
+    @Guide(description: "Ingredients explicitly written on the menu for this dish, each translated to English. Empty array if the menu does not list ingredients for this dish.")
     var ingredients: [String]
 
-    @Guide(description: "Common ingredients this dish typically contains but NOT written on the menu, in the user's language. Empty array if you truly cannot infer any.")
+    @Guide(description: "Common ingredients this dish typically has based on culinary knowledge, in English. Empty array if unsure.")
     var inferredIngredients: [String]
 
-    @Guide(description: "Allergen/content IDs based ONLY on explicit ingredients listed on the menu. Valid IDs: gluten, dairy, eggs, fish, crustaceans, peanuts, soy, tree_nuts, celery, mustard, sesame, sulfites, lupins, mollusks, lactose, fructose, histamine, fodmap, meat, poultry, pork, alcohol")
+    @Guide(description: "Allergen IDs from explicit ingredients. Valid: gluten, dairy, eggs, fish, crustaceans, peanuts, soy, tree_nuts, celery, mustard, sesame, sulfites, lupins, mollusks, lactose, fructose, histamine, fodmap, meat, poultry, pork, alcohol")
     var allergenIds: [String]
 
-    @Guide(description: "Allergen/content IDs that MAY apply based on inferred ingredients (AI suggestion, not confirmed). Same valid IDs as allergenIds. Empty array if no inferences.")
+    @Guide(description: "Allergen IDs from inferred ingredients only. Same valid IDs. Empty if none.")
     var suggestedAllergenIds: [String]
+}
+
+// MARK: - Generable Structs (Pass 2: Per-dish translation)
+
+@Generable
+struct DishTranslation {
+    @Guide(description: "The dish name translated to the target language.")
+    var translatedName: String
+
+    @Guide(description: "The dish description translated to the target language.")
+    var translatedDescription: String
+
+    @Guide(description: "Each ingredient translated to the target language, same count and order.")
+    var translatedIngredients: [String]
 }
 
 // MARK: - Errors
@@ -89,87 +103,58 @@ final class FoundationModelAnalyzer {
         SystemLanguageModel.default.availability == .available
     }
 
-    // MARK: - Analysis
+    enum AnalysisPhase: Sendable {
+        case extracting
+        case translating(current: Int, total: Int)
+    }
 
-    func analyze(ocrText: String, userLanguage: String) async throws -> ScannedMenu {
+    // MARK: - Analysis (two-pass: extract in English, then translate per-dish)
+
+    func analyze(
+        ocrText: String,
+        userLanguage: String,
+        onPhaseChange: (@Sendable (AnalysisPhase) -> Void)? = nil
+    ) async throws -> ScannedMenu {
         guard isAvailable else {
             throw FoundationModelError.modelNotAvailable
         }
 
-        let session = LanguageModelSession(
+        // --- PASS 1: Extract menu content — always in English ---
+        let extractSession = LanguageModelSession(
             instructions: """
-            You are a restaurant menu reader. You receive OCR text in ANY language \
-            extracted from a photo of a restaurant menu. \
+            You are a restaurant menu reader. ALL output MUST be in English. \
             \
-            STEP 1 — VALIDATE: \
-            Determine if this text is from a restaurant food menu. \
-            A restaurant menu lists multiple food or drink items that diners can order. \
-            If the text is NOT a menu (e.g. a product label, ingredient list on packaging, \
-            nutrition facts, receipt, invoice, bottle/wine label, cereal box, \
-            screenshot from a delivery app, book page, random text, \
-            or any non-menu document), set restaurant to "NOT_A_MENU" and return an \
-            empty dishes array. Do NOT invent dishes from non-menu text. \
+            VALIDATE: If the text is NOT a restaurant food menu (product label, \
+            nutrition facts, receipt, invoice, bottle, delivery app, book, random text), \
+            set restaurant to "NOT_A_MENU" with empty dishes. \
             \
-            STEP 2 — EXTRACT (only if it IS a menu): \
-            1. Find the restaurant name from headers, logos, or branding. "Unknown" if not visible. \
-            The restaurant name is NEVER a dish — do not include it as a dish. \
-            2. Extract every dish and drink that is clearly written in the menu. \
+            HOW TO READ A MENU LINE BY LINE: \
+            Each dish typically occupies 1-3 lines: \
+            LINE A: The dish name (often with a price on the same line). \
+            LINE B (optional): A subtitle, description, or translation of Line A. \
+            This is NOT a separate dish. Put this in dishDescription. \
+            LINE C (optional): Ingredient details for the dish on Line A. \
+            Put these into the ingredients array, translated to English. \
             \
-            CRITICAL ORDER RULE: \
-            Extract dishes in the EXACT sequential order they appear line by line in the text. \
-            Do NOT reorder, group, or sort them. \
+            Many menus are BILINGUAL: they print the name in one language \
+            and a translation on the next line. Both refer to the SAME dish. \
+            Use the FIRST line as name, the second as dishDescription. \
             \
-            UNDERSTANDING MENU STRUCTURE (applies to ALL languages): \
-            Every menu in any language has 3 levels. You MUST distinguish them: \
-            \
-            LEVEL 1 — SECTION HEADERS: Lines that name a group/category of dishes. \
-            These are NOT orderable items. They organize the menu into sections. \
-            A customer cannot order a section header. \
-            These are always isActualDish = false. \
-            Common patterns: they often appear alone on a line, sometimes in bigger/different \
-            font (ALL CAPS, centered), sometimes with decorative dashes or subtitles. \
-            They may also have a translation on the next line. Both are non-dish. \
-            \
-            LEVEL 2 — DISH NAMES: The actual orderable items listed under a section. \
-            These are specific prepared foods or drinks a customer can order by name. \
-            These are isActualDish = true. \
-            \
-            LEVEL 3 — DESCRIPTIONS: Text that appears below a dish name describing it, \
-            listing its components, or translating it. This text belongs to the dish above. \
-            It is NOT a separate dish. Include it in that dish's dishDescription or ingredients. \
-            \
-            KEY TEST: "Could a customer point to this line and order it?" \
-            If YES → it is a dish (isActualDish = true). \
-            If NO → it is either a section header or a description (isActualDish = false). \
-            \
-            CRITICAL EXTRACTION RULES: \
-            - Extract ONLY items explicitly written in the text. NEVER invent or fabricate dishes. \
-            - Keep dish names EXACTLY as written in the original language of the menu. \
-            - Fix obvious OCR typos using food knowledge, but do not change dish names significantly. \
-            - Skip non-food text: addresses, phone numbers, URLs, slogans, decorative text, \
-            allergen disclaimers, service charges, cover charges, section dividers. \
-            - When a dish has description text below it on the menu, put that text in dishDescription. \
-            - When a dish lists its ingredients on the menu, put those in the ingredients array. \
-            - Translate the dishDescription to \(userLanguage). \
-            - Write ALL ingredient names in \(userLanguage). \
-            \
-            INGREDIENT RULES: \
-            - The ingredients array must ONLY contain ingredients explicitly written \
-            on the menu beneath or next to the dish (translated to \(userLanguage)). \
-            - Do NOT decompose or guess ingredients from the dish name. \
-            For example: "Parmigiana di Melanzane" → ingredients should be empty \
-            unless the menu explicitly lists ingredients below it. \
-            - Do NOT extract parts of the dish name as ingredients. \
-            - If no ingredients are written on the menu for a dish, leave ingredients as an empty array. \
-            - inferredIngredients: Infer common ingredients the dish typically contains, \
-            based on your knowledge of the recipe (in \(userLanguage)). \
-            - If you cannot recognize a dish at all, set inferredIngredients to an empty array. \
-            \
-            ALLERGEN RULES: \
-            - allergenIds: ONLY from ingredients explicitly listed on the menu. \
-            - suggestedAllergenIds: From inferred ingredients (AI suggestion, not confirmed).
+            KEY RULES: \
+            - name: EXACTLY as written on the menu, original language. \
+            Do NOT append ingredients or descriptions to the name field. \
+            - dishDescription: English description. Include subtitles from the menu. \
+            - ingredients: ONLY ingredients explicitly listed on the menu for this dish, \
+            translated to English. Do NOT break the dish name into ingredients. \
+            Empty array if none listed. \
+            - inferredIngredients: Typical ingredients from culinary knowledge, in English. \
+            - isActualDish: true ONLY for orderable items. \
+            - The restaurant name is NEVER a dish. \
+            - Extract dishes in the EXACT order they appear.
             """
         )
+
+        onPhaseChange?(.extracting)
 
         let cleanedText = Self.preprocessOCRText(ocrText)
 
@@ -177,77 +162,98 @@ final class FoundationModelAnalyzer {
             ? String(cleanedText.prefix(Self.maxOCRCharacters))
             : cleanedText
 
-        let prompt = """
-        Analyze this text. If it is a restaurant menu, extract all dishes and drinks \
-        in the order they appear. If it is NOT a menu, return empty results.
-
-        TEXT:
+        let extractPrompt = """
+        Read this menu and extract every dish. \
+        Write all descriptions and ingredients in English. \
+        Subtitle lines below a dish name are descriptions, NOT separate dishes. \
+        \
+        TEXT: \
         \(truncatedText)
         """
 
+        let generated: GeneratedMenu
         do {
-            let response = try await session.respond(to: prompt, generating: GeneratedMenu.self)
-            return try buildScannedMenu(from: response.content, ocrText: cleanedText, userLanguage: userLanguage)
-        } catch is FoundationModelError {
-            throw FoundationModelError.notAMenu
+            let response = try await extractSession.respond(to: extractPrompt, generating: GeneratedMenu.self)
+            generated = response.content
         } catch {
             throw FoundationModelError.generationFailed(error.localizedDescription)
         }
-    }
 
-    // MARK: - Translation
+        var menu = try buildScannedMenu(from: generated, ocrText: cleanedText)
 
-    @Generable
-    struct TranslatedDish {
-        @Guide(description: "The dish description translated to the target language")
-        var translatedDescription: String
-    }
-
-    func translateMenu(dishes: [Dish], restaurant: String, to language: String) async throws -> (restaurant: String, dishes: [Dish]) {
-        guard isAvailable else {
-            throw FoundationModelError.modelNotAvailable
+        // --- PASS 2: Translate each dish individually ---
+        if userLanguage != "English" && !menu.dishes.isEmpty {
+            menu.dishes = await translateDishesIndividually(menu.dishes, to: userLanguage, onPhaseChange: onPhaseChange)
         }
 
+        return menu
+    }
+
+    // MARK: - Per-Dish Translation (one AI call per dish — maximum reliability)
+
+    private func translateDishesIndividually(
+        _ dishes: [Dish],
+        to language: String,
+        onPhaseChange: (@Sendable (AnalysisPhase) -> Void)? = nil
+    ) async -> [Dish] {
         let session = LanguageModelSession(
             instructions: """
-            You are a professional food translator. \
-            Translate dish descriptions accurately to \(language). \
-            Use correct culinary terms — not literal translations. \
-            Keep dish names in their original language.
+            You are a food translator. \
+            Translate dish names, descriptions, and ingredients to \(language). \
+            Use proper culinary terms in \(language).
             """
         )
 
-        var translatedDishes: [Dish] = []
+        var result: [Dish] = []
+        let total = dishes.count
 
-        for dish in dishes {
-            let descriptionToTranslate = dish.description ?? dish.name
+        for (index, dish) in dishes.enumerated() {
+            onPhaseChange?(.translating(current: index + 1, total: total))
+            let ingredientList = dish.ingredients.isEmpty
+                ? "none"
+                : dish.ingredients.joined(separator: ", ")
+            let desc = dish.description ?? ""
+
+            let prompt = """
+            Translate to \(language): \
+            name: \(dish.name) | \
+            description: \(desc) | \
+            ingredients: \(ingredientList)
+            """
+
             do {
-                let response = try await session.respond(
-                    to: "Translate this dish description to \(language): \"\(descriptionToTranslate)\"",
-                    generating: TranslatedDish.self
-                )
-                translatedDishes.append(Dish(
-                    name: dish.name,
-                    description: response.content.translatedDescription,
-                    price: nil,
-                    category: nil,
-                    ingredients: dish.ingredients,
-                    allergenIds: dish.allergenIds,
-                    inferredIngredients: dish.inferredIngredients,
-                    suggestedAllergenIds: dish.suggestedAllergenIds,
-                    textRegionIndices: dish.textRegionIndices
+                let response = try await session.respond(to: prompt, generating: DishTranslation.self)
+                let t = response.content
+
+                let tName = t.translatedName.trimmingCharacters(in: .whitespacesAndNewlines)
+                let effectiveName: String? = if tName.isEmpty
+                    || tName.lowercased() == dish.name.lowercased() {
+                    nil
+                } else {
+                    tName
+                }
+
+                let tDesc = t.translatedDescription.trimmingCharacters(in: .whitespacesAndNewlines)
+                let tIngr = t.translatedIngredients.filter { !$0.trimmingCharacters(in: .whitespaces).isEmpty }
+
+                result.append(Dish(
+                    from: dish,
+                    translatedName: effectiveName,
+                    translatedDescription: tDesc.isEmpty ? dish.description : tDesc,
+                    translatedIngredients: tIngr.isEmpty ? dish.ingredients : tIngr,
+                    translatedInferredIngredients: dish.inferredIngredients
                 ))
             } catch {
-                translatedDishes.append(dish)
+                result.append(dish)
             }
         }
 
-        return (restaurant: restaurant, dishes: translatedDishes)
+        return result
     }
 
     // MARK: - Build ScannedMenu (post-processing)
 
-    private func buildScannedMenu(from generated: GeneratedMenu, ocrText: String, userLanguage: String) throws -> ScannedMenu {
+    private func buildScannedMenu(from generated: GeneratedMenu, ocrText: String) throws -> ScannedMenu {
         if generated.restaurant.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() == "NOT_A_MENU" {
             throw FoundationModelError.notAMenu
         }
@@ -315,13 +321,11 @@ final class FoundationModelAnalyzer {
             throw FoundationModelError.notAMenu
         }
 
-        let restaurant = Self.sanitizeRestaurantName(generated.restaurant)
-
         return ScannedMenu(
-            restaurant: restaurant,
+            restaurant: "Unknown",
             dishes: dishes,
             categoryIcon: icon,
-            menuLanguage: userLanguage
+            menuLanguage: "Unknown"
         )
     }
 
@@ -551,7 +555,21 @@ final class FoundationModelAnalyzer {
     private static func sanitizeRestaurantName(_ name: String) -> String {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         if trimmed.isEmpty || trimmed.lowercased() == "unknown" { return "Unknown" }
-        if !trimmed.contains(where: { $0.isLetter }) { return "Unknown" }
+
+        let letterCount = trimmed.filter { $0.isLetter }.count
+        if letterCount == 0 { return "Unknown" }
+
+        let nonSpaceCount = trimmed.filter { !$0.isWhitespace }.count
+        if nonSpaceCount > 0 && letterCount < nonSpaceCount / 2 { return "Unknown" }
+
+        let stripped = trimmed.replacingOccurrences(of: " ", with: "")
+        if stripped.range(of: #"^\d{1,2}[:.]\d{2}$"#, options: .regularExpression) != nil {
+            return "Unknown"
+        }
+        if stripped.allSatisfy({ $0.isNumber || $0 == "." || $0 == "," || $0 == ":" || $0 == "-" || $0 == "/" }) {
+            return "Unknown"
+        }
+
         let lower = trimmed.lowercased()
         let genericNames: Set<String> = [
             "menù", "menu", "la carta", "the menu", "restaurant", "ristorante", "restaurante",

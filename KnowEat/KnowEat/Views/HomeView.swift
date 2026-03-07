@@ -91,35 +91,38 @@ struct HomeView: View {
                         }
                     )
                 }
-                .fullScreenCover(isPresented: $scanVM.showResults) {
-                    if let menu = scanVM.scannedMenu {
-                        let profile = profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])
-                        MenuResultView(
-                            menu: menu,
-                            analyzedDishes: scanVM.analyzedDishes,
-                            allergens: viewModel.allDietaryItems,
-                            filterGroups: viewModel.groupedFilters(for: profile),
-                            onSave: { savedMenu in
-                                menuStore.save(savedMenu)
-                                scanVM.dismissResults()
-                            },
-                            onDismiss: { scanVM.dismissResults() }
-                        )
+                .onChange(of: scanVM.showResults) { _, new in
+                    if new, let menu = scanVM.scannedMenu {
+                        selectedMenu = menu
                     }
                 }
                 .navigationDestination(isPresented: Binding(
                     get: { selectedMenu != nil },
-                    set: { if !$0 { selectedMenu = nil } }
+                    set: { isPresented in
+                        if !isPresented {
+                            let id = selectedMenu?.id
+                            selectedMenu = nil
+                            if id == scanVM.scannedMenu?.id {
+                                scanVM.dismissResults()
+                            }
+                        }
+                    }
                 )) {
                     if let menu = selectedMenu {
                         let profile = profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])
-                        let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
+                        let isFromScan = menu.id == scanVM.scannedMenu?.id
+                        let analyzed = isFromScan ? scanVM.analyzedDishes : AllergenChecker.analyze(menu: menu, profile: profile)
                         MenuResultView(
                             menu: menu,
                             analyzedDishes: analyzed,
                             allergens: viewModel.allDietaryItems,
                             filterGroups: viewModel.groupedFilters(for: profile),
-                            onDismiss: { selectedMenu = nil },
+                            onSave: isFromScan ? { savedMenu in
+                                menuStore.save(savedMenu)
+                                selectedMenu = nil
+                                scanVM.dismissResults()
+                            } : nil,
+                            onDismiss: { },
                             isPushed: true
                         )
                     }
@@ -201,7 +204,7 @@ struct HomeView: View {
                                     MenuCell(menu: menu)
                                 }
                                 .buttonStyle(.plain)
-                                .accessibilityLabel("\(menu.restaurant), \(strings.dishesCount(menu.dishes.count)), \(menu.menuLanguage)")
+                                .accessibilityLabel("\(menu.restaurant), \(strings.dishesCount(menu.dishes.count))")
                                 .accessibilityHint("Opens menu analysis and allergen check")
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     Button(role: .destructive) {

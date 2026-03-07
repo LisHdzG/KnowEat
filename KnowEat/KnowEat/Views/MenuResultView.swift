@@ -291,8 +291,16 @@ private struct DishCard: View {
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .top) {
-                    Text(item.dish.name)
-                        .font(.interSemiBold(size: 16))
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(item.dish.name)
+                            .font(.interSemiBold(size: 16))
+
+                        if let translated = item.dish.translatedName, !translated.isEmpty {
+                            Text(translated)
+                                .font(.interRegular(size: 13))
+                                .foregroundStyle(Color("PrimaryOrange").opacity(0.8))
+                        }
+                    }
 
                     Spacer()
 
@@ -389,6 +397,7 @@ private struct DishCard: View {
         .accessibilityHint(canShowLocation ? strings.viewOnMenu : dishAccessibilityHint)
         .sheet(isPresented: $showLocation) {
             DishLocationView(item: item, allergens: allergens, menu: menu, strings: strings)
+                .presentationDetents([.large])
         }
     }
 

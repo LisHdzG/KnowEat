@@ -43,21 +43,11 @@ struct MenuCell: View {
                     .font(.interRegular(size: 12))
                     .foregroundStyle(.secondary)
 
-                HStack(spacing: 10) {
-                    HStack(spacing: 4) {
-                        Image(systemName: "fork.knife")
-                            .font(.system(size: 10))
-                        Text(strings.dishesCount(menu.dishes.count))
-                            .font(.interRegular(size: 12))
-                    }
-
-                    HStack(spacing: 4) {
-                        Image(systemName: "globe")
-                            .font(.system(size: 10))
-                        Text(menu.menuLanguage)
-                            .font(.interRegular(size: 12))
-                            .lineLimit(1)
-                    }
+                HStack(spacing: 4) {
+                    Image(systemName: "fork.knife")
+                        .font(.system(size: 10))
+                    Text(strings.dishesCount(menu.dishes.count))
+                        .font(.interRegular(size: 12))
                 }
                 .foregroundStyle(.secondary)
             }

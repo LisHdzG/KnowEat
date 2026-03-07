@@ -61,6 +61,7 @@ struct TextRegion: Codable, Sendable {
 struct Dish: Identifiable, Codable, Sendable {
     let id: UUID
     let name: String
+    let translatedName: String?
     let description: String?
     let price: String?
     let category: String?
@@ -72,6 +73,7 @@ struct Dish: Identifiable, Codable, Sendable {
 
     init(
         name: String,
+        translatedName: String? = nil,
         description: String?,
         price: String?,
         category: String?,
@@ -83,6 +85,7 @@ struct Dish: Identifiable, Codable, Sendable {
     ) {
         self.id = UUID()
         self.name = name
+        self.translatedName = translatedName
         self.description = description
         self.price = price
         self.category = category
@@ -93,10 +96,25 @@ struct Dish: Identifiable, Codable, Sendable {
         self.textRegionIndices = textRegionIndices
     }
 
+    init(from original: Dish, translatedName: String?, translatedDescription: String?, translatedIngredients: [String], translatedInferredIngredients: [String]) {
+        self.id = original.id
+        self.name = original.name
+        self.translatedName = translatedName
+        self.description = translatedDescription
+        self.price = original.price
+        self.category = original.category
+        self.ingredients = translatedIngredients
+        self.inferredIngredients = translatedInferredIngredients
+        self.allergenIds = original.allergenIds
+        self.suggestedAllergenIds = original.suggestedAllergenIds
+        self.textRegionIndices = original.textRegionIndices
+    }
+
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
+        translatedName = try container.decodeIfPresent(String.self, forKey: .translatedName)
         description = try container.decodeIfPresent(String.self, forKey: .description)
         price = try container.decodeIfPresent(String.self, forKey: .price)
         category = try container.decodeIfPresent(String.self, forKey: .category)

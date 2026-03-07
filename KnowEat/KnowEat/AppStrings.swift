@@ -307,7 +307,7 @@ struct AppStrings {
         case "lactose": return t("Lactose", "Lactosa", "Lattosio")
         case "fructose": return t("Fructose", "Fructosa", "Fruttosio")
         case "histamine": return t("Histamine", "Histamina", "Istamina")
-        case "fodmap": return "FODMAP"
+        case "fodmap": return t("FODMAP (digestive sensitivity)", "FODMAP (sensibilidad digestiva)", "FODMAP (sensibilità digestiva)")
         // Content types
         case "meat": return t("Meat", "Carne", "Carne")
         case "poultry": return t("Poultry", "Aves", "Pollame")
@@ -459,6 +459,9 @@ struct AppStrings {
     var readingMenuText: String { t("Reading menu text…", "Leyendo texto del menú…", "Lettura testo del menu…") }
     var validatingContent: String { t("Validating content…", "Validando contenido…", "Validazione contenuto…") }
     var analyzingDishes: String { t("Analyzing dishes…", "Analizando platillos…", "Analisi piatti…") }
+    func translatingDish(_ current: Int, _ total: Int) -> String {
+        t("Translating \(current)/\(total)…", "Traduciendo \(current)/\(total)…", "Traduzione \(current)/\(total)…")
+    }
     var checkingAllergens: String { t("Checking your allergens…", "Verificando tus alérgenos…", "Controllo dei tuoi allergeni…") }
     var doneStage: String { t("Done!", "¡Listo!", "Fatto!") }
     var retryingBackup: String { t("Retrying with backup…", "Reintentando…", "Nuovo tentativo…") }
