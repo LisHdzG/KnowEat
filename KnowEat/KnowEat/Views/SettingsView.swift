@@ -90,10 +90,7 @@ struct SettingsView: View {
     }
 
     private var dietarySection: some View {
-        sectionContainer(
-            header: strings.dietaryProfile,
-            footer: strings.dietaryProfileFooter
-        ) {
+        sectionContainer(header: strings.dietaryProfile) {
             VStack(spacing: 0) {
                 dietaryRow(
                     icon: "exclamationmark.shield.fill",
@@ -236,18 +233,20 @@ struct SettingsView: View {
     }
 
     private func syncProfile(category: DietaryCategory) {
+        guard var profile = profileStore.profile else { return }
         let ids = Array(viewModel.selectedIds(for: category))
         switch category {
-        case .allergens: profileStore.profile?.allergenIds = ids
-        case .intolerances: profileStore.profile?.intoleranceIds = ids
-        case .conditions: profileStore.profile?.conditionIds = ids
-        case .diets: profileStore.profile?.dietIds = ids
-        case .situations: profileStore.profile?.situationIds = ids
+        case .allergens: profile.allergenIds = ids
+        case .intolerances: profile.intoleranceIds = ids
+        case .conditions: profile.conditionIds = ids
+        case .diets: profile.dietIds = ids
+        case .situations: profile.situationIds = ids
         }
+        profileStore.profile = profile
     }
 
     private var historySection: some View {
-        sectionContainer(header: strings.history) {
+        sectionContainer(header: strings.history, footer: strings.dataLocalNote) {
             VStack(spacing: 0) {
                 HStack(spacing: 14) {
                     settingsIcon("clock.arrow.circlepath")

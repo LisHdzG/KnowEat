@@ -126,10 +126,12 @@ struct DietaryProfileEditorView: View {
     }
 
     private func syncAllToProfile() {
-        profileStore.profile?.allergenIds = Array(viewModel.selectedIds(for: .allergens))
-        profileStore.profile?.intoleranceIds = Array(viewModel.selectedIds(for: .intolerances))
-        profileStore.profile?.conditionIds = Array(viewModel.selectedIds(for: .conditions))
-        profileStore.profile?.dietIds = Array(viewModel.selectedIds(for: .diets))
-        profileStore.profile?.situationIds = Array(viewModel.selectedIds(for: .situations))
+        guard var profile = profileStore.profile else { return }
+        profile.allergenIds = Array(viewModel.selectedIds(for: .allergens))
+        profile.intoleranceIds = Array(viewModel.selectedIds(for: .intolerances))
+        profile.conditionIds = Array(viewModel.selectedIds(for: .conditions))
+        profile.dietIds = Array(viewModel.selectedIds(for: .diets))
+        profile.situationIds = Array(viewModel.selectedIds(for: .situations))
+        profileStore.profile = profile
     }
 }

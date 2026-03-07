@@ -96,6 +96,11 @@ struct AppStrings {
     ) }
     var today: String { t("Today", "Hoy", "Oggi") }
     var yesterday: String { t("Yesterday", "Ayer", "Ieri") }
+    var dataLocalNote: String { t(
+        "Everything is saved on your device. Uninstalling the app will remove your data.",
+        "Todo se guarda en tu dispositivo. Si desinstalas la app, se borrarán tus datos.",
+        "Tutto viene salvato sul tuo dispositivo. Disinstallando l'app, i dati verranno rimossi."
+    ) }
     var cameraAccessRequired: String { t(
         "Camera Access Required",
         "Acceso a cámara requerido",
@@ -149,12 +154,6 @@ struct AppStrings {
         "Cambiare la lingua madre cambierà la lingua dell'intera app."
     ) }
     var dietaryProfile: String { t("Dietary Profile", "Perfil alimentario", "Profilo alimentare") }
-    var dietaryProfileFooter: String { t(
-        "KnowEat will consider all your dietary restrictions when scanning menus.",
-        "KnowEat considerará todas tus restricciones alimentarias al escanear menús.",
-        "KnowEat considererà tutte le tue restrizioni alimentari durante la scansione dei menu."
-    ) }
-
     var myAllergens: String { t("My Allergens", "Mis alérgenos", "I miei allergeni") }
     var selectAllergensDesc: String { t(
         "Select the allergens you want KnowEat to watch for when scanning menus.",
