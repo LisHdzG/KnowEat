@@ -288,6 +288,7 @@ struct AppStrings {
 
     func localizedAllergenName(_ id: String) -> String {
         switch id {
+        // Allergens
         case "gluten": return t("Gluten", "Gluten", "Glutine")
         case "dairy": return t("Dairy", "Lácteos", "Latticini")
         case "eggs": return t("Eggs", "Huevos", "Uova")
@@ -302,14 +303,32 @@ struct AppStrings {
         case "sulfites": return t("Sulfites", "Sulfitos", "Solfiti")
         case "lupins": return t("Lupins", "Altramuces", "Lupini")
         case "mollusks": return t("Mollusks", "Moluscos", "Molluschi")
+        // Intolerances
         case "lactose": return t("Lactose", "Lactosa", "Lattosio")
         case "fructose": return t("Fructose", "Fructosa", "Fruttosio")
         case "histamine": return t("Histamine", "Histamina", "Istamina")
         case "fodmap": return "FODMAP"
+        // Content types
         case "meat": return t("Meat", "Carne", "Carne")
         case "poultry": return t("Poultry", "Aves", "Pollame")
         case "pork": return t("Pork", "Cerdo", "Maiale")
         case "alcohol": return t("Alcohol", "Alcohol", "Alcol")
+        // Conditions
+        case "celiac": return t("Celiac Disease", "Enfermedad celíaca", "Celiachia")
+        case "diabetes": return t("Diabetes", "Diabetes", "Diabete")
+        case "hypertension": return t("Hypertension", "Hipertensión", "Ipertensione")
+        case "kidney_disease": return t("Kidney Disease", "Enfermedad renal", "Malattia renale")
+        case "gout": return t("Gout", "Gota", "Gotta")
+        case "favism": return t("Favism (G6PD)", "Favismo (G6PD)", "Favismo (G6PD)")
+        // Diets
+        case "vegetarian": return t("Vegetarian", "Vegetariano", "Vegetariano")
+        case "vegan": return t("Vegan", "Vegano", "Vegano")
+        case "pescatarian": return t("Pescatarian", "Pescetariano", "Pescetariano")
+        case "halal": return "Halal"
+        case "kosher": return "Kosher"
+        // Situations
+        case "pregnant": return t("Pregnancy", "Embarazo", "Gravidanza")
+        case "breastfeeding": return t("Breastfeeding", "Lactancia", "Allattamento")
         default: return id.replacingOccurrences(of: "_", with: " ").capitalized
         }
     }

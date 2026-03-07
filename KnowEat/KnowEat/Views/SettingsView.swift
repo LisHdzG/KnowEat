@@ -215,7 +215,8 @@ struct SettingsView: View {
                     ForEach(items) { item in
                         AllergenChipView(
                             allergen: item,
-                            isSelected: viewModel.isSelected(item.id, category: category)
+                            isSelected: viewModel.isSelected(item.id, category: category),
+                            displayName: strings.localizedAllergenName(item.id)
                         ) {
                             withAnimation(.easeInOut(duration: 0.2)) {
                                 viewModel.toggle(item.id, category: category)

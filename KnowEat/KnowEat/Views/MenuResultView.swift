@@ -278,10 +278,6 @@ private struct DishCard: View {
         !item.dish.ingredients.isEmpty
     }
 
-    private var hasInferredIngredients: Bool {
-        !item.dish.inferredIngredients.isEmpty && !isUnrecognizedDish
-    }
-
     private func nameFor(_ id: String) -> String {
         strings.localizedAllergenName(id)
     }
@@ -345,18 +341,6 @@ private struct DishCard: View {
                     .padding(.top, 2)
                 }
 
-                if hasInferredIngredients {
-                    HStack(alignment: .top, spacing: 4) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 8))
-                            .padding(.top, 3)
-                        inferredIngredientsText
-                            .font(.interRegular(size: 11))
-                            .lineLimit(2)
-                    }
-                    .foregroundStyle(.secondary.opacity(0.6))
-                }
-
                 if !item.isSafe {
                     Divider()
                     VStack(alignment: .leading, spacing: 3) {
@@ -377,15 +361,6 @@ private struct DishCard: View {
                             }
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.orange)
-                        }
-                        if item.hasSuggested {
-                            Label {
-                                Text(suggestedSummary)
-                            } icon: {
-                                Image(systemName: "sparkles")
-                            }
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.purple.opacity(0.8))
                         }
                     }
                 }
@@ -421,8 +396,8 @@ private struct DishCard: View {
         var label = "\(item.dish.name)"
         if isUnrecognizedDish {
             label += ". \(strings.unknownDishWarning)"
-        } else if !hasExplicitIngredients && hasInferredIngredients {
-            label += ". \(strings.ingredientsNotListed): \(item.dish.inferredIngredients.joined(separator: ", "))"
+        } else if !hasExplicitIngredients {
+            label += ". \(strings.noIngredientsDetected)"
         }
         if item.isSafe {
             label += ", safe"
@@ -436,7 +411,7 @@ private struct DishCard: View {
 
     private var dishAccessibilityHint: String {
         if isUnrecognizedDish || !hasExplicitIngredients {
-            return strings.ingredientsNotListed
+            return strings.noIngredientsDetected
         }
         return ""
     }
@@ -468,26 +443,7 @@ private struct DishCard: View {
         return parts.joined(separator: " · ")
     }
 
-    private var suggestedSummary: String {
-        let names = item.suggestedMatchedIds.map { nameFor($0) }.joined(separator: ", ")
-        return strings.aiSuggestsMayContain(names)
-    }
-
     // MARK: - Ingredients Text
-
-    private var inferredIngredientsText: Text {
-        let base = Color.secondary.opacity(0.6)
-        let inferred = item.dish.inferredIngredients
-        var result = Text("")
-        for (i, ingredient) in inferred.enumerated() {
-            let color: Color = isIngredientFlagged(ingredient) ? accentColor : base
-            result = Text("\(result)\(Text(ingredient).foregroundColor(color))")
-            if i < inferred.count - 1 {
-                result = Text("\(result)\(Text(", ").foregroundColor(base))")
-            }
-        }
-        return result
-    }
 
     private var ingredientsText: Text {
         let safe = Color.secondary.opacity(0.7)
@@ -504,16 +460,25 @@ private struct DishCard: View {
     }
 
     private func isIngredientFlagged(_ ingredient: String) -> Bool {
-        let lower = ingredient.lowercased()
+        let ingredientWords = Set(
+            ingredient.lowercased()
+                .components(separatedBy: CharacterSet.alphanumerics.inverted)
+                .filter { !$0.isEmpty }
+        )
         let allMatchedIds = item.dangerIds + item.advisoryIds
         return allMatchedIds.contains { id in
-            (Self.keywords[id] ?? []).contains { lower.contains($0) }
+            (Self.keywords[id] ?? []).contains { keyword in
+                if keyword.contains(" ") {
+                    return ingredient.lowercased().contains(keyword)
+                }
+                return ingredientWords.contains(keyword)
+            }
         }
     }
 
     private static let keywords: [String: [String]] = [
-        "gluten": ["wheat", "flour", "bread", "pasta", "barley", "rye", "oat", "semolina", "couscous", "noodle", "dough", "pastry", "cracker", "trigo", "harina", "pan", "avena", "cebada", "centeno", "grano", "farina", "orzo", "segale"],
-        "dairy": ["milk", "cheese", "cream", "butter", "yogurt", "mozzarella", "parmesan", "cheddar", "ricotta", "mascarpone", "brie", "feta", "whey", "ghee", "paneer", "leche", "queso", "crema", "mantequilla", "yogur", "nata", "latte", "formaggio", "burro", "panna"],
+        "gluten": ["wheat", "flour", "bread", "pasta", "barley", "rye", "oat", "semolina", "couscous", "noodle", "dough", "pastry", "cracker", "trigo", "harina", "avena", "cebada", "centeno", "grano", "farina", "orzo", "segale"],
+        "dairy": ["milk", "cheese", "cream", "butter", "yogurt", "mozzarella", "parmesan", "cheddar", "ricotta", "mascarpone", "brie", "feta", "whey", "ghee", "paneer", "leche", "queso", "mantequilla", "yogur", "nata", "formaggio", "panna"],
         "eggs": ["egg", "mayonnaise", "meringue", "aioli", "huevo", "mayonesa", "uovo", "uova", "maionese"],
         "fish": ["fish", "salmon", "tuna", "cod", "anchovy", "sardine", "bass", "trout", "halibut", "swordfish", "mackerel", "pescado", "salmón", "atún", "bacalao", "anchoa", "sardina", "trucha", "pesce", "tonno", "merluzzo", "acciuga"],
         "crustaceans": ["shrimp", "prawn", "crab", "lobster", "crawfish", "langoustine", "camarón", "gamba", "cangrejo", "langosta", "gambero", "granchio", "aragosta", "gambas"],
@@ -526,13 +491,13 @@ private struct DishCard: View {
         "sulfites": ["wine", "vinegar", "sulfite", "vino", "vinagre", "aceto"],
         "lupins": ["lupin", "lupini", "altramuz"],
         "mollusks": ["mussel", "clam", "oyster", "squid", "octopus", "scallop", "calamari", "snail", "mejillón", "almeja", "ostra", "calamar", "pulpo", "cozza", "vongola", "ostrica", "polpo", "capesante"],
-        "lactose": ["milk", "cheese", "cream", "butter", "yogurt", "ice cream", "leche", "queso", "crema", "mantequilla", "yogur", "helado", "latte", "formaggio", "burro", "gelato"],
-        "fructose": ["honey", "apple", "pear", "mango", "agave", "miel", "manzana", "pera", "miele", "mela"],
+        "lactose": ["milk", "cheese", "cream", "butter", "yogurt", "ice cream", "leche", "queso", "mantequilla", "yogur", "helado", "formaggio", "gelato"],
+        "fructose": ["honey", "apple", "pear", "mango", "agave", "miel", "manzana"],
         "histamine": ["wine", "aged cheese", "fermented", "cured", "smoked", "vinegar", "vino", "ahumado", "curado", "fermentado", "affumicato", "stagionato"],
-        "fodmap": ["garlic", "onion", "wheat", "apple", "pear", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"],
-        "meat": ["beef", "steak", "veal", "lamb", "pork", "ham", "bacon", "sausage", "salami", "prosciutto", "bresaola", "chorizo", "pepperoni", "mortadella", "pancetta", "carne", "res", "ternera", "cordero", "cerdo", "jamón", "tocino", "salchicha", "manzo", "vitello", "agnello", "maiale", "meatball", "burger", "ribs", "loin", "filet", "albóndigas", "hamburguesa", "costillas", "lomo", "polpette", "bistecca"],
+        "fodmap": ["garlic", "onion", "wheat", "apple", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"],
+        "meat": ["beef", "steak", "veal", "lamb", "pork", "bacon", "sausage", "salami", "prosciutto", "bresaola", "chorizo", "pepperoni", "mortadella", "pancetta", "carne", "carne de res", "ternera", "cordero", "cerdo", "jamón", "tocino", "salchicha", "manzo", "vitello", "agnello", "maiale", "meatball", "burger", "ribs", "albóndigas", "hamburguesa", "costillas", "lomo", "polpette", "bistecca"],
         "poultry": ["chicken", "turkey", "duck", "goose", "quail", "pollo", "pavo", "pato", "gallina", "tacchino", "anatra", "oca", "quaglia"],
-        "pork": ["pork", "ham", "bacon", "sausage", "salami", "prosciutto", "pancetta", "chorizo", "pepperoni", "mortadella", "lard", "guanciale", "cerdo", "jamón", "tocino", "salchicha", "manteca", "maiale", "lardo", "speck"],
-        "alcohol": ["wine", "beer", "cocktail", "liquor", "rum", "vodka", "whisky", "gin", "tequila", "brandy", "champagne", "prosecco", "sangria", "vino", "cerveza", "birra", "liquore", "grappa", "amaro", "spritz"]
+        "pork": ["pork", "bacon", "sausage", "salami", "prosciutto", "pancetta", "chorizo", "pepperoni", "mortadella", "lard", "guanciale", "cerdo", "jamón", "tocino", "salchicha", "maiale", "lardo", "speck"],
+        "alcohol": ["wine", "beer", "cocktail", "liquor", "rum", "vodka", "whisky", "tequila", "brandy", "champagne", "prosecco", "sangria", "vino", "cerveza", "birra", "liquore", "grappa", "amaro", "spritz"]
     ]
 }

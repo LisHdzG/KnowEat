@@ -27,13 +27,13 @@ struct GeneratedDish {
     @Guide(description: "Dish name exactly as written on the menu, in the original language. Max 8 words.")
     var name: String
 
-    @Guide(description: "Brief description translated to the user's language explaining what the dish is and its main components.")
+    @Guide(description: "Brief description in the user's language. Include any description or subtitle text from the menu that appears below the dish name. Explain what the dish is and its main components.")
     var dishDescription: String
 
-    @Guide(description: "true if this is a real orderable food or drink item. false if it is a section header, category title, restaurant name, subtitle, decoration, or any non-orderable text.")
+    @Guide(description: "true ONLY for orderable food/drink items a customer can order by name. false for section headers, category titles, subtitles, translations of sections, restaurant names, decorative text, disclaimers, descriptions of other dishes, or any non-orderable text.")
     var isActualDish: Bool
 
-    @Guide(description: "Ingredients written on the menu for this dish, in the user's language. Empty array if none listed.")
+    @Guide(description: "ONLY ingredients explicitly written on the menu text for this dish, translated to the user's language. Do NOT decompose or guess from the dish name. If the menu does not list ingredients for this dish, this MUST be an empty array.")
     var ingredients: [String]
 
     @Guide(description: "Common ingredients this dish typically contains but NOT written on the menu, in the user's language. Empty array if you truly cannot infer any.")
@@ -83,7 +83,7 @@ final class FoundationModelAnalyzer {
         "meat", "poultry", "pork", "alcohol"
     ]
 
-    private static let maxOCRCharacters = 8000
+    private static let maxOCRCharacters = 12000
 
     var isAvailable: Bool {
         SystemLanguageModel.default.availability == .available
@@ -98,7 +98,8 @@ final class FoundationModelAnalyzer {
 
         let session = LanguageModelSession(
             instructions: """
-            You are a restaurant menu reader. You receive OCR text extracted from a photo. \
+            You are a restaurant menu reader. You receive OCR text in ANY language \
+            extracted from a photo of a restaurant menu. \
             \
             STEP 1 — VALIDATE: \
             Determine if this text is from a restaurant food menu. \
@@ -116,16 +117,30 @@ final class FoundationModelAnalyzer {
             \
             CRITICAL ORDER RULE: \
             Extract dishes in the EXACT sequential order they appear line by line in the text. \
-            Do NOT reorder, group, or sort them. The first dish in the text must be the first \
-            in the array, the second dish must be second, and so on. \
+            Do NOT reorder, group, or sort them. \
             \
-            DISH vs NON-DISH RULE: \
-            - Set isActualDish to true ONLY for real orderable food/drink items. \
-            - Set isActualDish to false for: section headers, category titles (e.g. "ANTIPASTI", \
-            "Entrantes", "Desserts", "PIZZAS", "BEBIDAS"), restaurant names, subtitles, \
-            decorative text, slogans, prices without a dish, or any non-orderable text. \
-            - A dish must be something a customer can order and eat/drink. \
-            - Category headers typically appear in ALL CAPS or as standalone lines without a price. \
+            UNDERSTANDING MENU STRUCTURE (applies to ALL languages): \
+            Every menu in any language has 3 levels. You MUST distinguish them: \
+            \
+            LEVEL 1 — SECTION HEADERS: Lines that name a group/category of dishes. \
+            These are NOT orderable items. They organize the menu into sections. \
+            A customer cannot order a section header. \
+            These are always isActualDish = false. \
+            Common patterns: they often appear alone on a line, sometimes in bigger/different \
+            font (ALL CAPS, centered), sometimes with decorative dashes or subtitles. \
+            They may also have a translation on the next line. Both are non-dish. \
+            \
+            LEVEL 2 — DISH NAMES: The actual orderable items listed under a section. \
+            These are specific prepared foods or drinks a customer can order by name. \
+            These are isActualDish = true. \
+            \
+            LEVEL 3 — DESCRIPTIONS: Text that appears below a dish name describing it, \
+            listing its components, or translating it. This text belongs to the dish above. \
+            It is NOT a separate dish. Include it in that dish's dishDescription or ingredients. \
+            \
+            KEY TEST: "Could a customer point to this line and order it?" \
+            If YES → it is a dish (isActualDish = true). \
+            If NO → it is either a section header or a description (isActualDish = false). \
             \
             CRITICAL EXTRACTION RULES: \
             - Extract ONLY items explicitly written in the text. NEVER invent or fabricate dishes. \
@@ -133,13 +148,22 @@ final class FoundationModelAnalyzer {
             - Fix obvious OCR typos using food knowledge, but do not change dish names significantly. \
             - Skip non-food text: addresses, phone numbers, URLs, slogans, decorative text, \
             allergen disclaimers, service charges, cover charges, section dividers. \
+            - When a dish has description text below it on the menu, put that text in dishDescription. \
+            - When a dish lists its ingredients on the menu, put those in the ingredients array. \
             - Translate the dishDescription to \(userLanguage). \
             - Write ALL ingredient names in \(userLanguage). \
             \
             INGREDIENT RULES: \
-            - List ingredients explicitly written on the menu for each dish (translated to \(userLanguage)). \
-            - Infer common additional ingredients the dish typically contains (in \(userLanguage)). \
-            - If you cannot recognize a dish at all, set inferredIngredients to ["Unrecognized dish"]. \
+            - The ingredients array must ONLY contain ingredients explicitly written \
+            on the menu beneath or next to the dish (translated to \(userLanguage)). \
+            - Do NOT decompose or guess ingredients from the dish name. \
+            For example: "Parmigiana di Melanzane" → ingredients should be empty \
+            unless the menu explicitly lists ingredients below it. \
+            - Do NOT extract parts of the dish name as ingredients. \
+            - If no ingredients are written on the menu for a dish, leave ingredients as an empty array. \
+            - inferredIngredients: Infer common ingredients the dish typically contains, \
+            based on your knowledge of the recipe (in \(userLanguage)). \
+            - If you cannot recognize a dish at all, set inferredIngredients to an empty array. \
             \
             ALLERGEN RULES: \
             - allergenIds: ONLY from ingredients explicitly listed on the menu. \
@@ -241,7 +265,7 @@ final class FoundationModelAnalyzer {
                 ? String(trimmedName.split(separator: " ").prefix(8).joined(separator: " "))
                 : trimmedName
 
-            let explicitText = (gd.ingredients + [finalName, gd.dishDescription])
+            let explicitText = (gd.ingredients + [gd.dishDescription])
                 .joined(separator: " ").lowercased()
             let explicitLocalAllergens = Self.detectAllergensLocally(in: explicitText)
 
@@ -376,52 +400,84 @@ final class FoundationModelAnalyzer {
             "orden", "order", "pedido",
             "extra", "add-on", "topping", "supplement",
             "regular", "xl", "xxl", "combo", "upgrade",
-            // Category headers commonly misread as dishes
+            // Italian categories (simple and compound)
             "antipasti", "antipasto", "primi", "primi piatti", "secondi", "secondi piatti",
             "contorni", "dolci", "dessert", "desserts", "bevande", "bibite",
+            "antipasti di mare", "antipasti di terra", "antipasti misti",
+            "primi di mare", "primi di terra", "primi piatti di mare", "primi piatti di terra",
+            "secondi di mare", "secondi di terra", "secondi piatti di mare", "secondi piatti di terra",
+            "piatti di mare", "piatti di terra", "piatti principali",
+            "dolci della tradizione", "dolci della tradizione napoletana",
+            "dolci della casa", "dolci homemade",
+            "birre", "birra", "liquori", "liquore", "amari",
+            "vini rossi", "vini bianchi", "vini della casa", "vini al bicchiere",
+            "vini", "vino", "vinos",
+            "contorni e insalate", "pizze e focacce",
+            "zuppe e minestre", "paste fresche", "paste al forno",
+            "crudi di mare", "fritti", "grigliate", "grigliata",
+            "aperitivi", "digestivi", "caffetteria",
+            "- side dishes -", "- sweets -", "- drinks -", "- beers -", "- liquors -",
+            "- first of earth -", "- seconds of the sea -", "- earth seconds -",
+            "first of earth", "seconds of the sea", "earth seconds",
+            // Spanish categories
             "entrantes", "entradas", "sopas", "ensaladas", "platos fuertes",
             "platos principales", "postres", "bebidas", "aperitivos",
+            "antojitos", "tacos", "quesadillas", "volcanes",
+            "especialidades", "para compartir", "para empezar",
+            "extras", "acompañamientos", "guarniciones",
+            "aguas", "refrescos", "cervezas", "vinos", "cocktails", "cócteles",
+            // English categories
             "appetizers", "starters", "soups", "salads", "main courses",
             "main dishes", "sides", "side dishes", "drinks", "beverages",
-            "wines", "vini", "vinos", "cocktails", "cócteles",
+            "wines", "cocktails", "beers", "spirits",
+            "small plates", "large plates", "shareable", "shareables",
+            "flight bites", "atmospheric spirits", "crew brews",
+            "worldly wines", "zero-proof cocktails",
+            // French categories
+            "entrées", "plats", "hors d'oeuvres", "boissons",
+            "nos apéritifs", "nos bières", "les eaux", "les softs",
+            "nos producteurs", "les planches apéro",
+            "fromage et desserts", "fromages", "formules",
+            // Turkish categories
+            "başlangıçlar", "ana yemekler", "tatlılar", "içecekler",
+            "çorbalar", "salatalar", "mezeler",
+            // Generic structural
             "pasta", "pizze", "pizzas", "insalate", "zuppe",
             "carni", "pesce", "risotti", "focacce",
-            "entrées", "plats", "hors d'oeuvres",
             "nuestros platos", "nuestra carta", "i nostri piatti", "la nostra carta",
             "our dishes", "our menu", "today's specials",
             "del día", "del giorno", "of the day",
             "brunch", "breakfast", "lunch", "dinner", "cena", "pranzo", "colazione",
             "desayuno", "almuerzo", "comida",
+            // Subtitles / translations of categories
+            "traditional neapolitan desserts", "sparkling or still water",
+            "normative sugli allergeni",
         ]
         if junkExact.contains(lower) { return true }
 
         let junkContains = [
             "servizio", "coperto", "cover charge", "service charge",
-            "www.", ".com", ".it", ".es", ".org", "http",
+            "www.", "http",
             "facebook", "instagram", "tiktok", "tripadvisor", "twitter",
             "follow us", "síguenos", "seguici",
             "iva inclusa", "iva incluida", "tax included",
-            "tel:", "tel.", "horario", "orario",
             "google maps", "touchprint",
-            "tutti i gusti", "prezzi vari",
             "la nostra pasta contiene", "allergeni sono indicati",
-            "protegidas por derechos", "fecha de la imagen",
-            "zte blade", "copyright",
-            "add to cart", "añadir al carrito", "aggiungi",
+            "copyright",
+            "add to cart", "añadir al carrito", "aggiungi al carrello",
             "delivery fee", "costo de envío",
             "minimum order", "pedido mínimo", "ordine minimo",
-            "nutrition facts", "nutritional", "información nutricional",
-            "calories", "calorías", "calorie",
+            "nutrition facts", "información nutricional",
             "serving size", "net weight", "peso neto",
-            "ingredients:", "ingredientes:", "ingredienti:",
             "manufactured by", "fabricado por", "prodotto da",
             "best before", "use by", "exp date",
-            "abv", "% vol", "alcohol by volume",
+            "alcohol by volume",
             "denomination of origin", "denominación de origen",
-            "grape variety", "vitigno", "variedad de uva",
-            "tasting notes", "notas de cata",
-            "brewed by", "distilled", "brewery", "winery",
             "screenshot", "captura de pantalla",
+            "normative sugli allergeni", "dear customers",
+            "si avvisa la gentile clientela",
+            "please ask our staff",
+            "precios con iva", "servicio a domicilio",
         ]
         if junkContains.contains(where: { lower.contains($0) }) { return true }
 
@@ -440,16 +496,30 @@ final class FoundationModelAnalyzer {
         }
 
         let letters = name.filter { $0.isLetter }
-        if words.count <= 2 && !letters.isEmpty && letters == letters.uppercased() {
+        if words.count <= 3 && !letters.isEmpty && letters == letters.uppercased() {
             let categoryHeaders: Set<String> = [
                 "antipasti", "antipasto", "primi", "secondi", "contorni", "dolci",
-                "dessert", "bevande", "bibite", "vini", "cocktails",
-                "entrantes", "sopas", "ensaladas", "postres", "bebidas",
+                "dessert", "bevande", "bibite", "vini", "cocktails", "birre", "liquori",
+                "entrantes", "sopas", "ensaladas", "postres", "bebidas", "tacos",
                 "appetizers", "starters", "soups", "salads", "sides", "drinks",
                 "pizze", "pizzas", "insalate", "zuppe", "risotti", "focacce",
-                "carni", "pesce",
+                "carni", "pesce", "fritti", "grigliate", "aperitivi", "digestivi",
+                "extras", "especialidades", "quesadillas", "volcanes",
             ]
             if categoryHeaders.contains(lower) { return true }
+        }
+
+        let stripped = lower.trimmingCharacters(in: CharacterSet(charactersIn: "-–—· "))
+        if stripped != lower && junkExact.contains(stripped) { return true }
+
+        let categoryPrefixes = [
+            "antipasti ", "primi ", "secondi ", "piatti ",
+            "dolci ", "crudi ", "fritti ",
+        ]
+        if categoryPrefixes.contains(where: { lower.hasPrefix($0) }) {
+            let foodIndicators = ["con ", "alla ", "al ", "alle ", "allo ", "e ", "di pesce", "fritto", "fritte", "marinato", "arrosto"]
+            let looksLikeDish = foodIndicators.contains(where: { lower.contains($0) }) && words.count >= 3
+            if !looksLikeDish { return true }
         }
 
         let letterChars = name.unicodeScalars.filter { CharacterSet.letters.contains($0) }
@@ -506,63 +576,17 @@ final class FoundationModelAnalyzer {
         lines = lines.filter { line in
             let lower = line.lowercased()
             if lower.contains("www.") || lower.contains("http") { return false }
-            if lower.contains(".com") || lower.contains(".org") || lower.contains(".it") || lower.contains(".es") { return false }
-            if ["facebook", "instagram", "tiktok", "tripadvisor", "twitter",
-                "follow us", "síguenos", "seguici", "whatsapp",
-                "youtube", "pinterest", "snapchat", "linkedin"]
+            if ["facebook.com", "instagram.com", "tripadvisor.com", "google.com"]
                 .contains(where: { lower.contains($0) }) { return false }
-            if lower.hasPrefix("tel") || lower.hasPrefix("+") { return false }
-            let digits = line.filter { $0.isNumber }
-            if digits.count > 8 && !line.contains("$") && !line.contains("€") && !line.contains("£") { return false }
-            if ["google maps", "touchprint", "zte blade", "fecha de la imagen",
-                "protegidas por derechos", "las imágenes pueden",
-                "foto -", "copyright", "todos los derechos",
-                "screenshot", "captura de pantalla", "schermata",
-                "add to cart", "añadir al carrito", "aggiungi al carrello",
-                "delivery fee", "costo de envío", "spese di consegna",
+            if ["google maps", "touchprint", "copyright", "todos los derechos",
+                "screenshot", "captura de pantalla",
                 "uber eats", "doordash", "grubhub", "deliveroo", "just eat",
-                "rappi", "didi food", "glovo", "postmates",
-                "your order", "tu pedido", "il tuo ordine",
-                "checkout", "order now", "ordenar ahora",
+                "rappi", "didi food", "glovo",
                 "nutrition facts", "nutritional information",
-                "información nutricional", "informazioni nutrizionali",
-                "serving size", "tamaño de porción",
-                "calories per serving", "daily value",
-                "net weight", "peso neto", "peso netto",
-                "manufactured by", "fabricado por", "prodotto da",
-                "best before", "consumir preferentemente",
-                "abv", "alcohol by volume", "% vol",
-                "grape variety", "variedad de uva", "vitigno",
-                "tasting notes", "notas de cata",
-                "denomination of origin", "denominación de origen",
-                "d.o.c", "d.o.c.g", "i.g.t", "i.g.p"]
+                "información nutricional", "informazioni nutrizionali"]
                 .contains(where: { lower.contains($0) }) { return false }
-            if lower.hasPrefix("via ") || lower.hasPrefix("calle ") || lower.hasPrefix("c/") { return false }
             if lower.hasPrefix("p.iva") || lower.hasPrefix("c.f.") { return false }
             return true
-        }
-
-        lines = lines.map { line in
-            var f = line
-            let fixes: [(String, String)] = [
-                ("COPER TO", "COPERTO"), ("SER VIZIO", "SERVIZIO"),
-                ("SERV IZIO", "SERVIZIO"), ("CO PER TO", "COPERTO"),
-            ]
-            for (wrong, right) in fixes { f = f.replacingOccurrences(of: wrong, with: right) }
-            return f
-        }
-
-        lines = lines.filter { line in
-            let lower = line.lowercased()
-            return !["servizio e coperto", "servicio y cubierto", "cover charge", "service charge",
-                      "ogni aggiunta o variazione", "sala interna coperto", "la nostra pasta contiene glutine",
-                      "allergeni sono indicati",
-                      "contains sulfites", "contiene solfiti", "contiene sulfitos",
-                      "may contain traces", "puede contener trazas", "può contenere tracce",
-                      "produced in a facility", "elaborado en una planta",
-                      "allergen warning", "aviso de alérgenos", "avvertenza allergeni",
-                      "ask your server", "pregunte a su mesero", "chiedere al cameriere"]
-                .contains(where: { lower.contains($0) })
         }
 
         lines = lines.filter { line in
@@ -579,9 +603,24 @@ final class FoundationModelAnalyzer {
 
     private static func detectAllergensLocally(in text: String) -> Set<String> {
         var found: Set<String> = []
+        let words = Set(
+            text.components(separatedBy: CharacterSet.alphanumerics.inverted)
+                .map { $0.lowercased() }
+                .filter { !$0.isEmpty }
+        )
         for (allergenId, keywords) in allergenKeywordMap {
-            if keywords.contains(where: { text.contains($0) }) {
-                found.insert(allergenId)
+            for keyword in keywords {
+                if keyword.contains(" ") {
+                    if text.contains(keyword) {
+                        found.insert(allergenId)
+                        break
+                    }
+                } else {
+                    if words.contains(keyword) {
+                        found.insert(allergenId)
+                        break
+                    }
+                }
             }
         }
         return found
@@ -600,8 +639,8 @@ final class FoundationModelAnalyzer {
             "milk", "cheese", "cream", "butter", "yogurt", "mozzarella", "parmesan", "parmigiano",
             "ricotta", "mascarpone", "brie", "feta", "whey", "ghee", "paneer",
             "provola", "provolone", "pecorino", "gorgonzola", "burrata", "scamorza",
-            "leche", "queso", "crema", "mantequilla", "yogur", "nata",
-            "latte", "formaggio", "burro", "panna"
+            "leche", "queso", "mantequilla", "yogur", "nata",
+            "formaggio", "panna"
         ],
         "eggs": [
             "egg", "mayonnaise", "meringue", "aioli", "carbonara",
@@ -638,24 +677,24 @@ final class FoundationModelAnalyzer {
         "lactose": [
             "milk", "cheese", "cream", "butter", "yogurt", "ice cream",
             "provola", "provolone", "mozzarella", "ricotta", "pecorino", "parmigiano", "burrata",
-            "leche", "queso", "crema", "mantequilla", "yogur", "helado",
-            "latte", "formaggio", "burro", "gelato"
+            "leche", "queso", "mantequilla", "yogur", "helado",
+            "formaggio", "gelato"
         ],
-        "fructose": ["honey", "apple", "pear", "mango", "agave", "miel", "manzana", "pera", "miele", "mela"],
+        "fructose": ["honey", "apple", "pear", "mango", "agave", "miel", "manzana"],
         "histamine": [
             "wine", "aged cheese", "fermented", "cured", "smoked", "vinegar",
             "vino", "ahumado", "curado", "fermentado", "affumicato", "stagionato",
             "salame", "prosciutto", "ciccioli", "lardati"
         ],
-        "fodmap": ["garlic", "onion", "wheat", "apple", "pear", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"],
+        "fodmap": ["garlic", "onion", "wheat", "apple", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"],
         "meat": [
-            "beef", "steak", "veal", "lamb", "pork", "ham", "bacon", "sausage", "salami",
+            "beef", "steak", "veal", "lamb", "pork", "bacon", "sausage", "salami",
             "prosciutto", "bresaola", "chorizo", "pepperoni", "mortadella", "pancetta",
-            "carne", "res", "ternera", "cordero", "cerdo", "jamón", "tocino", "salchicha",
-            "manzo", "vitello", "agnello", "maiale", "prosciutto",
-            "meatball", "burger", "patty", "ribs", "loin", "sirloin", "filet",
+            "carne", "carne de res", "ternera", "cordero", "cerdo", "jamón", "tocino", "salchicha",
+            "manzo", "vitello", "agnello", "maiale",
+            "meatball", "burger", "patty", "ribs", "sirloin",
             "albóndigas", "hamburguesa", "costillas", "lomo", "solomillo",
-            "polpette", "costola", "filetto", "bistecca"
+            "polpette", "filetto", "bistecca"
         ],
         "poultry": [
             "chicken", "turkey", "duck", "goose", "quail", "hen",
@@ -663,13 +702,13 @@ final class FoundationModelAnalyzer {
             "pollo", "tacchino", "anatra", "oca", "quaglia"
         ],
         "pork": [
-            "pork", "ham", "bacon", "sausage", "salami", "prosciutto", "pancetta",
+            "pork", "bacon", "sausage", "salami", "prosciutto", "pancetta",
             "chorizo", "pepperoni", "mortadella", "lard", "guanciale", "coppa",
-            "cerdo", "jamón", "tocino", "salchicha", "manteca",
+            "cerdo", "jamón", "tocino", "salchicha",
             "maiale", "lardo", "speck"
         ],
         "alcohol": [
-            "wine", "beer", "cocktail", "liquor", "rum", "vodka", "whisky", "gin", "tequila",
+            "wine", "beer", "cocktail", "liquor", "rum", "vodka", "whisky", "tequila",
             "brandy", "champagne", "prosecco", "sangria", "margarita", "mojito",
             "vino", "cerveza", "cóctel", "licor", "ron",
             "birra", "liquore", "grappa", "amaro", "limoncello", "spritz"

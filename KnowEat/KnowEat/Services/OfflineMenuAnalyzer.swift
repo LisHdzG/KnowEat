@@ -252,10 +252,24 @@ final class OfflineMenuAnalyzer {
 
     // MARK: - Allergen Detection
 
+    private static func wordSet(from text: String) -> Set<String> {
+        Set(text.components(separatedBy: CharacterSet.alphanumerics.inverted)
+            .map { $0.lowercased() }
+            .filter { !$0.isEmpty })
+    }
+
+    private static func matchesKeyword(_ keyword: String, words: Set<String>, fullText: String) -> Bool {
+        if keyword.contains(" ") {
+            return fullText.contains(keyword)
+        }
+        return words.contains(keyword)
+    }
+
     private func detectAllergens(in text: String) -> [String] {
+        let words = Self.wordSet(from: text)
         var found: [String] = []
         for (allergenId, keywords) in Self.allergenKeywords {
-            if keywords.contains(where: { text.contains($0) }) {
+            if keywords.contains(where: { Self.matchesKeyword($0, words: words, fullText: text) }) {
                 found.append(allergenId)
             }
         }
@@ -263,9 +277,10 @@ final class OfflineMenuAnalyzer {
     }
 
     private func extractIngredientHints(from text: String) -> [String] {
+        let words = Self.wordSet(from: text)
         var ingredients: [String] = []
         for (_, keywords) in Self.allergenKeywords {
-            for keyword in keywords where text.contains(keyword) {
+            for keyword in keywords where Self.matchesKeyword(keyword, words: words, fullText: text) {
                 let capitalized = keyword.prefix(1).uppercased() + keyword.dropFirst()
                 if !ingredients.contains(capitalized) {
                     ingredients.append(capitalized)
@@ -278,8 +293,8 @@ final class OfflineMenuAnalyzer {
     // MARK: - Keyword Database
 
     private static let allergenKeywords: [String: [String]] = [
-        "gluten": ["wheat", "flour", "bread", "pasta", "barley", "rye", "oat", "semolina", "couscous", "noodle", "dough", "pastry", "cracker", "trigo", "harina", "pan ", "avena", "cebada", "centeno", "grano", "farina", "orzo", "segale"],
-        "dairy": ["milk", "cheese", "cream", "butter", "yogurt", "mozzarella", "parmesan", "cheddar", "ricotta", "mascarpone", "brie", "feta", "whey", "ghee", "paneer", "leche", "queso", "crema", "mantequilla", "yogur", "nata", "latte", "formaggio", "burro", "panna"],
+        "gluten": ["wheat", "flour", "bread", "pasta", "barley", "rye", "oat", "semolina", "couscous", "noodle", "dough", "pastry", "cracker", "trigo", "harina", "avena", "cebada", "centeno", "grano", "farina", "orzo", "segale"],
+        "dairy": ["milk", "cheese", "cream", "butter", "yogurt", "mozzarella", "parmesan", "cheddar", "ricotta", "mascarpone", "brie", "feta", "whey", "ghee", "paneer", "leche", "queso", "mantequilla", "yogur", "nata", "formaggio", "panna"],
         "eggs": ["egg", "mayonnaise", "meringue", "aioli", "huevo", "mayonesa", "uovo", "uova", "maionese"],
         "fish": ["fish", "salmon", "tuna", "cod", "anchovy", "sardine", "bass", "trout", "halibut", "swordfish", "mackerel", "pescado", "salmón", "atún", "bacalao", "anchoa", "sardina", "trucha", "pesce", "tonno", "merluzzo", "acciuga"],
         "crustaceans": ["shrimp", "prawn", "crab", "lobster", "crawfish", "langoustine", "camarón", "gamba", "cangrejo", "langosta", "gambero", "granchio", "aragosta", "gambas"],
@@ -292,13 +307,13 @@ final class OfflineMenuAnalyzer {
         "sulfites": ["wine", "vinegar", "sulfite", "vino", "vinagre", "aceto"],
         "lupins": ["lupin", "lupini", "altramuz"],
         "mollusks": ["mussel", "clam", "oyster", "squid", "octopus", "scallop", "calamari", "snail", "mejillón", "almeja", "ostra", "calamar", "pulpo", "cozza", "vongola", "ostrica", "polpo", "capesante"],
-        "lactose": ["milk", "cheese", "cream", "butter", "yogurt", "ice cream", "leche", "queso", "crema", "mantequilla", "yogur", "helado", "latte", "formaggio", "burro", "gelato"],
-        "fructose": ["honey", "apple", "pear", "mango", "agave", "miel", "manzana", "pera", "miele", "mela"],
+        "lactose": ["milk", "cheese", "cream", "butter", "yogurt", "ice cream", "leche", "queso", "mantequilla", "yogur", "helado", "formaggio", "gelato"],
+        "fructose": ["honey", "apple", "pear", "mango", "agave", "miel", "manzana"],
         "histamine": ["wine", "aged cheese", "fermented", "cured", "smoked", "vinegar", "vino", "ahumado", "curado", "fermentado", "affumicato", "stagionato"],
-        "fodmap": ["garlic", "onion", "wheat", "apple", "pear", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"],
-        "meat": ["beef", "steak", "veal", "lamb", "pork", "ham", "bacon", "sausage", "salami", "prosciutto", "bresaola", "chorizo", "pepperoni", "mortadella", "pancetta", "carne", "res", "ternera", "cordero", "cerdo", "jamón", "tocino", "manzo", "vitello", "agnello", "maiale", "meatball", "burger", "ribs", "loin", "filet", "polpette", "bistecca"],
+        "fodmap": ["garlic", "onion", "wheat", "apple", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"],
+        "meat": ["beef", "steak", "veal", "lamb", "pork", "bacon", "sausage", "salami", "prosciutto", "bresaola", "chorizo", "pepperoni", "mortadella", "pancetta", "carne", "carne de res", "ternera", "cordero", "cerdo", "jamón", "tocino", "manzo", "vitello", "agnello", "maiale", "meatball", "burger", "ribs", "polpette", "bistecca"],
         "poultry": ["chicken", "turkey", "duck", "goose", "quail", "pollo", "pavo", "pato", "gallina", "tacchino", "anatra", "oca"],
-        "pork": ["pork", "ham", "bacon", "sausage", "salami", "prosciutto", "pancetta", "chorizo", "pepperoni", "mortadella", "lard", "guanciale", "cerdo", "jamón", "tocino", "maiale", "lardo", "speck"],
-        "alcohol": ["wine", "beer", "cocktail", "liquor", "rum", "vodka", "whisky", "gin", "tequila", "brandy", "champagne", "prosecco", "sangria", "vino", "cerveza", "birra", "liquore", "grappa", "amaro", "spritz"]
+        "pork": ["pork", "bacon", "sausage", "salami", "prosciutto", "pancetta", "chorizo", "pepperoni", "mortadella", "lard", "guanciale", "cerdo", "jamón", "tocino", "maiale", "lardo", "speck"],
+        "alcohol": ["wine", "beer", "cocktail", "liquor", "rum", "vodka", "whisky", "tequila", "brandy", "champagne", "prosecco", "sangria", "vino", "cerveza", "birra", "liquore", "grappa", "amaro", "spritz"]
     ]
 }

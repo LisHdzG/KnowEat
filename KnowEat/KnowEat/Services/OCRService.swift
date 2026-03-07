@@ -73,7 +73,7 @@ final class OCRService {
 
                 for observation in observations {
                     guard let candidate = observation.topCandidates(1).first,
-                          candidate.confidence > 0.4 else { continue }
+                          candidate.confidence > 0.3 else { continue }
 
                     lines.append(candidate.string)
 

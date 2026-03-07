@@ -53,7 +53,7 @@ struct ActiveFiltersCard: View {
                 } else {
                     FlowLayout(spacing: 6) {
                         ForEach(allChips, id: \.item.id) { chip in
-                            Text(chip.item.name)
+                            Text(strings.localizedAllergenName(chip.item.id))
                                 .font(.system(size: 12, weight: .medium))
                                 .foregroundStyle(chip.color)
                                 .padding(.horizontal, 10)

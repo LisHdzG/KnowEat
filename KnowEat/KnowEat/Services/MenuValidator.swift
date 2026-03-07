@@ -32,8 +32,7 @@ enum MenuValidator {
 
     private static let integerPriceRegex: NSRegularExpression = {
         try! NSRegularExpression(
-            pattern: #"(?:^|\s)\d{2,4}(?:\s*$)"#,
-            options: .anchorsMatchLines
+            pattern: #"\b\d{2,4}\b"#
         )
     }()
 
@@ -43,44 +42,24 @@ enum MenuValidator {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
 
-        if ocrText.trimmingCharacters(in: .whitespacesAndNewlines).count < 20 || lines.count < 2 {
+        if ocrText.trimmingCharacters(in: .whitespacesAndNewlines).count < 15 || lines.count < 2 {
             throw MenuValidationError.tooLittleText
         }
 
-        if looksLikeProductLabel(ocrText) {
+        if isDefinitelyNotMenu(ocrText, lines: lines) {
             throw MenuValidationError.productLabel
-        }
-
-        if looksLikeBeverageLabel(ocrText) {
-            throw MenuValidationError.productLabel
-        }
-
-        if looksLikeIngredientList(ocrText, lines: lines) {
-            throw MenuValidationError.productLabel
-        }
-
-        if looksLikeScreenshot(ocrText) {
-            throw MenuValidationError.notAMenu
-        }
-
-        if looksLikeReceipt(ocrText) {
-            throw MenuValidationError.notAMenu
-        }
-
-        if !hasMenuEvidence(ocrText, lines: lines) {
-            throw MenuValidationError.notAMenu
         }
     }
 
-    // MARK: - Product Label Detection
+    // MARK: - Negative-only validation
 
-    private static func looksLikeProductLabel(_ text: String) -> Bool {
+    private static func isDefinitelyNotMenu(_ text: String, lines: [String]) -> Bool {
         let lower = text.lowercased()
 
         let labelIndicators = [
             "nutrition facts", "nutritional information", "información nutricional",
             "informazioni nutrizionali", "valori nutrizionali", "valeurs nutritionnelles",
-            "serving size", "tamaño de porción", "porzione",
+            "serving size", "tamaño de porción",
             "calories per serving", "calorías por porción",
             "daily value", "valor diario", "valore giornaliero",
             "total fat", "grasa total", "grassi totali",
@@ -88,266 +67,64 @@ enum MenuValidator {
             "net weight", "peso neto", "peso netto", "net wt",
             "manufactured by", "fabricado por", "prodotto da",
             "best before", "consumir preferentemente", "da consumarsi",
-            "storage instructions", "conservar en", "conservare",
-            "ingredients:", "ingredientes:", "ingredienti:",
-            "contains:", "may contain", "produced in a facility",
-            "contiene:", "puede contener", "può contenere",
-            "allergen information", "información sobre alérgenos",
-            "use by", "sell by", "exp date", "lot number", "batch",
-            "distributed by", "distribuido por", "importado por",
-            "keep refrigerated", "mantener refrigerado", "conservare in frigo",
+            "storage instructions", "conservar en",
+            "use by", "sell by", "exp date", "lot number",
+            "distributed by", "distribuido por",
+            "keep refrigerated", "mantener refrigerado",
         ]
-
-        let matchCount = labelIndicators.filter { lower.contains($0) }.count
-        return matchCount >= 2
-    }
-
-    // MARK: - Beverage / Bottle Label Detection
-
-    private static func looksLikeBeverageLabel(_ text: String) -> Bool {
-        let lower = text.lowercased()
-
-        let bottleIndicators = [
-            "abv", "alc.", "alcohol by volume", "vol.", "% vol",
-            "grape variety", "variedad de uva", "vitigno",
-            "vintage", "cosecha", "vendemmia", "annata",
-            "aged in", "envejecido en", "invecchiato in",
-            "denomination of origin", "denominación de origen", "denominazione di origine",
-            "d.o.", "d.o.c.", "d.o.c.g.", "i.g.t.", "i.g.p.",
-            "winery", "bodega", "cantina", "vineyard", "viñedo", "vigneto",
-            "distilled", "destilado", "distillato",
-            "barrel aged", "single malt", "blended",
-            "brewed by", "cervecería", "birrificio", "brewery",
-            "hops", "lúpulo", "luppolo", "ibu",
-            "tasting notes", "notas de cata", "note di degustazione",
-            "750 ml", "500 ml", "330 ml", "375 ml", "1.5 l",
-            "serve chilled", "servir frío", "servire freddo",
-            "sulfites", "contains sulfites", "contiene solfiti",
-        ]
-
-        let matchCount = bottleIndicators.filter { lower.contains($0) }.count
-        return matchCount >= 2
-    }
-
-    // MARK: - Ingredient List Detection (cereal boxes, packaged food)
-
-    private static func looksLikeIngredientList(_ text: String, lines: [String]) -> Bool {
-        let lower = text.lowercased()
+        let labelHits = labelIndicators.filter { lower.contains($0) }.count
+        if labelHits >= 3 { return true }
 
         let hasIngredientHeader = ["ingredients:", "ingredientes:", "ingredienti:",
                                    "composition:", "composición:", "composizione:"]
             .contains(where: { lower.contains($0) })
+        if hasIngredientHeader {
+            let packagingIndicators = [
+                "per 100g", "per serving", "por porción", "per porzione",
+                "kcal", "kj", "protein", "proteína", "proteine",
+                "carbohydrate", "carbohidrato", "carboidrat",
+                "fiber", "fibra", "sodium", "sodio",
+                "vitamin", "vitamina",
+                "emulsifier", "stabilizer", "preservative", "conservante",
+            ]
+            let packagingHits = packagingIndicators.filter { lower.contains($0) }.count
+            if packagingHits >= 2 { return true }
+        }
 
-        guard hasIngredientHeader else { return false }
-
-        let packagingIndicators = [
-            "per 100g", "per serving", "por porción", "per porzione",
-            "energy", "kcal", "kj", "protein", "proteína", "proteine",
-            "carbohydrate", "carbohidrato", "carboidrat",
-            "fiber", "fibra", "sodium", "sodio",
-            "vitamin", "vitamina", "iron", "hierro", "ferro",
-            "calcium", "calcio", "potassium", "potasio",
-            "% daily", "% valor diario",
-            "emulsifier", "emulsionante", "stabilizer", "estabilizante",
-            "preservative", "conservante", "artificial",
-            "e100", "e101", "e102", "e110", "e120", "e150", "e160",
-            "e200", "e202", "e211", "e220", "e250", "e270", "e300",
-            "e322", "e330", "e400", "e410", "e412", "e415", "e440",
-            "e471", "e500", "e621",
+        let bottleIndicators = [
+            "alcohol by volume", "% vol",
+            "grape variety", "variedad de uva", "vitigno",
+            "denomination of origin", "denominación de origen", "denominazione di origine",
+            "d.o.c.g.", "i.g.t.", "i.g.p.",
+            "winery", "bodega", "cantina",
+            "distilled", "destilado", "distillato",
+            "barrel aged", "single malt",
+            "brewed by", "birrificio", "brewery",
+            "tasting notes", "notas de cata", "note di degustazione",
         ]
-
-        let packagingHits = packagingIndicators.filter { lower.contains($0) }.count
-
-        let commaHeavyLines = lines.filter { line in
-            let commas = line.filter { $0 == "," }.count
-            return commas >= 4
-        }.count
-
-        return packagingHits >= 1 || commaHeavyLines >= 2
-    }
-
-    // MARK: - Screenshot Detection
-
-    private static func looksLikeScreenshot(_ text: String) -> Bool {
-        let lower = text.lowercased()
-
-        let screenshotIndicators = [
-            "screenshot", "captura de pantalla", "schermata",
-            "battery", "batería", "batteria",
-            "wi-fi", "wifi", "signal", "airplane mode",
-            "notifications", "notificaciones", "notifiche",
-            "settings", "configuración", "impostazioni",
-            "home screen", "pantalla de inicio",
-            "search bar", "barra de búsqueda",
-            "app store", "play store", "google play",
-            "whatsapp", "telegram", "messenger",
-            "uber eats", "doordash", "grubhub", "deliveroo", "just eat",
-            "rappi", "didi food", "glovo",
-            "add to cart", "añadir al carrito", "aggiungi al carrello",
-            "checkout", "pagar", "order now", "ordenar ahora",
-            "your order", "tu pedido", "il tuo ordine",
-            "delivery fee", "costo de envío", "spese di consegna",
-            "rated", "reviews", "reseñas", "recensioni",
-            "open now", "abierto ahora", "aperto ora",
-            "see menu", "ver menú", "vedi menu",
-        ]
-
-        let matchCount = screenshotIndicators.filter { lower.contains($0) }.count
-
-        if matchCount >= 2 { return true }
+        let bottleHits = bottleIndicators.filter { lower.contains($0) }.count
+        if bottleHits >= 3 { return true }
 
         let deliveryAppIndicators = [
             "add to cart", "añadir al carrito", "aggiungi al carrello",
-            "delivery fee", "costo de envío",
-            "your order", "tu pedido",
+            "checkout", "order now", "ordenar ahora",
+            "your order", "tu pedido", "il tuo ordine",
+            "delivery fee", "costo de envío", "spese di consegna",
             "min order", "pedido mínimo",
         ]
-        let isDeliveryApp = deliveryAppIndicators.filter { lower.contains($0) }.count >= 1
-            && lower.contains("$") || lower.contains("€")
-
-        return isDeliveryApp
-    }
-
-    // MARK: - Receipt Detection
-
-    private static func looksLikeReceipt(_ text: String) -> Bool {
-        let lower = text.lowercased()
+        let deliveryHits = deliveryAppIndicators.filter { lower.contains($0) }.count
+        if deliveryHits >= 2 { return true }
 
         let receiptIndicators = [
-            "subtotal", "total:", "tax", "change", "receipt",
-            "invoice", "payment", "credit card", "debit card",
-            "recibo", "factura", "cambio", "efectivo", "tarjeta",
-            "scontrino", "ricevuta", "totale:", "resto", "contanti",
-            "ticket", "caja", "cajero",
+            "subtotal", "total:", "receipt",
+            "invoice", "payment method", "credit card", "debit card",
+            "recibo", "factura",
+            "scontrino", "ricevuta",
             "transaction", "transacción", "transazione",
             "amount due", "monto a pagar", "importo dovuto",
-            "tip", "propina", "mancia",
-            "order #", "pedido #", "ordine #",
         ]
-
-        return receiptIndicators.filter({ lower.contains($0) }).count >= 2
-    }
-
-    // MARK: - Positive Menu Evidence
-
-    private static func hasMenuEvidence(_ text: String, lines: [String]) -> Bool {
-        let lower = text.lowercased()
-
-        let priceCount = priceRegex.numberOfMatches(
-            in: text,
-            range: NSRange(text.startIndex..., in: text)
-        )
-
-        let intPriceCount = integerPriceRegex.numberOfMatches(
-            in: text,
-            range: NSRange(text.startIndex..., in: text)
-        )
-
-        let totalPriceSignals = priceCount + intPriceCount / 2
-
-        let menuKeywords = [
-            "menu", "menú", "menù", "carta", "appetizer", "appetizers",
-            "entrée", "entree", "main course", "dessert", "desserts",
-            "drinks", "beverages", "starters", "sides",
-            "antipasti", "antipasto", "primi", "secondi", "contorni", "dolci", "bevande",
-            "entrantes", "postres", "bebidas", "ensaladas", "carnes", "mariscos",
-            "platos fuertes", "plato del día", "especialidades",
-            "hors d'oeuvres", "entrées", "plats", "boissons",
-            // Turkish
-            "yemek", "içecek", "tatli", "tatlı", "başlangıç", "ana yemek",
-            // Portuguese
-            "prato", "sobremesa",
-            // German
-            "speisekarte", "vorspeisen", "hauptgerichte", "nachspeisen", "getränke",
-            // Generic structural
-            "para compartir", "para llevar", "para empezar", "formule", "formules",
-            "piatto", "piatti", "portata",
-            "quesadilla", "tacos", "burgers", "wraps", "volcán",
-            "antojitos", "gorditas", "huaraches", "flautas", "tamales",
-            "sopes", "tostadas",
-        ]
-        let hasMenuKeyword = menuKeywords.contains(where: { lower.contains($0) })
-
-        let foodKeywords = [
-            // English
-            "chicken", "beef", "pork", "fish", "salmon", "shrimp", "lamb",
-            "pasta", "rice", "bread", "salad", "soup", "pizza", "sushi",
-            "burger", "sandwich", "steak", "fries", "sauce", "cheese",
-            "grilled", "fried", "baked", "roasted", "lobster", "crab",
-            "wings", "nachos", "calamari", "mozzarella", "caesar",
-            "wrap", "nuggets", "chowder", "chili",
-            // Spanish
-            "pollo", "carne", "cerdo", "pescado", "arroz", "ensalada",
-            "sopa", "hamburguesa", "tacos", "queso", "frijoles",
-            "asado", "frito", "al horno", "quesadilla", "burrito",
-            "empanada", "taco", "enchilada", "guacamole", "tortilla",
-            "chile", "mole", "pozole", "chilaquiles", "gordita",
-            "huarache", "flauta", "tamale", "tamal", "sope",
-            "tostada", "churro", "flan", "elote", "esquite",
-            "chicharrón", "chorizo", "arrachera", "sirloin",
-            "carnitas", "barbacoa", "pastor", "birria",
-            "costilla", "chuleta", "milanesa", "ceviche",
-            "agua fresca", "horchata", "limonada", "cerveza",
-            "refresco", "café", "postre",
-            // Italian
-            "vitello", "manzo", "maiale", "insalata", "zuppa", "riso",
-            "formaggio", "prosciutto", "risotto", "bruschetta",
-            "lasagna", "ravioli", "gnocchi", "parmigiana", "carpaccio",
-            "tiramisu", "panna cotta", "gelato", "focaccia",
-            "calzone", "margherita", "marinara", "caprese",
-            "scaloppina", "tagliata", "frittura", "baccalà",
-            "salsiccia", "provoleta", "provolone",
-            "linguine", "pappardelle", "tonnarelli", "calamarata",
-            "orata", "salmone", "polpo", "gamberone", "calamaro",
-            // French
-            "poisson", "poulet", "boeuf", "salade", "soupe", "fromage",
-            "crème", "gratin", "confit", "tartare", "foie gras",
-            "rémoulade", "bavette", "entrecôte", "côte", "filet",
-            "crêpe", "quiche", "ratatouille", "bouillabaisse",
-            "mousse", "crème brûlée", "tarte", "feuillantine",
-            "langoustine", "huître", "crevette",
-            "porc", "agneau", "canard", "veau",
-            // Turkish
-            "kebab", "köfte", "döner", "pide", "lahmacun", "börek",
-            "baklava", "manti", "çorba", "pilav", "kuzu",
-            "tavuk", "balık", "izgara", "sote",
-            // Argentine
-            "empanada", "choripan", "provoleta", "asado",
-            "bondiola", "entraña", "vacío", "picaña",
-            "matambre", "bife", "chimichurri", "morcilla",
-            "ribeye", "lomito",
-            // Puerto Rican / Caribbean
-            "alcapurria", "mofongo", "tostón", "plantain",
-            "sofrito", "arroz con", "pernil", "lechón",
-            // Generic
-            "cocktail", "spritz", "negroni", "margarita",
-            "prosecco", "cappuccino", "espresso",
-        ]
-        let foodCount = foodKeywords.filter { lower.contains($0) }.count
-
-        let linesWithPrices = lines.filter { line in
-            let range = NSRange(line.startIndex..., in: line)
-            return priceRegex.firstMatch(in: line, range: range) != nil
-        }.count
-
-        let linesWithIntPrices = lines.filter { line in
-            let range = NSRange(line.startIndex..., in: line)
-            return integerPriceRegex.firstMatch(in: line, range: range) != nil
-        }.count
-
-        let totalPriceLines = linesWithPrices + linesWithIntPrices
-
-        if linesWithPrices >= 2 { return true }
-        if totalPriceSignals >= 3 { return true }
-        if priceCount >= 2 { return true }
-        if hasMenuKeyword && foodCount >= 1 { return true }
-        if hasMenuKeyword && totalPriceLines >= 2 { return true }
-        if linesWithPrices >= 1 && foodCount >= 1 { return true }
-        if foodCount >= 2 { return true }
-        if totalPriceSignals >= 1 && hasMenuKeyword { return true }
-        if lines.count >= 4 && foodCount >= 1 { return true }
-        if totalPriceLines >= 3 { return true }
-        if lines.count >= 6 && totalPriceLines >= 2 { return true }
+        let receiptHits = receiptIndicators.filter { lower.contains($0) }.count
+        if receiptHits >= 3 { return true }
 
         return false
     }

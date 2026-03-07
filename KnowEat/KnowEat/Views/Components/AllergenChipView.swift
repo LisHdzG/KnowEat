@@ -10,7 +10,10 @@ import SwiftUI
 struct AllergenChipView: View {
     let allergen: Allergen
     let isSelected: Bool
+    var displayName: String? = nil
     let action: () -> Void
+
+    private var label: String { displayName ?? allergen.name }
 
     var body: some View {
         Button(action: action) {
@@ -24,7 +27,7 @@ struct AllergenChipView: View {
                             .fill(isSelected ? Color.white.opacity(0.25) : Color("PrimaryOrange").opacity(0.12))
                     )
 
-                Text(allergen.name)
+                Text(label)
                     .font(.interMedium(size: 13))
                     .foregroundStyle(isSelected ? .white : .primary)
                     .lineLimit(1)
@@ -41,7 +44,7 @@ struct AllergenChipView: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(allergen.name), \(isSelected ? "selected" : "not selected")")
+        .accessibilityLabel("\(label), \(isSelected ? "selected" : "not selected")")
         .accessibilityHint("Double-tap to \(isSelected ? "deselect" : "select") this dietary restriction")
         .accessibilityAddTraits(isSelected ? [.isButton, .isSelected] : .isButton)
     }
