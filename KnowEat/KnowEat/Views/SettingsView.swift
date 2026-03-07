@@ -18,6 +18,10 @@ struct SettingsView: View {
     @State private var showDeleteConfirmation = false
     @State private var showFinalConfirmation = false
 
+    private var strings: AppStrings {
+        AppStrings(profileStore.profile?.nativeLanguage ?? "English")
+    }
+
     var body: some View {
         ScrollView {
             VStack(spacing: 28) {
@@ -32,7 +36,7 @@ struct SettingsView: View {
             .padding(.bottom, 32)
         }
         .background(Color(.systemBackground))
-        .navigationTitle("Settings")
+        .navigationTitle(strings.settings)
         .navigationBarTitleDisplayMode(.large)
         .tint(Color("PrimaryOrange"))
         .toolbar {
@@ -42,7 +46,7 @@ struct SettingsView: View {
                         .font(.system(size: 14, weight: .semibold))
                 }
                 .tint(Color("SecondaryGray"))
-                .accessibilityLabel("Close")
+                .accessibilityLabel(strings.close)
                 .accessibilityHint("Closes settings and returns to home")
             }
         }
@@ -68,13 +72,13 @@ struct SettingsView: View {
     // MARK: - Sections
 
     private var translationSection: some View {
-        sectionContainer(header: "Translation preferences") {
+        sectionContainer(header: strings.languageSection, footer: strings.languageChangeNote) {
             Button {
                 viewModel.showLanguagePicker = true
             } label: {
                 settingsRow(
                     icon: "character.book.closed",
-                    title: "Native Language",
+                    title: strings.nativeLanguage,
                     trailing: viewModel.selectedLanguage,
                     showChevron: true
                 )
@@ -87,15 +91,15 @@ struct SettingsView: View {
 
     private var dietarySection: some View {
         sectionContainer(
-            header: "Dietary Profile",
-            footer: "KnowEat will consider all your dietary restrictions when scanning menus."
+            header: strings.dietaryProfile,
+            footer: strings.dietaryProfileFooter
         ) {
             VStack(spacing: 0) {
                 dietaryRow(
                     icon: "exclamationmark.shield.fill",
-                    title: "Allergens",
-                    editorTitle: "My Allergens",
-                    description: "Select the allergens you want KnowEat to watch for when scanning menus.",
+                    title: strings.allergens,
+                    editorTitle: strings.myAllergens,
+                    description: strings.selectAllergensDesc,
                     items: viewModel.allergens,
                     category: .allergens,
                     count: profileStore.profile?.allergenIds.count ?? 0
@@ -105,9 +109,9 @@ struct SettingsView: View {
 
                 dietaryRow(
                     icon: "pills.fill",
-                    title: "Intolerances",
-                    editorTitle: "Intolerances",
-                    description: "Select food intolerances so KnowEat can flag problematic ingredients.",
+                    title: strings.intolerances,
+                    editorTitle: strings.intolerances,
+                    description: strings.selectIntolerancesDesc,
                     items: viewModel.intolerances,
                     category: .intolerances,
                     count: profileStore.profile?.intoleranceIds.count ?? 0
@@ -117,9 +121,9 @@ struct SettingsView: View {
 
                 dietaryRow(
                     icon: "heart.text.clipboard.fill",
-                    title: "Medical Conditions",
-                    editorTitle: "Medical Conditions",
-                    description: "Select medical conditions that affect your diet so KnowEat can give better recommendations.",
+                    title: strings.medicalConditions,
+                    editorTitle: strings.medicalConditions,
+                    description: strings.selectConditionsDesc,
                     items: viewModel.conditions,
                     category: .conditions,
                     count: profileStore.profile?.conditionIds.count ?? 0
@@ -129,9 +133,9 @@ struct SettingsView: View {
 
                 dietaryRow(
                     icon: "fork.knife",
-                    title: "Diets",
-                    editorTitle: "Diets",
-                    description: "Select lifestyle or religious diets you follow.",
+                    title: strings.diets,
+                    editorTitle: strings.diets,
+                    description: strings.selectDietsDesc,
                     items: viewModel.diets,
                     category: .diets,
                     count: profileStore.profile?.dietIds.count ?? 0
@@ -141,9 +145,9 @@ struct SettingsView: View {
 
                 dietaryRow(
                     icon: "figure.and.child.holdinghands",
-                    title: "Situations",
-                    editorTitle: "Situations",
-                    description: "Select temporary situations that may affect what you should eat.",
+                    title: strings.situations,
+                    editorTitle: strings.situations,
+                    description: strings.selectSituationsDesc,
                     items: viewModel.situations,
                     category: .situations,
                     count: profileStore.profile?.situationIds.count ?? 0
@@ -172,7 +176,7 @@ struct SettingsView: View {
             settingsRow(
                 icon: icon,
                 title: title,
-                trailing: count > 0 ? "\(count) active" : nil,
+                trailing: count > 0 ? strings.activeCount(count) : nil,
                 showChevron: true
             )
         }
@@ -242,12 +246,12 @@ struct SettingsView: View {
     }
 
     private var historySection: some View {
-        sectionContainer(header: "History") {
+        sectionContainer(header: strings.history) {
             VStack(spacing: 0) {
                 HStack(spacing: 14) {
                     settingsIcon("clock.arrow.circlepath")
 
-                    Text("Save history")
+                    Text(strings.saveHistory)
                         .font(.interRegular(size: 16))
 
                     Spacer()
@@ -255,7 +259,7 @@ struct SettingsView: View {
                     Toggle("", isOn: saveHistoryBinding)
                         .labelsHidden()
                         .tint(Color("PrimaryOrange"))
-                        .accessibilityLabel("Save history")
+                        .accessibilityLabel(strings.saveHistory)
                         .accessibilityHint("When on, scanned menus are saved to your history")
                 }
                 .padding(.horizontal, 16)
@@ -270,28 +274,28 @@ struct SettingsView: View {
                     } label: {
                         settingsRow(
                             icon: "trash.fill",
-                            title: "Delete all menus",
+                            title: strings.deleteAllMenus,
                             trailing: "\(menuStore.menus.count)"
                         )
                     }
                     .buttonStyle(.plain)
                     .accessibilityLabel("Delete all menus, \(menuStore.menus.count) saved")
                     .accessibilityHint("Permanently deletes all saved menus from history")
-                    .alert("Delete All Menus?", isPresented: $showDeleteConfirmation) {
-                        Button("Delete All", role: .destructive) {
+                    .alert(strings.deleteAllMenusConfirm, isPresented: $showDeleteConfirmation) {
+                        Button(strings.deleteAllButton, role: .destructive) {
                             showFinalConfirmation = true
                         }
-                        Button("Cancel", role: .cancel) {}
+                        Button(strings.cancel, role: .cancel) {}
                     } message: {
-                        Text("This will permanently delete all \(menuStore.menus.count) saved menus.")
+                        Text(strings.deleteAllMessage(menuStore.menus.count))
                     }
-                    .alert("Are you sure?", isPresented: $showFinalConfirmation) {
-                        Button("Yes, delete everything", role: .destructive) {
+                    .alert(strings.areYouSure, isPresented: $showFinalConfirmation) {
+                        Button(strings.yesDeleteAll, role: .destructive) {
                             withAnimation { menuStore.deleteAll() }
                         }
-                        Button("Cancel", role: .cancel) {}
+                        Button(strings.cancel, role: .cancel) {}
                     } message: {
-                        Text("This action cannot be undone.")
+                        Text(strings.cannotBeUndone)
                     }
                 }
             }
@@ -299,7 +303,7 @@ struct SettingsView: View {
     }
 
     private var aboutSection: some View {
-        sectionContainer(header: "About") {
+        sectionContainer(header: strings.about) {
             VStack(spacing: 0) {
                 Button {
                     if let urlString = PrivacyConfigService.shared.privacyNotice?.url,
@@ -309,12 +313,12 @@ struct SettingsView: View {
                 } label: {
                     settingsRow(
                         icon: "lock.fill",
-                        title: "Privacy Policy",
+                        title: strings.privacyPolicy,
                         showChevron: true
                     )
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Privacy Policy")
+                .accessibilityLabel(strings.privacyPolicy)
                 .accessibilityHint("Opens the privacy policy in Safari")
 
                 Divider()
@@ -325,11 +329,11 @@ struct SettingsView: View {
                 } label: {
                     settingsRow(
                         icon: "star.fill",
-                        title: "Rate KnowEat"
+                        title: strings.rateKnowEat
                     )
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("Rate KnowEat")
+                .accessibilityLabel(strings.rateKnowEat)
                 .accessibilityHint("Shows the rating dialog")
             }
         }

@@ -26,24 +26,36 @@ enum OCRError: LocalizedError {
 final class OCRService {
     static let shared = OCRService()
 
-    func extractText(from images: [UIImage]) async throws -> String {
-        var allText: [String] = []
+    struct OCRResult {
+        let text: String
+        let regions: [TextRegion]
+    }
 
-        for image in images {
-            let text = try await recognizeText(in: image)
-            if !text.isEmpty {
-                allText.append(text)
+    func extractText(from images: [UIImage]) async throws -> String {
+        let result = try await extractTextWithRegions(from: images)
+        return result.text
+    }
+
+    func extractTextWithRegions(from images: [UIImage]) async throws -> OCRResult {
+        var allText: [String] = []
+        var allRegions: [TextRegion] = []
+
+        for (index, image) in images.enumerated() {
+            let result = try await recognizeTextWithRegions(in: image, imageIndex: index)
+            if !result.text.isEmpty {
+                allText.append(result.text)
             }
+            allRegions.append(contentsOf: result.regions)
         }
 
         let combined = allText.joined(separator: "\n\n")
         guard !combined.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
             throw OCRError.noTextFound
         }
-        return combined
+        return OCRResult(text: combined, regions: allRegions)
     }
 
-    private func recognizeText(in image: UIImage) async throws -> String {
+    private func recognizeTextWithRegions(in image: UIImage, imageIndex: Int) async throws -> OCRResult {
         guard let cgImage = image.cgImage else {
             throw OCRError.recognitionFailed("Could not process image.")
         }
@@ -56,12 +68,29 @@ final class OCRService {
                 }
 
                 let observations = request.results as? [VNRecognizedTextObservation] ?? []
-                let lines = observations.compactMap { observation -> String? in
+                var lines: [String] = []
+                var regions: [TextRegion] = []
+
+                for observation in observations {
                     guard let candidate = observation.topCandidates(1).first,
-                          candidate.confidence > 0.3 else { return nil }
-                    return candidate.string
+                          candidate.confidence > 0.5 else { continue }
+
+                    lines.append(candidate.string)
+
+                    let box = observation.boundingBox
+                    regions.append(TextRegion(
+                        text: candidate.string,
+                        x: box.origin.x,
+                        y: box.origin.y,
+                        width: box.size.width,
+                        height: box.size.height,
+                        confidence: candidate.confidence,
+                        imageIndex: imageIndex
+                    ))
                 }
-                continuation.resume(returning: lines.joined(separator: "\n"))
+
+                let text = lines.joined(separator: "\n")
+                continuation.resume(returning: OCRResult(text: text, regions: regions))
             }
 
             request.recognitionLevel = .accurate

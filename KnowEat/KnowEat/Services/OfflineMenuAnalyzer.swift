@@ -27,7 +27,7 @@ final class OfflineMenuAnalyzer {
 
         return ScannedMenu(
             restaurant: restaurant,
-            dishes: dishes.isEmpty ? fallbackSingleDish(from: ocrText) : dishes,
+            dishes: dishes,
             categoryIcon: "restaurant",
             menuLanguage: userLanguage
         )
@@ -84,13 +84,22 @@ final class OfflineMenuAnalyzer {
         let detectedAllergens = detectAllergens(in: textToAnalyze)
         let inferredIngredients = extractIngredientHints(from: textToAnalyze)
 
+        let dbAllergens = DishDatabase.shared.allergens(forDishNamed: entry.name)
+        let confirmedAllergens = Array(Set(detectedAllergens).union(dbAllergens)).sorted()
+
+        let knownIngredients = DishDatabase.shared.knownIngredients(forDishNamed: entry.name)
+        let knownText = knownIngredients.joined(separator: " ").lowercased()
+        let suggestedFromKnown = detectAllergens(in: knownText)
+        let suggested = Array(Set(suggestedFromKnown).subtracting(confirmedAllergens)).sorted()
+
         return Dish(
             name: entry.name,
             description: entry.description,
-            price: entry.price,
-            category: entry.category,
+            price: nil,
+            category: nil,
             ingredients: inferredIngredients,
-            allergenIds: detectedAllergens
+            allergenIds: confirmedAllergens,
+            suggestedAllergenIds: suggested
         )
     }
 
@@ -240,17 +249,6 @@ final class OfflineMenuAnalyzer {
         return "Unknown"
     }
 
-    private func fallbackSingleDish(from text: String) -> [Dish] {
-        let allergens = detectAllergens(in: text.lowercased())
-        return [Dish(
-            name: "Menu (OCR)",
-            description: String(text.prefix(200)),
-            price: nil,
-            category: nil,
-            ingredients: extractIngredientHints(from: text.lowercased()),
-            allergenIds: allergens
-        )]
-    }
 
     // MARK: - Allergen Detection
 
@@ -297,6 +295,10 @@ final class OfflineMenuAnalyzer {
         "lactose": ["milk", "cheese", "cream", "butter", "yogurt", "ice cream", "leche", "queso", "crema", "mantequilla", "yogur", "helado", "latte", "formaggio", "burro", "gelato"],
         "fructose": ["honey", "apple", "pear", "mango", "agave", "miel", "manzana", "pera", "miele", "mela"],
         "histamine": ["wine", "aged cheese", "fermented", "cured", "smoked", "vinegar", "vino", "ahumado", "curado", "fermentado", "affumicato", "stagionato"],
-        "fodmap": ["garlic", "onion", "wheat", "apple", "pear", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"]
+        "fodmap": ["garlic", "onion", "wheat", "apple", "pear", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"],
+        "meat": ["beef", "steak", "veal", "lamb", "pork", "ham", "bacon", "sausage", "salami", "prosciutto", "bresaola", "chorizo", "pepperoni", "mortadella", "pancetta", "carne", "res", "ternera", "cordero", "cerdo", "jamón", "tocino", "manzo", "vitello", "agnello", "maiale", "meatball", "burger", "ribs", "loin", "filet", "polpette", "bistecca"],
+        "poultry": ["chicken", "turkey", "duck", "goose", "quail", "pollo", "pavo", "pato", "gallina", "tacchino", "anatra", "oca"],
+        "pork": ["pork", "ham", "bacon", "sausage", "salami", "prosciutto", "pancetta", "chorizo", "pepperoni", "mortadella", "lard", "guanciale", "cerdo", "jamón", "tocino", "maiale", "lardo", "speck"],
+        "alcohol": ["wine", "beer", "cocktail", "liquor", "rum", "vodka", "whisky", "gin", "tequila", "brandy", "champagne", "prosecco", "sangria", "vino", "cerveza", "birra", "liquore", "grappa", "amaro", "spritz"]
     ]
 }

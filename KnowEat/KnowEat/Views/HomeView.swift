@@ -19,6 +19,10 @@ struct HomeView: View {
     @State private var showRenameAlert = false
     @State private var searchText = ""
 
+    private var strings: AppStrings {
+        AppStrings(profileStore.profile?.nativeLanguage ?? "English")
+    }
+
     private var groupedMenus: [(String, [ScannedMenu])] {
         let calendar = Calendar.current
         let source = searchText.isEmpty
@@ -26,9 +30,9 @@ struct HomeView: View {
             : menuStore.menus.filter { $0.restaurant.localizedCaseInsensitiveContains(searchText) }
         let grouped = Dictionary(grouping: source) { menu -> String in
             if calendar.isDateInToday(menu.scannedAt) {
-                return "Today"
+                return strings.today
             } else if calendar.isDateInYesterday(menu.scannedAt) {
-                return "Yesterday"
+                return strings.yesterday
             } else {
                 let formatter = DateFormatter()
                 formatter.dateFormat = "dd MMM yyyy"
@@ -62,7 +66,7 @@ struct HomeView: View {
                             Image(systemName: "gearshape")
                         }
                         .tint(Color("SecondaryGray"))
-                        .accessibilityLabel("Settings")
+                        .accessibilityLabel(strings.settings)
                         .accessibilityHint("Opens app settings and dietary profile")
                     }
                     ToolbarItem(placement: .topBarTrailing) {
@@ -72,7 +76,7 @@ struct HomeView: View {
                             Image(systemName: "doc.viewfinder")
                         }
                         .tint(Color("PrimaryOrange"))
-                        .accessibilityLabel("Scan menu")
+                        .accessibilityLabel(strings.scanMenu)
                         .accessibilityHint("Opens the camera to scan a restaurant menu")
                     }
                 }
@@ -125,26 +129,26 @@ struct HomeView: View {
                         SettingsView()
                     }
                 }
-                .alert("Camera Access Required", isPresented: $scanVM.showPermissionDeniedAlert) {
-                    Button("Open Settings") {
+                .alert(strings.cameraAccessRequired, isPresented: $scanVM.showPermissionDeniedAlert) {
+                    Button(strings.openSettings) {
                         scanVM.openAppSettings()
                     }
-                    Button("Cancel", role: .cancel) {}
+                    Button(strings.cancel, role: .cancel) {}
                 } message: {
-                    Text("KnowEat needs camera access to scan menus. Please enable it in Settings.")
+                    Text(strings.cameraAccessMessage)
                 }
-                .alert("Rename Menu", isPresented: $showRenameAlert) {
-                    TextField("Restaurant name", text: $renameText)
+                .alert(strings.renameMenu, isPresented: $showRenameAlert) {
+                    TextField(strings.restaurantName, text: $renameText)
                         .onChange(of: renameText) { _, newValue in
                             if newValue.count > 20 { renameText = String(newValue.prefix(20)) }
                         }
-                    Button("Save") {
+                    Button(strings.save) {
                         if let menu = menuToRename,
                            !renameText.trimmingCharacters(in: .whitespaces).isEmpty {
                             menuStore.rename(menu, to: renameText)
                         }
                     }
-                    Button("Cancel", role: .cancel) {}
+                    Button(strings.cancel, role: .cancel) {}
                 }
             }
 
@@ -167,7 +171,7 @@ struct HomeView: View {
     }
 
     private var titleSection: some View {
-        Text("Recent Menus")
+        Text(strings.recentMenus)
             .font(.interSemiBold(size: 28))
             .foregroundStyle(Color("PrimaryOrange"))
     }
@@ -197,13 +201,13 @@ struct HomeView: View {
                                     MenuCell(menu: menu)
                                 }
                                 .buttonStyle(.plain)
-                                .accessibilityLabel("\(menu.restaurant), \(menu.dishes.count) dishes, \(menu.menuLanguage)")
+                                .accessibilityLabel("\(menu.restaurant), \(strings.dishesCount(menu.dishes.count)), \(menu.menuLanguage)")
                                 .accessibilityHint("Opens menu analysis and allergen check")
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     Button(role: .destructive) {
                                         withAnimation { menuStore.delete(menu) }
                                     } label: {
-                                        Label("Delete", systemImage: "trash")
+                                        Label(strings.delete, systemImage: "trash")
                                     }
                                 }
                                 .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -212,7 +216,7 @@ struct HomeView: View {
                                         menuToRename = menu
                                         showRenameAlert = true
                                     } label: {
-                                        Label("Rename", systemImage: "pencil")
+                                        Label(strings.rename, systemImage: "pencil")
                                     }
                                     .tint(Color("PrimaryOrange"))
                                 }
@@ -229,7 +233,7 @@ struct HomeView: View {
                     }
                 }
                 .listStyle(.plain)
-                .searchable(text: $searchText, prompt: "Search menus...")
+                .searchable(text: $searchText, prompt: strings.searchMenus)
             }
         }
         .frame(maxHeight: .infinity)
@@ -262,9 +266,9 @@ struct HomeView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 10) {
-                    errorTipRow(icon: "menucard", text: "Photograph a food menu with text")
-                    errorTipRow(icon: "sun.max", text: "Use good lighting, avoid shadows")
-                    errorTipRow(icon: "camera.metering.center.weighted", text: "Keep text in focus and fully visible")
+                    errorTipRow(icon: "menucard", text: strings.photographMenuTip)
+                    errorTipRow(icon: "sun.max", text: strings.goodLightingTip)
+                    errorTipRow(icon: "camera.metering.center.weighted", text: strings.keepFocusTip)
                 }
                 .padding(16)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -285,7 +289,7 @@ struct HomeView: View {
                     HStack(spacing: 8) {
                         Image(systemName: "camera.fill")
                             .font(.system(size: 14, weight: .semibold))
-                        Text("Retake Photo")
+                        Text(strings.retakePhoto)
                             .font(.interSemiBold(size: 16))
                     }
                     .foregroundStyle(.white)
@@ -300,12 +304,11 @@ struct HomeView: View {
     }
 
     private var errorIcon: String {
-        switch scanVM.errorTitle {
-        case "No Menu Text Found": return "doc.text.magnifyingglass"
-        case "Couldn't Read Text": return "text.magnifyingglass"
-        case "Analysis Failed": return "fork.knife.circle"
-        default: return "exclamationmark.triangle"
-        }
+        let title = scanVM.errorTitle
+        if title == strings.noMenuTextFoundTitle { return "doc.text.magnifyingglass" }
+        if title == strings.couldntReadTextTitle { return "text.magnifyingglass" }
+        if title == strings.analysisFailedTitle { return "fork.knife.circle" }
+        return "exclamationmark.triangle"
     }
 
     private func errorTipRow(icon: String, text: String) -> some View {
@@ -323,22 +326,22 @@ struct HomeView: View {
 
     private var emptyMenuPlaceholder: some View {
         ContentUnavailableView {
-            Label("No menus yet", systemImage: "menucard")
+            Label(strings.noMenusYet, systemImage: "menucard")
                 .foregroundStyle(Color("SecondaryGray").opacity(0.45))
         } description: {
-            Text("Scan a menu to get started")
+            Text(strings.scanToGetStarted)
                 .font(.interRegular(size: 15))
                 .foregroundStyle(Color("SecondaryGray").opacity(0.5))
         } actions: {
             Button {
                 scanVM.openScanner()
             } label: {
-                Text("Scan Menu")
+                Text(strings.scanMenu)
                     .font(.interSemiBold(size: 16))
             }
             .buttonStyle(.borderedProminent)
             .tint(Color("PrimaryOrange"))
-            .accessibilityLabel("Scan menu")
+            .accessibilityLabel(strings.scanMenu)
             .accessibilityHint("Opens the camera to scan your first restaurant menu")
         }
     }

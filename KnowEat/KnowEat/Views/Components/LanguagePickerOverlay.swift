@@ -8,12 +8,17 @@
 import SwiftUI
 
 struct LanguagePickerOverlay: View {
+    @Environment(UserProfileStore.self) private var profileStore
     @Binding var selectedLanguage: String
     let languages: [String]
     @Binding var isPresented: Bool
     var presentedAsSheet: Bool = false
 
     @State private var dragOffset: CGFloat = 0
+
+    private var strings: AppStrings {
+        AppStrings(profileStore.profile?.nativeLanguage ?? "English")
+    }
     @State private var sheetAppeared = false
 
     private let sheetHeight: CGFloat = 350
@@ -52,11 +57,11 @@ struct LanguagePickerOverlay: View {
                 .foregroundStyle(Color("PrimaryOrange"))
                 .padding(.bottom, 8)
 
-            Text("Select Language")
+            Text(strings.selectLanguage)
                 .font(.interSemiBold(size: 20))
                 .padding(.bottom, 4)
 
-            Text("Choose your preferred language")
+            Text(strings.choosePreferredLanguage)
                 .font(.interRegular(size: 13))
                 .foregroundStyle(Color("SecondaryGray"))
                 .padding(.bottom, 24)

@@ -22,42 +22,24 @@ struct MenuResultView: View {
     @State private var showNamePrompt = false
     @State private var alertNameInput = ""
     @State private var searchText = ""
-    @State private var selectedCategoryIndex = 0
     @State private var showDisclaimer = true
-    @State private var showLanguagePicker = false
-    @State private var selectedLanguage = ""
     @State private var displayMenu: ScannedMenu?
     @State private var displayDishes: [AnalyzedDish]?
-    @State private var isTranslating = false
-    @State private var translationError: String?
     @State private var showDietaryEditor = false
     @State private var currentFilterGroups: [DietaryFilterGroup]?
 
-    private let availableLanguages = ["English", "Español", "Italiano"]
+    private var strings: AppStrings {
+        AppStrings(profileStore.profile?.nativeLanguage ?? "English")
+    }
     private var canSave: Bool {
         onSave != nil && (profileStore.profile?.saveHistory ?? true)
     }
-    private var isReadOnly: Bool { !canSave }
     private var activeMenu: ScannedMenu { displayMenu ?? menu }
     private var activeDishes: [AnalyzedDish] { displayDishes ?? analyzedDishes }
-
-    private var categories: [String] {
-        let cats = Set(activeDishes.compactMap { $0.dish.category })
-        return ["All"] + cats.sorted()
-    }
-
-    private var selectedCategory: String? {
-        guard selectedCategoryIndex > 0, selectedCategoryIndex < categories.count else { return nil }
-        return categories[selectedCategoryIndex]
-    }
 
     private var filteredDishes: [AnalyzedDish] {
         var result = activeDishes.filter {
             !$0.dish.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }
-
-        if let category = selectedCategory {
-            result = result.filter { $0.dish.category == category }
         }
 
         if !searchText.isEmpty {
@@ -72,13 +54,6 @@ struct MenuResultView: View {
         return result
     }
 
-    private var groupedByCategory: [(String, [AnalyzedDish])] {
-        let dict = Dictionary(grouping: filteredDishes) { item in
-            item.dish.category ?? "Other"
-        }
-        return dict.sorted { $0.key < $1.key }
-    }
-
     var body: some View {
         Group {
             if isPushed {
@@ -89,32 +64,10 @@ struct MenuResultView: View {
                 }
             }
         }
-        .sheet(isPresented: $showLanguagePicker) {
-            LanguagePickerOverlay(
-                selectedLanguage: $selectedLanguage,
-                languages: availableLanguages,
-                isPresented: $showLanguagePicker,
-                presentedAsSheet: true
-            )
-            .presentationDetents([.medium])
-            .presentationDragIndicator(.visible)
-        }
-        .fullScreenCover(isPresented: $isTranslating) {
-            LoaderView(phrases: [
-                "Translating dishes…",
-                "Adapting ingredients…",
-                "Updating your menu…",
-                "Almost ready…"
-            ])
-        }
     }
 
     private var mainContent: some View {
         VStack(spacing: 0) {
-            if categories.count > 2 {
-                categoryPicker
-            }
-
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 16) {
                     headerSection
@@ -140,91 +93,60 @@ struct MenuResultView: View {
             }
         }
         .background(Color(.systemBackground))
-        .searchable(text: $searchText, prompt: "Search dishes...")
+        .searchable(text: $searchText, prompt: strings.searchDishes)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if !isPushed {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .cancellationAction) {
                     Button {
                         dismiss()
                         onDismiss()
                     } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 14, weight: .semibold))
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 20))
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.secondary)
                     }
-                    .tint(Color("SecondaryGray"))
-                    .accessibilityLabel("Close")
-                    .accessibilityHint("Dismisses the menu results and returns to the previous screen")
+                    .accessibilityLabel(strings.close)
                 }
             }
-            ToolbarItem(placement: .topBarTrailing) {
-                if isReadOnly {
-                    Button {
-                        showLanguagePicker = true
-                    } label: {
-                        Image(systemName: "character.bubble")
-                            .font(.system(size: 16, weight: .medium))
-                    }
-                    .tint(Color("PrimaryOrange"))
-                    .accessibilityLabel("Change language")
-                    .accessibilityHint("Opens the language picker to translate the menu")
-                } else {
+            if canSave {
+                ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         handleSave()
                     } label: {
-                        Text("Save")
+                        Text(strings.save)
                             .font(.interMedium(size: 16))
                     }
                     .tint(Color("PrimaryOrange"))
-                    .accessibilityLabel("Save menu")
-                    .accessibilityHint("Saves this menu to your recent menus list")
+                    .accessibilityLabel(strings.saveMenu)
+                    .accessibilityHint(strings.saveMenuHint)
                 }
             }
-        }
-        .onAppear {
-            if selectedLanguage.isEmpty {
-                let menuLang = menu.menuLanguage
-                if menuLang != "Unknown" && !menuLang.isEmpty {
-                    selectedLanguage = menuLang
-                } else {
-                    selectedLanguage = profileStore.profile?.nativeLanguage ?? "English"
-                }
-            }
-        }
-        .onChange(of: selectedLanguage) { oldValue, newValue in
-            guard !oldValue.isEmpty, oldValue != newValue else { return }
-            handleRetranslation(to: newValue)
         }
         .sheet(isPresented: $showDietaryEditor) {
             DietaryProfileEditorView {
                 reAnalyzeWithUpdatedProfile()
             }
         }
-        .alert("Restaurant Name", isPresented: $showNamePrompt) {
-            TextField("Enter restaurant name", text: $alertNameInput)
+        .alert(strings.restaurantNameTitle, isPresented: $showNamePrompt) {
+            TextField(strings.enterRestaurantName, text: $alertNameInput)
                 .onChange(of: alertNameInput) { _, newValue in
                     if newValue.count > 20 { alertNameInput = String(newValue.prefix(20)) }
                 }
-            Button("Save") {
+            Button(strings.save) {
                 let name = alertNameInput.trimmingCharacters(in: .whitespaces)
                 if !name.isEmpty {
-                    let savedMenu = ScannedMenu(restaurant: name, dishes: activeMenu.dishes, categoryIcon: activeMenu.categoryIcon, menuLanguage: activeMenu.menuLanguage)
-                    onSave?(savedMenu)
+                    var renamedMenu = activeMenu
+                    renamedMenu.restaurant = name
+                    onSave?(renamedMenu)
                 }
             }
-            Button("Cancel", role: .cancel) {
+            Button(strings.cancel, role: .cancel) {
                 alertNameInput = ""
             }
         } message: {
-            Text("We couldn't detect the restaurant name. Please enter it to save this menu.")
-        }
-        .alert("Translation Error", isPresented: .init(
-            get: { translationError != nil },
-            set: { if !$0 { translationError = nil } }
-        )) {
-            Button("OK") { translationError = nil }
-        } message: {
-            Text(translationError ?? "")
+            Text(strings.couldntDetectName)
         }
     }
 
@@ -241,7 +163,7 @@ struct MenuResultView: View {
                     .foregroundStyle(Color("PrimaryOrange"))
             }
 
-            Text("\(activeDishes.count) dishes found")
+            Text(strings.dishesFound(activeDishes.count))
                 .font(.interRegular(size: 14))
                 .foregroundStyle(.secondary)
         }
@@ -257,16 +179,16 @@ struct MenuResultView: View {
                 .accessibilityHidden(true)
 
             VStack(alignment: .leading, spacing: 2) {
-                Text("Analyzed on your device")
+                Text(strings.analyzedOnDevice)
                     .font(.system(size: 12, weight: .semibold))
                     .foregroundStyle(.secondary)
 
-                Text("Always confirm with staff for severe allergies.")
+                Text(strings.confirmWithStaff)
                     .font(.system(size: 11))
                     .foregroundStyle(.tertiary)
             }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("Analysis notice. Menu was analyzed on your device. Always confirm with staff for severe allergies.")
+            .accessibilityLabel(strings.analysisNoticeA11y)
 
             Spacer()
 
@@ -278,80 +200,24 @@ struct MenuResultView: View {
                     .symbolRenderingMode(.hierarchical)
                     .foregroundStyle(.quaternary)
             }
-            .accessibilityLabel("Dismiss disclaimer")
-            .accessibilityHint("Hides the analysis notice banner")
+            .accessibilityLabel(strings.dismissDisclaimer)
         }
         .padding(.horizontal, 14)
         .padding(.vertical, 10)
         .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
     }
 
-    // MARK: - Category Picker
-
-    private var categoryPicker: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(categories.indices, id: \.self) { index in
-                        let title = index == 0 ? "All" : (
-                            categories[index].components(separatedBy: "(").first?
-                                .trimmingCharacters(in: .whitespaces) ?? categories[index]
-                        )
-
-                        Button {
-                            withAnimation(.snappy(duration: 0.25)) {
-                                selectedCategoryIndex = index
-                            }
-                        } label: {
-                            Text(title)
-                                .font(.system(size: 14, weight: selectedCategoryIndex == index ? .semibold : .regular))
-                                .foregroundStyle(selectedCategoryIndex == index ? .white : .primary)
-                                .padding(.horizontal, 16)
-                                .padding(.vertical, 8)
-                                .background(
-                                    Capsule()
-                                        .fill(selectedCategoryIndex == index ? Color("PrimaryOrange") : Color(.systemGray6))
-                                )
-                        }
-                        .buttonStyle(.plain)
-                        .id(index)
-                        .accessibilityLabel(title)
-                        .accessibilityHint(selectedCategoryIndex == index ? "Selected. Filtering by \(title)" : "Filters dishes to show only \(title)")
-                        .accessibilityAddTraits(selectedCategoryIndex == index ? [.isButton, .isSelected] : .isButton)
-                    }
-                }
-                .padding(.horizontal, 24)
-                .padding(.vertical, 10)
-            }
-            .background(Color(.systemBackground))
-            .onChange(of: selectedCategoryIndex) { _, newValue in
-                withAnimation { proxy.scrollTo(newValue, anchor: .center) }
-            }
-        }
-    }
-
     // MARK: - Dish List
 
     private var dishList: some View {
-        VStack(alignment: .leading, spacing: 24) {
+        VStack(alignment: .leading, spacing: 12) {
             if filteredDishes.isEmpty {
                 ContentUnavailableView.search(text: searchText)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 32)
             } else {
-                ForEach(groupedByCategory, id: \.0) { category, dishes in
-                    VStack(alignment: .leading, spacing: 12) {
-                        if selectedCategory == nil {
-                            Text(category.uppercased())
-                                .font(.interSemiBold(size: 14))
-                                .foregroundStyle(.primary)
-                                .tracking(0.5)
-                        }
-
-                        ForEach(dishes) { item in
-                            DishCard(item: item, allergens: allergens)
-                        }
-                    }
+                ForEach(filteredDishes) { item in
+                    DishCard(item: item, allergens: allergens, strings: strings, menu: activeMenu)
                 }
             }
         }
@@ -380,42 +246,6 @@ struct MenuResultView: View {
         let vm = HomeViewModel()
         currentFilterGroups = vm.groupedFilters(for: profile)
     }
-
-    private func handleRetranslation(to language: String) {
-        showLanguagePicker = false
-        selectedCategoryIndex = 0
-        let currentMenu = activeMenu
-
-        Task { @MainActor in
-            try? await Task.sleep(for: .milliseconds(400))
-            isTranslating = true
-            do {
-                let result = try await FoundationModelAnalyzer.shared.translateMenu(
-                    dishes: currentMenu.dishes,
-                    restaurant: currentMenu.restaurant,
-                    to: language
-                )
-
-                var updated = displayMenu ?? menu
-                updated.dishes = result.dishes
-                updated.restaurant = result.restaurant
-                updated.menuLanguage = language
-                displayMenu = updated
-
-                let profile = profileStore.profile ?? UserProfile(nativeLanguage: "", allergenIds: [])
-                displayDishes = AllergenChecker.analyze(menu: updated, profile: profile)
-
-                if isReadOnly {
-                    menuStore.updateTranslation(menu, translated: updated)
-                }
-
-                isTranslating = false
-            } catch {
-                isTranslating = false
-                translationError = error.localizedDescription
-            }
-        }
-    }
 }
 
 // MARK: - Dish Card
@@ -423,6 +253,14 @@ struct MenuResultView: View {
 private struct DishCard: View {
     let item: AnalyzedDish
     let allergens: [Allergen]
+    let strings: AppStrings
+    let menu: ScannedMenu
+
+    @State private var showLocation = false
+
+    private var canShowLocation: Bool {
+        !item.dish.textRegionIndices.isEmpty && !menu.imageFileNames.isEmpty
+    }
 
     private var accentColor: Color {
         if item.isSafe { return .green }
@@ -456,31 +294,19 @@ private struct DishCard: View {
                 .padding(.vertical, 10)
 
             VStack(alignment: .leading, spacing: 8) {
-                HStack(alignment: .firstTextBaseline) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(item.dish.name)
-                            .font(.interSemiBold(size: 16))
+                Text(item.dish.name)
+                    .font(.interSemiBold(size: 16))
 
-                        if let description = item.dish.description, !description.isEmpty {
-                            Text(description)
-                                .font(.interRegular(size: 13))
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-
-                    Spacer(minLength: 8)
-
-                    if let price = item.dish.price, !price.isEmpty {
-                        Text(price)
-                            .font(.system(size: 14, weight: .medium, design: .rounded))
-                            .foregroundStyle(.tertiary)
-                    }
+                if let description = item.dish.description, !description.isEmpty {
+                    Text(description)
+                        .font(.interRegular(size: 13))
+                        .foregroundStyle(.secondary)
                 }
 
-                if !item.dish.ingredients.isEmpty {
+                if hasExplicitIngredients {
                     ingredientsText
                         .font(.interRegular(size: 13))
-                        .lineLimit(2)
+                        .lineLimit(3)
                 }
 
                 if isUnrecognizedDish {
@@ -488,49 +314,32 @@ private struct DishCard: View {
                         Image(systemName: "sparkles")
                             .font(.system(size: 9))
                             .padding(.top, 3)
-
-                        Text("Unknown dish — please ask staff about ingredients")
+                        Text(strings.unknownDishWarning)
                             .font(.interRegular(size: 12))
                             .lineLimit(2)
                     }
                     .foregroundStyle(.orange.opacity(0.8))
                 } else if hasInferredIngredients {
-                    VStack(alignment: .leading, spacing: 4) {
-                        HStack(alignment: .top, spacing: 4) {
-                            Image(systemName: "sparkles")
-                                .font(.system(size: 9))
-                                .padding(.top, 3)
-
-                            inferredIngredientsText
-                                .font(.interRegular(size: 12))
-                                .lineLimit(2)
-                        }
-                        .foregroundStyle(.secondary.opacity(0.7))
-
-                        if !hasExplicitIngredients {
-                            HStack(alignment: .top, spacing: 4) {
-                                Image(systemName: "sparkles")
-                                    .font(.system(size: 9))
-                                    .padding(.top, 3)
-
-                                Text("Ingredients not listed on menu — confirm with staff")
-                                    .font(.interRegular(size: 11))
-                                    .lineLimit(2)
-                            }
-                            .foregroundStyle(.orange.opacity(0.7))
-                        }
-                    }
-                } else if !hasExplicitIngredients {
                     HStack(alignment: .top, spacing: 4) {
                         Image(systemName: "sparkles")
                             .font(.system(size: 9))
                             .padding(.top, 3)
-
-                        Text("No ingredients available — please ask staff")
+                        inferredIngredientsText
                             .font(.interRegular(size: 12))
                             .lineLimit(2)
                     }
-                    .foregroundStyle(.orange.opacity(0.7))
+                    .foregroundStyle(.secondary.opacity(0.7))
+                }
+
+                if !hasExplicitIngredients && !isUnrecognizedDish {
+                    HStack(alignment: .top, spacing: 4) {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 10))
+                            .padding(.top, 2)
+                        Text(strings.noIngredientsDetected)
+                            .font(.interRegular(size: 12))
+                    }
+                    .foregroundStyle(.gray)
                 }
 
                 if !item.isSafe {
@@ -556,6 +365,27 @@ private struct DishCard: View {
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.orange)
                         }
+
+                        if item.hasSuggested {
+                            Label {
+                                Text(suggestedSummary)
+                            } icon: {
+                                Image(systemName: "sparkles")
+                            }
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.purple.opacity(0.8))
+                        }
+                    }
+                }
+
+                if canShowLocation {
+                    Divider()
+                    Button {
+                        showLocation = true
+                    } label: {
+                        Label(strings.viewOnMenu, systemImage: "photo.on.rectangle")
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(Color("PrimaryOrange"))
                     }
                 }
             }
@@ -572,39 +402,33 @@ private struct DishCard: View {
         .accessibilityElement(children: .combine)
         .accessibilityLabel(dishAccessibilityLabel)
         .accessibilityHint(dishAccessibilityHint)
+        .sheet(isPresented: $showLocation) {
+            DishLocationView(dish: item.dish, menu: menu, strings: strings)
+        }
     }
 
     private var dishAccessibilityLabel: String {
         var label = "\(item.dish.name)"
-        if let price = item.dish.price, !price.isEmpty {
-            label += ", \(price)"
-        }
         if isUnrecognizedDish {
-            label += ". Unknown dish, please ask staff about ingredients"
+            label += ". \(strings.unknownDishWarning)"
         } else if !hasExplicitIngredients && hasInferredIngredients {
-            label += ". Ingredients not listed on menu, AI suggests: \(item.dish.inferredIngredients.joined(separator: ", "))"
+            label += ". \(strings.ingredientsNotListed): \(item.dish.inferredIngredients.joined(separator: ", "))"
         }
         if item.isSafe {
-            label += ", safe to eat"
+            label += ", safe"
         } else if item.isDanger {
-            label += ", not recommended. Contains allergens or not safe for your condition: \(dangerSummary)"
+            label += ", \(dangerSummary)"
         } else if item.isAdvisory {
-            label += ", may cause intolerance or not compatible: \(advisorySummary)"
+            label += ", \(advisorySummary)"
         }
         return label
     }
 
     private var dishAccessibilityHint: String {
         if isUnrecognizedDish || !hasExplicitIngredients {
-            return "Ingredients were not listed on the menu. Please confirm with restaurant staff"
+            return strings.ingredientsNotListed
         }
-        if item.isSafe {
-            return "No dietary restrictions match this dish"
-        }
-        if item.isDanger {
-            return "Contains ingredients that may cause an allergic reaction or are not safe for your medical condition"
-        }
-        return "May cause intolerance or is not compatible with your diet or situation"
+        return ""
     }
 
     // MARK: - Warning Summaries
@@ -632,6 +456,11 @@ private struct DishCard: View {
             parts.append(item.matchedSituationIds.map { nameFor($0) }.joined(separator: ", "))
         }
         return parts.joined(separator: " · ")
+    }
+
+    private var suggestedSummary: String {
+        let names = item.suggestedMatchedIds.map { nameFor($0) }.joined(separator: ", ")
+        return strings.aiSuggestsMayContain(names)
     }
 
     // MARK: - Ingredients Text
@@ -690,6 +519,10 @@ private struct DishCard: View {
         "lactose": ["milk", "cheese", "cream", "butter", "yogurt", "ice cream", "leche", "queso", "crema", "mantequilla", "yogur", "helado", "latte", "formaggio", "burro", "gelato"],
         "fructose": ["honey", "apple", "pear", "mango", "agave", "miel", "manzana", "pera", "miele", "mela"],
         "histamine": ["wine", "aged cheese", "fermented", "cured", "smoked", "vinegar", "vino", "ahumado", "curado", "fermentado", "affumicato", "stagionato"],
-        "fodmap": ["garlic", "onion", "wheat", "apple", "pear", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"]
+        "fodmap": ["garlic", "onion", "wheat", "apple", "pear", "ajo", "cebolla", "trigo", "manzana", "aglio", "cipolla"],
+        "meat": ["beef", "steak", "veal", "lamb", "pork", "ham", "bacon", "sausage", "salami", "prosciutto", "bresaola", "chorizo", "pepperoni", "mortadella", "pancetta", "carne", "res", "ternera", "cordero", "cerdo", "jamón", "tocino", "salchicha", "manzo", "vitello", "agnello", "maiale", "meatball", "burger", "ribs", "loin", "filet", "albóndigas", "hamburguesa", "costillas", "lomo", "polpette", "bistecca"],
+        "poultry": ["chicken", "turkey", "duck", "goose", "quail", "pollo", "pavo", "pato", "gallina", "tacchino", "anatra", "oca", "quaglia"],
+        "pork": ["pork", "ham", "bacon", "sausage", "salami", "prosciutto", "pancetta", "chorizo", "pepperoni", "mortadella", "lard", "guanciale", "cerdo", "jamón", "tocino", "salchicha", "manteca", "maiale", "lardo", "speck"],
+        "alcohol": ["wine", "beer", "cocktail", "liquor", "rum", "vodka", "whisky", "gin", "tequila", "brandy", "champagne", "prosecco", "sangria", "vino", "cerveza", "birra", "liquore", "grappa", "amaro", "spritz"]
     ]
 }

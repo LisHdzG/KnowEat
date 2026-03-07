@@ -16,6 +16,8 @@ private struct GalleryThumbnail: Identifiable {
 }
 
 struct CameraView: View {
+    @Environment(UserProfileStore.self) private var profileStore
+
     let onPhotosReady: ([UIImage]) -> Void
     let onCancelled: () -> Void
 
@@ -33,6 +35,10 @@ struct CameraView: View {
 
     @State private var showCrop = false
     @State private var isCapturing = false
+
+    private var strings: AppStrings {
+        AppStrings(profileStore.profile?.nativeLanguage ?? "English")
+    }
 
     var body: some View {
         ZStack {
@@ -126,7 +132,7 @@ struct CameraView: View {
                     .padding(12)
                     .background(.ultraThinMaterial, in: Circle())
             }
-            .accessibilityLabel("Close camera")
+            .accessibilityLabel(strings.closeCamera)
             .accessibilityHint("Dismisses the camera and returns without analyzing")
 
             Spacer()
@@ -141,7 +147,7 @@ struct CameraView: View {
                     .padding(12)
                     .background(.ultraThinMaterial, in: Circle())
             }
-            .accessibilityLabel(isTorchOn ? "Flash on" : "Flash off")
+            .accessibilityLabel(isTorchOn ? strings.flashOn : strings.flashOff)
             .accessibilityHint("Toggles the camera flash or torch")
         }
         .padding(.horizontal, 20)
@@ -184,7 +190,7 @@ struct CameraView: View {
                     .frame(width: 48, height: 48)
                     .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 12))
             }
-            .accessibilityLabel("Photo library")
+            .accessibilityLabel(strings.photoLibrary)
             .accessibilityHint("Opens your photo library to select menu images")
 
             Spacer()
@@ -203,7 +209,7 @@ struct CameraView: View {
             .disabled(isCapturing)
             .opacity(isCapturing ? 0.6 : 1)
             .animation(.easeInOut(duration: 0.2), value: isCapturing)
-            .accessibilityLabel("Take photo")
+            .accessibilityLabel(strings.takePhoto)
             .accessibilityHint(isCapturing ? "Capturing…" : "Captures a photo of the menu")
 
             Spacer()
@@ -235,7 +241,7 @@ struct CameraView: View {
                             .offset(x: 6, y: -6)
                     }
                 }
-                .accessibilityLabel("\(capturedPhotos.count) photo\(capturedPhotos.count == 1 ? "" : "s") selected")
+                .accessibilityLabel(strings.photoCount(capturedPhotos.count) + " selected")
                 .accessibilityHint("Opens preview to review photos or send for analysis")
             }
         }
@@ -310,7 +316,7 @@ struct CameraView: View {
         }
         .fullScreenCover(isPresented: $showCrop) {
             if previewIndex < capturedPhotos.count {
-                PhotoCropView(image: capturedPhotos[previewIndex]) { cropped in
+                PhotoCropView(image: capturedPhotos[previewIndex], strings: strings) { cropped in
                     capturedPhotos[previewIndex] = cropped
                     showCrop = false
                 } onCancel: {
@@ -333,12 +339,12 @@ struct CameraView: View {
                     .padding(12)
                     .background(.ultraThinMaterial, in: Circle())
             }
-            .accessibilityLabel("Back to camera")
+            .accessibilityLabel(strings.backToCamera)
             .accessibilityHint("Returns to camera to add more photos")
 
             Spacer()
 
-            Text("\(capturedPhotos.count) photo\(capturedPhotos.count == 1 ? "" : "s")")
+            Text(strings.photoCount(capturedPhotos.count))
                 .font(.system(size: 15, weight: .medium))
                 .foregroundStyle(.white.opacity(0.8))
 
@@ -354,7 +360,7 @@ struct CameraView: View {
                         .padding(12)
                         .background(.ultraThinMaterial, in: Circle())
                 }
-                .accessibilityLabel("Crop photo")
+                .accessibilityLabel(strings.cropPhoto)
                 .accessibilityHint("Opens the crop editor for the current photo")
 
                 Button {
@@ -373,7 +379,7 @@ struct CameraView: View {
                         .padding(12)
                         .background(.ultraThinMaterial, in: Circle())
                 }
-                .accessibilityLabel("Delete photo")
+                .accessibilityLabel(strings.deletePhoto)
                 .accessibilityHint("Removes the current photo from the selection")
             }
         }
@@ -427,7 +433,7 @@ struct CameraView: View {
                 HStack(spacing: 6) {
                     Image(systemName: "plus")
                         .font(.system(size: 14, weight: .bold))
-                    Text("Add more")
+                    Text(strings.addMore)
                         .font(.system(size: 15, weight: .semibold))
                 }
                 .foregroundStyle(.white)
@@ -445,7 +451,7 @@ struct CameraView: View {
                 onPhotosReady(capturedPhotos)
             } label: {
                 HStack(spacing: 6) {
-                    Text("Analyze")
+                    Text(strings.analyze)
                         .font(.system(size: 15, weight: .semibold))
                     Image(systemName: "arrow.right")
                         .font(.system(size: 14, weight: .bold))
@@ -695,6 +701,7 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
 
 struct PhotoCropView: View {
     let image: UIImage
+    let strings: AppStrings
     let onCropped: (UIImage) -> Void
     let onCancel: () -> Void
 
@@ -963,7 +970,7 @@ struct PhotoCropView: View {
     private var cropTopBar: some View {
         HStack {
             Button { onCancel() } label: {
-                Text("Cancel")
+                Text(strings.cancel)
                     .font(.system(size: 16, weight: .medium))
                     .foregroundStyle(.white)
                     .padding(.horizontal, 16)
@@ -984,7 +991,7 @@ struct PhotoCropView: View {
                     .padding(12)
                     .background(.ultraThinMaterial, in: Circle())
             }
-            .accessibilityLabel("Reset crop")
+            .accessibilityLabel(strings.resetCrop)
         }
         .padding(.horizontal, 20)
         .padding(.top, 12)
@@ -995,7 +1002,7 @@ struct PhotoCropView: View {
             let cropped = performCrop()
             onCropped(cropped)
         } label: {
-            Text("Done")
+            Text(strings.done)
                 .font(.system(size: 17, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)

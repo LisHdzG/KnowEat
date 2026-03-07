@@ -8,7 +8,12 @@
 import SwiftUI
 
 struct MenuCell: View {
+    @Environment(UserProfileStore.self) private var profileStore
     let menu: ScannedMenu
+
+    private var strings: AppStrings {
+        AppStrings(profileStore.profile?.nativeLanguage ?? "English")
+    }
 
     private var formattedDate: String {
         let formatter = DateFormatter()
@@ -42,7 +47,7 @@ struct MenuCell: View {
                     HStack(spacing: 4) {
                         Image(systemName: "fork.knife")
                             .font(.system(size: 10))
-                        Text("\(menu.dishes.count) dishes")
+                        Text(strings.dishesCount(menu.dishes.count))
                             .font(.interRegular(size: 12))
                     }
 

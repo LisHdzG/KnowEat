@@ -8,9 +8,14 @@
 import SwiftUI
 
 struct ActiveFiltersCard: View {
+    @Environment(UserProfileStore.self) private var profileStore
     let groups: [DietaryFilterGroup]
     var showChevron: Bool = false
     var onTap: (() -> Void)? = nil
+
+    private var strings: AppStrings {
+        AppStrings(profileStore.profile?.nativeLanguage ?? "English")
+    }
 
     private var allChips: [(item: Allergen, color: Color)] {
         groups.flatMap { group in
@@ -28,7 +33,7 @@ struct ActiveFiltersCard: View {
                         .font(.system(size: 16))
                         .foregroundStyle(allChips.isEmpty ? Color("SecondaryGray").opacity(0.4) : Color("PrimaryOrange"))
 
-                    Text("Dietary Profile")
+                    Text(strings.dietaryProfile)
                         .font(.interMedium(size: 14))
                         .foregroundStyle(.primary)
 
@@ -42,7 +47,7 @@ struct ActiveFiltersCard: View {
                 }
 
                 if allChips.isEmpty {
-                    Text("No dietary restrictions configured")
+                    Text(strings.noDietaryRestrictions)
                         .font(.interRegular(size: 13))
                         .foregroundStyle(.secondary)
                 } else {

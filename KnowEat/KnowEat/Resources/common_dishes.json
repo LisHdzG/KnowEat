@@ -1,0 +1,2064 @@
+[
+  {
+    "names": ["carbonara", "pasta carbonara", "spaghetti carbonara", "spaghetti alla carbonara"],
+    "ingredients": ["pasta", "eggs", "guanciale", "pecorino cheese", "black pepper"],
+    "allergens": ["gluten", "eggs", "dairy", "lactose", "histamine"]
+  },
+  {
+    "names": ["margherita", "pizza margherita"],
+    "ingredients": ["pizza dough", "tomato sauce", "mozzarella", "basil", "olive oil"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["lasagna", "lasagne", "lasagna bolognese"],
+    "ingredients": ["pasta sheets", "ground beef", "tomato sauce", "béchamel", "parmesan", "mozzarella"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["risotto", "risotto ai funghi", "mushroom risotto"],
+    "ingredients": ["arborio rice", "mushrooms", "onion", "butter", "parmesan", "white wine", "broth"],
+    "allergens": ["dairy", "lactose", "sulfites", "fodmap"]
+  },
+  {
+    "names": ["tiramisu", "tiramisù"],
+    "ingredients": ["mascarpone", "eggs", "ladyfingers", "espresso", "cocoa", "sugar"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["bruschetta", "bruschette"],
+    "ingredients": ["bread", "tomatoes", "garlic", "basil", "olive oil"],
+    "allergens": ["gluten", "fodmap"]
+  },
+  {
+    "names": ["caprese", "insalata caprese"],
+    "ingredients": ["mozzarella", "tomatoes", "basil", "olive oil"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["amatriciana", "pasta amatriciana", "bucatini amatriciana"],
+    "ingredients": ["pasta", "guanciale", "tomato sauce", "pecorino", "chili"],
+    "allergens": ["gluten", "dairy", "lactose", "histamine"]
+  },
+  {
+    "names": ["pesto", "pasta al pesto", "penne al pesto", "trofie al pesto"],
+    "ingredients": ["pasta", "basil", "pine nuts", "garlic", "parmesan", "olive oil"],
+    "allergens": ["gluten", "dairy", "tree_nuts", "lactose", "fodmap"]
+  },
+  {
+    "names": ["ravioli", "ravioli ricotta e spinaci"],
+    "ingredients": ["pasta dough", "ricotta", "spinach", "eggs", "parmesan"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["gnocchi", "gnocchi di patate"],
+    "ingredients": ["potatoes", "flour", "eggs"],
+    "allergens": ["gluten", "eggs"]
+  },
+  {
+    "names": ["arancini", "arancino", "arancine"],
+    "ingredients": ["rice", "ragù", "mozzarella", "peas", "eggs", "breadcrumbs"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["ossobuco", "osso buco"],
+    "ingredients": ["veal shank", "onion", "carrots", "celery", "white wine", "broth", "gremolata"],
+    "allergens": ["celery", "sulfites", "fodmap"]
+  },
+  {
+    "names": ["saltimbocca", "saltimbocca alla romana"],
+    "ingredients": ["veal", "prosciutto", "sage", "butter", "white wine"],
+    "allergens": ["dairy", "sulfites", "histamine", "lactose"]
+  },
+  {
+    "names": ["parmigiana", "parmigiana di melanzane", "melanzane alla parmigiana"],
+    "ingredients": ["eggplant", "tomato sauce", "mozzarella", "parmesan", "basil"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["cacio e pepe", "pasta cacio e pepe"],
+    "ingredients": ["pasta", "pecorino cheese", "black pepper"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["focaccia"],
+    "ingredients": ["flour", "olive oil", "salt", "yeast", "rosemary"],
+    "allergens": ["gluten"]
+  },
+  {
+    "names": ["prosciutto e melone"],
+    "ingredients": ["prosciutto", "cantaloupe melon"],
+    "allergens": ["histamine", "fructose"]
+  },
+  {
+    "names": ["tacos", "tacos de carne", "tacos al pastor"],
+    "ingredients": ["corn tortilla", "meat", "onion", "cilantro", "salsa"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["burrito", "burrito de pollo", "burrito de carne"],
+    "ingredients": ["flour tortilla", "rice", "beans", "meat", "cheese", "sour cream", "salsa"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["quesadilla", "quesadillas"],
+    "ingredients": ["flour tortilla", "cheese", "vegetables or meat"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["enchiladas", "enchiladas rojas", "enchiladas verdes"],
+    "ingredients": ["corn tortilla", "chicken or meat", "chili sauce", "cheese", "onion", "cream"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["guacamole"],
+    "ingredients": ["avocado", "lime", "onion", "cilantro", "tomato", "chili"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["nachos"],
+    "ingredients": ["corn chips", "cheese", "jalapeños", "beans", "sour cream", "salsa"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["chilaquiles"],
+    "ingredients": ["corn tortilla chips", "salsa", "cheese", "cream", "eggs", "onion"],
+    "allergens": ["dairy", "eggs", "lactose", "fodmap"]
+  },
+  {
+    "names": ["tamales", "tamal"],
+    "ingredients": ["corn masa", "lard", "meat or cheese", "chili sauce"],
+    "allergens": ["dairy"]
+  },
+  {
+    "names": ["pozole", "posole"],
+    "ingredients": ["hominy corn", "pork", "chili", "onion", "garlic", "oregano"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["ceviche"],
+    "ingredients": ["raw fish", "lime juice", "onion", "cilantro", "chili", "tomato"],
+    "allergens": ["fish", "fodmap"]
+  },
+  {
+    "names": ["empanada", "empanadas"],
+    "ingredients": ["wheat dough", "meat or cheese", "onion", "spices"],
+    "allergens": ["gluten", "fodmap"]
+  },
+  {
+    "names": ["cheeseburger", "hamburger", "burger", "hamburguesa"],
+    "ingredients": ["beef patty", "bread bun", "cheese", "lettuce", "tomato", "onion", "pickles"],
+    "allergens": ["gluten", "dairy", "sesame", "lactose", "fodmap"]
+  },
+  {
+    "names": ["hot dog", "hotdog"],
+    "ingredients": ["sausage", "bread bun", "mustard", "ketchup", "onion"],
+    "allergens": ["gluten", "mustard", "fodmap"]
+  },
+  {
+    "names": ["caesar salad", "ensalada césar", "insalata caesar"],
+    "ingredients": ["romaine lettuce", "parmesan", "croutons", "caesar dressing", "anchovies", "eggs"],
+    "allergens": ["gluten", "dairy", "eggs", "fish", "lactose"]
+  },
+  {
+    "names": ["club sandwich"],
+    "ingredients": ["bread", "chicken", "bacon", "lettuce", "tomato", "mayonnaise"],
+    "allergens": ["gluten", "eggs"]
+  },
+  {
+    "names": ["fish and chips", "fish & chips"],
+    "ingredients": ["battered fish", "french fries", "tartar sauce"],
+    "allergens": ["gluten", "fish", "eggs"]
+  },
+  {
+    "names": ["mac and cheese", "mac & cheese", "macaroni and cheese"],
+    "ingredients": ["macaroni", "cheddar cheese", "butter", "milk", "flour"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["buffalo wings", "chicken wings", "alitas"],
+    "ingredients": ["chicken wings", "butter", "hot sauce", "celery"],
+    "allergens": ["dairy", "celery", "lactose"]
+  },
+  {
+    "names": ["bbq ribs", "costillas", "ribs"],
+    "ingredients": ["pork ribs", "bbq sauce", "spices"],
+    "allergens": ["mustard", "sulfites"]
+  },
+  {
+    "names": ["grilled chicken", "pollo a la parrilla", "pollo alla griglia"],
+    "ingredients": ["chicken breast", "olive oil", "garlic", "herbs"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["new york steak", "ribeye", "filete", "bistecca"],
+    "ingredients": ["beef steak", "salt", "pepper", "butter"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["sushi", "nigiri", "sashimi"],
+    "ingredients": ["rice", "raw fish", "nori seaweed", "soy sauce", "wasabi"],
+    "allergens": ["fish", "soy", "sesame"]
+  },
+  {
+    "names": ["ramen"],
+    "ingredients": ["wheat noodles", "broth", "pork", "egg", "nori", "green onion"],
+    "allergens": ["gluten", "eggs", "soy"]
+  },
+  {
+    "names": ["tempura"],
+    "ingredients": ["shrimp or vegetables", "tempura batter", "flour", "eggs"],
+    "allergens": ["gluten", "eggs", "crustaceans"]
+  },
+  {
+    "names": ["gyoza", "dumplings"],
+    "ingredients": ["wheat wrapper", "ground pork", "cabbage", "garlic", "ginger", "soy sauce"],
+    "allergens": ["gluten", "soy", "sesame", "fodmap"]
+  },
+  {
+    "names": ["teriyaki", "chicken teriyaki", "teriyaki chicken"],
+    "ingredients": ["chicken", "soy sauce", "mirin", "sugar", "ginger", "garlic"],
+    "allergens": ["soy", "gluten", "fodmap"]
+  },
+  {
+    "names": ["edamame"],
+    "ingredients": ["soybeans", "salt"],
+    "allergens": ["soy"]
+  },
+  {
+    "names": ["miso soup", "sopa de miso", "zuppa di miso"],
+    "ingredients": ["miso paste", "tofu", "seaweed", "green onion", "dashi"],
+    "allergens": ["soy", "fish"]
+  },
+  {
+    "names": ["pad thai"],
+    "ingredients": ["rice noodles", "shrimp or chicken", "eggs", "peanuts", "bean sprouts", "lime", "fish sauce"],
+    "allergens": ["crustaceans", "eggs", "peanuts", "fish"]
+  },
+  {
+    "names": ["green curry", "curry verde", "thai green curry"],
+    "ingredients": ["coconut milk", "green curry paste", "chicken", "bamboo shoots", "basil", "fish sauce"],
+    "allergens": ["fish", "tree_nuts"]
+  },
+  {
+    "names": ["tom yum", "tom yam"],
+    "ingredients": ["shrimp", "lemongrass", "lime", "chili", "mushrooms", "fish sauce"],
+    "allergens": ["crustaceans", "fish"]
+  },
+  {
+    "names": ["spring rolls", "rollitos primavera"],
+    "ingredients": ["rice paper or wheat wrapper", "vegetables", "vermicelli", "shrimp or pork"],
+    "allergens": ["gluten", "crustaceans"]
+  },
+  {
+    "names": ["fried rice", "arroz frito"],
+    "ingredients": ["rice", "eggs", "soy sauce", "vegetables", "onion", "garlic"],
+    "allergens": ["eggs", "soy", "fodmap"]
+  },
+  {
+    "names": ["tikka masala", "chicken tikka masala"],
+    "ingredients": ["chicken", "yogurt", "tomato sauce", "cream", "garlic", "ginger", "spices"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["naan", "naan bread"],
+    "ingredients": ["flour", "yogurt", "butter", "yeast"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["samosa", "samosas"],
+    "ingredients": ["wheat pastry", "potatoes", "peas", "spices"],
+    "allergens": ["gluten"]
+  },
+  {
+    "names": ["biryani"],
+    "ingredients": ["basmati rice", "meat or vegetables", "yogurt", "onion", "garlic", "saffron", "spices"],
+    "allergens": ["dairy", "fodmap", "lactose"]
+  },
+  {
+    "names": ["tandoori chicken", "pollo tandoori"],
+    "ingredients": ["chicken", "yogurt", "garlic", "ginger", "tandoori spices"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["falafel"],
+    "ingredients": ["chickpeas", "garlic", "onion", "parsley", "cumin", "flour"],
+    "allergens": ["gluten", "sesame", "fodmap"]
+  },
+  {
+    "names": ["hummus"],
+    "ingredients": ["chickpeas", "tahini", "lemon", "garlic", "olive oil"],
+    "allergens": ["sesame", "fodmap"]
+  },
+  {
+    "names": ["kebab", "shawarma", "doner"],
+    "ingredients": ["lamb or chicken", "pita bread", "yogurt sauce", "onion", "tomato", "lettuce"],
+    "allergens": ["gluten", "dairy", "sesame", "lactose", "fodmap"]
+  },
+  {
+    "names": ["tabbouleh", "tabule"],
+    "ingredients": ["bulgur wheat", "parsley", "tomato", "onion", "lemon", "olive oil"],
+    "allergens": ["gluten", "fodmap"]
+  },
+  {
+    "names": ["paella", "paella de mariscos", "paella valenciana"],
+    "ingredients": ["rice", "saffron", "chicken or seafood", "onion", "garlic", "peppers", "peas"],
+    "allergens": ["crustaceans", "mollusks", "fodmap"]
+  },
+  {
+    "names": ["gazpacho"],
+    "ingredients": ["tomatoes", "cucumber", "pepper", "garlic", "bread", "olive oil", "vinegar"],
+    "allergens": ["gluten", "fodmap", "sulfites"]
+  },
+  {
+    "names": ["tortilla española", "tortilla de patatas", "spanish omelette"],
+    "ingredients": ["eggs", "potatoes", "onion", "olive oil"],
+    "allergens": ["eggs", "fodmap"]
+  },
+  {
+    "names": ["croquetas", "croquettes"],
+    "ingredients": ["béchamel", "ham or chicken", "breadcrumbs", "eggs", "flour"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["patatas bravas", "papas bravas"],
+    "ingredients": ["potatoes", "bravas sauce", "aioli"],
+    "allergens": ["eggs"]
+  },
+  {
+    "names": ["croissant"],
+    "ingredients": ["flour", "butter", "sugar", "yeast", "eggs", "milk"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["quiche", "quiche lorraine"],
+    "ingredients": ["pie crust", "eggs", "cream", "cheese", "bacon or vegetables"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["crêpe", "crepe", "crêpes", "crepes"],
+    "ingredients": ["flour", "eggs", "milk", "butter", "sugar"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["ratatouille"],
+    "ingredients": ["eggplant", "zucchini", "peppers", "tomatoes", "onion", "garlic", "olive oil"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["coq au vin"],
+    "ingredients": ["chicken", "red wine", "bacon", "mushrooms", "onion", "garlic", "butter"],
+    "allergens": ["dairy", "sulfites", "histamine", "fodmap", "lactose"]
+  },
+  {
+    "names": ["french onion soup", "soupe à l'oignon"],
+    "ingredients": ["onions", "beef broth", "bread", "gruyère cheese", "butter", "wine"],
+    "allergens": ["gluten", "dairy", "sulfites", "fodmap", "lactose"]
+  },
+  {
+    "names": ["escargot", "escargots"],
+    "ingredients": ["snails", "garlic butter", "parsley"],
+    "allergens": ["mollusks", "dairy", "fodmap", "lactose"]
+  },
+  {
+    "names": ["fondue"],
+    "ingredients": ["gruyère cheese", "emmental cheese", "white wine", "garlic", "bread"],
+    "allergens": ["gluten", "dairy", "sulfites", "fodmap", "lactose"]
+  },
+  {
+    "names": ["moussaka"],
+    "ingredients": ["eggplant", "ground lamb", "tomato sauce", "béchamel", "onion", "garlic"],
+    "allergens": ["dairy", "gluten", "fodmap", "lactose"]
+  },
+  {
+    "names": ["gyros"],
+    "ingredients": ["pork or chicken", "pita bread", "tzatziki", "tomato", "onion"],
+    "allergens": ["gluten", "dairy", "fodmap", "lactose"]
+  },
+  {
+    "names": ["souvlaki"],
+    "ingredients": ["grilled meat skewers", "pita bread", "tomato", "onion", "tzatziki"],
+    "allergens": ["gluten", "dairy", "fodmap", "lactose"]
+  },
+  {
+    "names": ["pho"],
+    "ingredients": ["rice noodles", "beef broth", "beef", "bean sprouts", "basil", "lime", "onion"],
+    "allergens": ["soy", "fish", "fodmap"]
+  },
+  {
+    "names": ["banh mi"],
+    "ingredients": ["baguette", "pork or chicken", "pickled vegetables", "cilantro", "jalapeño", "pâté"],
+    "allergens": ["gluten"]
+  },
+  {
+    "names": ["dim sum", "har gow", "siu mai"],
+    "ingredients": ["wheat or rice wrapper", "shrimp or pork", "vegetables", "soy sauce"],
+    "allergens": ["gluten", "crustaceans", "soy", "sesame"]
+  },
+  {
+    "names": ["kung pao chicken", "pollo kung pao"],
+    "ingredients": ["chicken", "peanuts", "chili", "soy sauce", "garlic", "ginger", "vegetables"],
+    "allergens": ["peanuts", "soy", "fodmap"]
+  },
+  {
+    "names": ["sweet and sour", "agridulce"],
+    "ingredients": ["pork or chicken", "pineapple", "peppers", "vinegar", "sugar", "soy sauce"],
+    "allergens": ["soy", "gluten", "sulfites", "fructose"]
+  },
+  {
+    "names": ["wonton", "wonton soup"],
+    "ingredients": ["wheat wrapper", "ground pork", "shrimp", "broth", "soy sauce"],
+    "allergens": ["gluten", "crustaceans", "soy"]
+  },
+  {
+    "names": ["pancakes", "hotcakes", "panqueques"],
+    "ingredients": ["flour", "eggs", "milk", "butter", "sugar", "baking powder"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["french toast", "tostadas francesas", "pain perdu"],
+    "ingredients": ["bread", "eggs", "milk", "cinnamon", "sugar", "butter"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["eggs benedict", "huevos benedictinos"],
+    "ingredients": ["english muffin", "poached eggs", "ham", "hollandaise sauce", "butter"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["churros"],
+    "ingredients": ["flour", "water", "sugar", "oil", "chocolate sauce"],
+    "allergens": ["gluten", "dairy"]
+  },
+  {
+    "names": ["chocolate cake", "pastel de chocolate", "torta al cioccolato"],
+    "ingredients": ["flour", "cocoa", "eggs", "butter", "sugar", "milk"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["cheesecake"],
+    "ingredients": ["cream cheese", "sugar", "eggs", "graham cracker crust", "butter"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["panna cotta"],
+    "ingredients": ["cream", "sugar", "gelatin", "vanilla"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["crème brûlée", "creme brulee"],
+    "ingredients": ["cream", "egg yolks", "sugar", "vanilla"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["gelato", "ice cream", "helado"],
+    "ingredients": ["milk", "cream", "sugar", "eggs"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["margarita", "cocktail margarita"],
+    "ingredients": ["tequila", "lime juice", "triple sec", "salt"],
+    "allergens": ["sulfites"]
+  },
+  {
+    "names": ["mojito"],
+    "ingredients": ["rum", "lime", "mint", "sugar", "soda water"],
+    "allergens": ["sulfites"]
+  },
+  {
+    "names": ["sangria"],
+    "ingredients": ["red wine", "fruit", "brandy", "sugar", "soda"],
+    "allergens": ["sulfites", "fructose", "histamine"]
+  },
+  {
+    "names": ["beer", "birra", "cerveza", "bière"],
+    "ingredients": ["barley", "hops", "yeast", "water"],
+    "allergens": ["gluten"]
+  },
+  {
+    "names": ["wine", "vino", "vin"],
+    "ingredients": ["grapes"],
+    "allergens": ["sulfites", "histamine"]
+  },
+  {
+    "names": ["couscous"],
+    "ingredients": ["semolina wheat", "vegetables", "meat or chickpeas", "broth", "spices"],
+    "allergens": ["gluten", "fodmap"]
+  },
+  {
+    "names": ["bibimbap"],
+    "ingredients": ["rice", "vegetables", "beef", "egg", "gochujang", "sesame oil"],
+    "allergens": ["eggs", "soy", "sesame"]
+  },
+  {
+    "names": ["bulgogi"],
+    "ingredients": ["beef", "soy sauce", "sesame oil", "garlic", "ginger", "pear", "sugar"],
+    "allergens": ["soy", "sesame", "fodmap", "fructose"]
+  },
+
+  {
+    "names": ["vitello tonnato"],
+    "ingredients": ["veal", "tuna sauce", "capers", "anchovies", "mayonnaise", "lemon"],
+    "allergens": ["fish", "eggs", "histamine"]
+  },
+  {
+    "names": ["arrabbiata", "pasta all'arrabbiata", "penne arrabbiata"],
+    "ingredients": ["pasta", "tomato sauce", "garlic", "chili", "olive oil"],
+    "allergens": ["gluten", "fodmap"]
+  },
+  {
+    "names": ["pasta alla norma", "pasta norma"],
+    "ingredients": ["pasta", "eggplant", "tomato sauce", "ricotta salata", "basil"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["tortellini in brodo", "tortellini en caldo"],
+    "ingredients": ["pasta dough", "pork", "prosciutto", "parmesan", "eggs", "broth"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose", "histamine"]
+  },
+  {
+    "names": ["ribollita"],
+    "ingredients": ["bread", "cannellini beans", "kale", "cabbage", "carrots", "onion", "celery", "tomato"],
+    "allergens": ["gluten", "celery", "fodmap"]
+  },
+  {
+    "names": ["pappa al pomodoro"],
+    "ingredients": ["bread", "tomatoes", "garlic", "basil", "olive oil"],
+    "allergens": ["gluten", "fodmap"]
+  },
+  {
+    "names": ["grissini"],
+    "ingredients": ["flour", "olive oil", "yeast", "salt"],
+    "allergens": ["gluten"]
+  },
+  {
+    "names": ["piadina", "piadina romagnola"],
+    "ingredients": ["flour", "lard", "salt", "water"],
+    "allergens": ["gluten"]
+  },
+  {
+    "names": ["bomboloni", "bombolone"],
+    "ingredients": ["flour", "eggs", "butter", "sugar", "yeast", "milk", "custard"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["panettone"],
+    "ingredients": ["flour", "butter", "eggs", "sugar", "candied fruit", "raisins", "yeast"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose", "fructose"]
+  },
+  {
+    "names": ["pandoro"],
+    "ingredients": ["flour", "butter", "eggs", "sugar", "yeast", "vanilla"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["cassata", "cassata siciliana"],
+    "ingredients": ["sponge cake", "ricotta", "candied fruit", "marzipan", "sugar", "chocolate"],
+    "allergens": ["gluten", "dairy", "eggs", "tree_nuts", "lactose", "fructose"]
+  },
+  {
+    "names": ["cannoli", "cannolo"],
+    "ingredients": ["fried pastry shell", "ricotta", "sugar", "chocolate chips", "pistachios"],
+    "allergens": ["gluten", "dairy", "eggs", "tree_nuts", "lactose"]
+  },
+  {
+    "names": ["semifreddo"],
+    "ingredients": ["eggs", "cream", "sugar", "flavorings"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["granita", "granita siciliana"],
+    "ingredients": ["water", "sugar", "fruit or coffee"],
+    "allergens": ["fructose"]
+  },
+  {
+    "names": ["affogato", "affogato al caffè"],
+    "ingredients": ["vanilla gelato", "espresso"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["bistecca alla fiorentina", "florentine steak"],
+    "ingredients": ["t-bone steak", "salt", "pepper", "olive oil"],
+    "allergens": []
+  },
+  {
+    "names": ["tagliata", "tagliata di manzo"],
+    "ingredients": ["beef steak", "arugula", "parmesan", "olive oil", "lemon"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["cotoletta alla milanese", "cotoletta", "milanesa"],
+    "ingredients": ["veal cutlet", "eggs", "breadcrumbs", "butter"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["polpette", "meatballs", "albóndigas italianas"],
+    "ingredients": ["ground beef", "breadcrumbs", "eggs", "parmesan", "garlic", "parsley", "tomato sauce"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose", "fodmap"]
+  },
+  {
+    "names": ["fritto misto", "frittura mista"],
+    "ingredients": ["shrimp", "squid", "fish", "flour", "eggs", "oil"],
+    "allergens": ["gluten", "eggs", "crustaceans", "fish", "mollusks"]
+  },
+  {
+    "names": ["caponata"],
+    "ingredients": ["eggplant", "celery", "tomatoes", "onion", "capers", "olives", "vinegar", "sugar"],
+    "allergens": ["celery", "sulfites", "fodmap"]
+  },
+  {
+    "names": ["supplì", "suppli"],
+    "ingredients": ["rice", "tomato sauce", "mozzarella", "eggs", "breadcrumbs"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["crocchè", "crocché", "croquetas de papa napolitanas"],
+    "ingredients": ["potatoes", "eggs", "parsley", "breadcrumbs", "mozzarella"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["panzerotti", "panzerotto"],
+    "ingredients": ["pizza dough", "mozzarella", "tomato sauce"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["minestrone", "sopa minestrone"],
+    "ingredients": ["vegetables", "beans", "pasta", "celery", "onion", "garlic", "tomato"],
+    "allergens": ["gluten", "celery", "fodmap"]
+  },
+  {
+    "names": ["pasta e fagioli", "pasta fazool"],
+    "ingredients": ["pasta", "cannellini beans", "tomato", "onion", "celery", "garlic", "olive oil"],
+    "allergens": ["gluten", "celery", "fodmap"]
+  },
+  {
+    "names": ["fettuccine alfredo"],
+    "ingredients": ["fettuccine", "butter", "parmesan", "cream"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["aglio e olio", "spaghetti aglio e olio", "pasta aglio e olio"],
+    "ingredients": ["spaghetti", "garlic", "olive oil", "chili flakes", "parsley"],
+    "allergens": ["gluten", "fodmap"]
+  },
+  {
+    "names": ["pasta alla vodka", "penne alla vodka"],
+    "ingredients": ["pasta", "tomato sauce", "cream", "vodka", "onion", "parmesan"],
+    "allergens": ["gluten", "dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["carpaccio", "carpaccio di manzo"],
+    "ingredients": ["raw beef", "arugula", "parmesan", "lemon", "olive oil", "capers"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["acqua pazza", "pesce all'acqua pazza"],
+    "ingredients": ["white fish", "tomatoes", "garlic", "capers", "olives", "white wine"],
+    "allergens": ["fish", "sulfites", "fodmap"]
+  },
+  {
+    "names": ["pasta primavera"],
+    "ingredients": ["pasta", "zucchini", "bell peppers", "tomatoes", "garlic", "olive oil", "parmesan"],
+    "allergens": ["gluten", "dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["calzone"],
+    "ingredients": ["pizza dough", "mozzarella", "ricotta", "ham", "tomato sauce"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["antipasto", "antipasto misto"],
+    "ingredients": ["cured meats", "cheese", "olives", "artichokes", "roasted peppers"],
+    "allergens": ["dairy", "lactose", "histamine"]
+  },
+  {
+    "names": ["pizza quattro formaggi", "four cheese pizza"],
+    "ingredients": ["pizza dough", "mozzarella", "gorgonzola", "fontina", "parmesan"],
+    "allergens": ["gluten", "dairy", "lactose", "histamine"]
+  },
+  {
+    "names": ["pizza pepperoni", "pepperoni pizza"],
+    "ingredients": ["pizza dough", "tomato sauce", "mozzarella", "pepperoni"],
+    "allergens": ["gluten", "dairy", "lactose", "histamine"]
+  },
+  {
+    "names": ["bolognese", "ragù alla bolognese", "pasta bolognese", "spaghetti bolognese"],
+    "ingredients": ["pasta", "ground beef", "tomato sauce", "onion", "celery", "carrots", "red wine"],
+    "allergens": ["gluten", "celery", "sulfites", "fodmap"]
+  },
+  {
+    "names": ["tortellini", "tortellini alla panna"],
+    "ingredients": ["pasta dough", "pork", "prosciutto", "parmesan", "eggs", "cream"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose", "histamine"]
+  },
+
+  {
+    "names": ["carnitas", "tacos de carnitas"],
+    "ingredients": ["pork shoulder", "lard", "orange", "garlic", "cumin", "corn tortilla"],
+    "allergens": ["fodmap", "fructose"]
+  },
+  {
+    "names": ["birria", "tacos de birria", "birria de res"],
+    "ingredients": ["beef or goat", "dried chili peppers", "onion", "garlic", "cumin", "oregano", "tomato"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["chile relleno", "chiles rellenos"],
+    "ingredients": ["poblano pepper", "cheese", "eggs", "flour", "tomato sauce"],
+    "allergens": ["dairy", "eggs", "gluten", "lactose"]
+  },
+  {
+    "names": ["mole", "mole poblano", "pollo en mole"],
+    "ingredients": ["dried chili peppers", "chocolate", "sesame seeds", "peanuts", "onion", "garlic", "spices", "chicken"],
+    "allergens": ["peanuts", "sesame", "fodmap"]
+  },
+  {
+    "names": ["tostadas", "tostada"],
+    "ingredients": ["fried corn tortilla", "beans", "lettuce", "cheese", "cream", "salsa", "meat"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["sopes"],
+    "ingredients": ["corn masa", "beans", "lettuce", "cheese", "cream", "salsa", "meat"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["gorditas"],
+    "ingredients": ["corn masa", "beans", "cheese", "salsa", "meat", "lettuce"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["flautas", "taquitos"],
+    "ingredients": ["corn tortilla", "chicken or beef", "cheese", "cream", "lettuce", "salsa", "oil"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["torta ahogada"],
+    "ingredients": ["birote bread", "carnitas", "onion", "chili sauce", "beans"],
+    "allergens": ["gluten", "fodmap"]
+  },
+  {
+    "names": ["elote", "Mexican street corn", "elote asado"],
+    "ingredients": ["corn on the cob", "mayonnaise", "cheese", "chili powder", "lime"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["esquites", "elote en vaso"],
+    "ingredients": ["corn kernels", "mayonnaise", "cheese", "chili powder", "lime", "epazote"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["tres leches", "pastel de tres leches", "three milk cake"],
+    "ingredients": ["sponge cake", "condensed milk", "evaporated milk", "cream", "eggs", "flour", "sugar"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["flan", "flan de caramelo", "flan napolitano"],
+    "ingredients": ["eggs", "milk", "condensed milk", "sugar", "vanilla"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["chiles en nogada"],
+    "ingredients": ["poblano pepper", "picadillo", "walnut cream sauce", "pomegranate", "parsley"],
+    "allergens": ["tree_nuts", "fructose"]
+  },
+  {
+    "names": ["cochinita pibil", "tacos de cochinita"],
+    "ingredients": ["pork", "achiote paste", "orange juice", "onion", "habanero", "corn tortilla"],
+    "allergens": ["fodmap", "fructose"]
+  },
+  {
+    "names": ["barbacoa", "tacos de barbacoa"],
+    "ingredients": ["beef cheeks", "dried chili peppers", "garlic", "cumin", "oregano", "corn tortilla"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["tacos de suadero"],
+    "ingredients": ["beef brisket", "corn tortilla", "onion", "cilantro", "salsa"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["tacos de lengua"],
+    "ingredients": ["beef tongue", "corn tortilla", "onion", "cilantro", "salsa"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["tacos de buche"],
+    "ingredients": ["pork stomach", "corn tortilla", "onion", "cilantro", "salsa"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["tacos de chorizo"],
+    "ingredients": ["chorizo", "corn tortilla", "onion", "cilantro", "salsa"],
+    "allergens": ["fodmap", "histamine"]
+  },
+  {
+    "names": ["carne asada", "tacos de carne asada"],
+    "ingredients": ["grilled beef", "corn tortilla", "onion", "cilantro", "salsa", "guacamole"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["chicharrón", "chicharrones"],
+    "ingredients": ["pork rinds", "salt", "lime", "chili sauce"],
+    "allergens": []
+  },
+  {
+    "names": ["sincronizada", "sincronizadas"],
+    "ingredients": ["flour tortilla", "ham", "cheese", "salsa"],
+    "allergens": ["gluten", "dairy", "lactose", "histamine"]
+  },
+  {
+    "names": ["huarache", "huaraches"],
+    "ingredients": ["corn masa", "beans", "cheese", "meat", "salsa", "onion", "cream"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["memela", "memelas"],
+    "ingredients": ["corn masa", "beans", "cheese", "salsa"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["tlayuda"],
+    "ingredients": ["large corn tortilla", "beans", "oaxaca cheese", "meat", "avocado", "salsa"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["molcajete"],
+    "ingredients": ["grilled beef", "chicken", "shrimp", "cactus", "cheese", "salsa", "onion"],
+    "allergens": ["crustaceans", "dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["arroz con leche", "rice pudding"],
+    "ingredients": ["rice", "milk", "sugar", "cinnamon", "condensed milk"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["horchata", "agua de horchata"],
+    "ingredients": ["rice", "cinnamon", "sugar", "vanilla", "water"],
+    "allergens": []
+  },
+  {
+    "names": ["torta mexicana", "torta de jamón", "torta de milanesa"],
+    "ingredients": ["bolillo bread", "beans", "meat or ham", "cheese", "lettuce", "tomato", "avocado", "mayonnaise"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["pambazo", "pambazos"],
+    "ingredients": ["bread", "potatoes", "chorizo", "guajillo sauce", "lettuce", "cream", "cheese"],
+    "allergens": ["gluten", "dairy", "lactose", "histamine"]
+  },
+  {
+    "names": ["huevos rancheros"],
+    "ingredients": ["eggs", "corn tortilla", "ranchero sauce", "beans", "cheese"],
+    "allergens": ["eggs", "dairy", "lactose"]
+  },
+  {
+    "names": ["menudo", "pancita"],
+    "ingredients": ["beef tripe", "hominy", "dried chili peppers", "onion", "garlic", "oregano"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["pupusa", "pupusas"],
+    "ingredients": ["corn masa", "cheese", "beans", "pork"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["arepa", "arepas"],
+    "ingredients": ["corn flour", "water", "salt", "cheese", "butter"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["bandeja paisa"],
+    "ingredients": ["rice", "beans", "ground beef", "fried egg", "plantain", "chicharrón", "arepa", "avocado", "chorizo"],
+    "allergens": ["eggs", "histamine"]
+  },
+  {
+    "names": ["lomo saltado"],
+    "ingredients": ["beef", "onion", "tomato", "french fries", "soy sauce", "rice", "vinegar"],
+    "allergens": ["soy", "sulfites", "fodmap"]
+  },
+  {
+    "names": ["ají de gallina"],
+    "ingredients": ["chicken", "bread", "walnuts", "ají amarillo", "milk", "parmesan", "rice"],
+    "allergens": ["gluten", "dairy", "tree_nuts", "lactose"]
+  },
+  {
+    "names": ["pastel de choclo"],
+    "ingredients": ["ground corn", "ground beef", "chicken", "onion", "eggs", "olives", "raisins"],
+    "allergens": ["eggs", "fodmap", "fructose"]
+  },
+  {
+    "names": ["pico de gallo", "salsa fresca"],
+    "ingredients": ["tomato", "onion", "cilantro", "jalapeño", "lime"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["salsa verde", "salsa verde mexicana"],
+    "ingredients": ["tomatillo", "jalapeño", "onion", "cilantro", "garlic"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["tacos de pescado", "fish tacos"],
+    "ingredients": ["battered fish", "corn tortilla", "cabbage", "cream sauce", "lime", "salsa"],
+    "allergens": ["fish", "gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["chimichanga", "chimichangas"],
+    "ingredients": ["flour tortilla", "meat", "beans", "cheese", "rice", "oil"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+
+  {
+    "names": ["tonkatsu", "tonkatsu de cerdo"],
+    "ingredients": ["pork cutlet", "breadcrumbs", "eggs", "flour", "cabbage", "tonkatsu sauce"],
+    "allergens": ["gluten", "eggs", "soy"]
+  },
+  {
+    "names": ["okonomiyaki"],
+    "ingredients": ["flour", "cabbage", "eggs", "pork belly", "okonomiyaki sauce", "mayonnaise", "bonito flakes"],
+    "allergens": ["gluten", "eggs", "fish", "soy"]
+  },
+  {
+    "names": ["takoyaki", "bolitas de pulpo"],
+    "ingredients": ["flour batter", "octopus", "green onion", "ginger", "takoyaki sauce", "bonito flakes", "mayonnaise"],
+    "allergens": ["gluten", "eggs", "mollusks", "fish", "soy"]
+  },
+  {
+    "names": ["yakitori"],
+    "ingredients": ["chicken skewers", "soy sauce", "mirin", "sugar", "sake"],
+    "allergens": ["soy", "gluten"]
+  },
+  {
+    "names": ["udon", "udon noodles"],
+    "ingredients": ["wheat noodles", "dashi broth", "soy sauce", "mirin", "green onion"],
+    "allergens": ["gluten", "soy", "fish"]
+  },
+  {
+    "names": ["soba", "soba noodles", "fideos soba"],
+    "ingredients": ["buckwheat noodles", "dashi broth", "soy sauce", "mirin", "green onion"],
+    "allergens": ["gluten", "soy", "fish"]
+  },
+  {
+    "names": ["katsu curry", "chicken katsu curry", "katsu kare"],
+    "ingredients": ["breaded chicken cutlet", "curry sauce", "rice", "flour", "eggs"],
+    "allergens": ["gluten", "eggs", "soy"]
+  },
+  {
+    "names": ["donburi", "oyakodon", "katsudon"],
+    "ingredients": ["rice", "chicken or pork cutlet", "eggs", "onion", "soy sauce", "mirin"],
+    "allergens": ["gluten", "eggs", "soy", "fodmap"]
+  },
+  {
+    "names": ["onigiri", "rice ball", "bola de arroz"],
+    "ingredients": ["rice", "nori seaweed", "salmon or tuna or pickled plum"],
+    "allergens": ["fish"]
+  },
+  {
+    "names": ["mochi", "mochi ice cream"],
+    "ingredients": ["glutinous rice flour", "sugar", "ice cream or red bean paste"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["wagyu", "wagyu beef", "carne wagyu"],
+    "ingredients": ["wagyu beef", "salt", "pepper"],
+    "allergens": []
+  },
+  {
+    "names": ["tataki", "tuna tataki", "atún tataki", "katsuo tataki"],
+    "ingredients": ["seared tuna or beef", "soy sauce", "ginger", "garlic", "rice vinegar"],
+    "allergens": ["fish", "soy", "fodmap"]
+  },
+  {
+    "names": ["chirashi", "chirashi sushi", "chirashi bowl"],
+    "ingredients": ["sushi rice", "assorted raw fish", "vegetables", "nori", "soy sauce"],
+    "allergens": ["fish", "soy", "sesame"]
+  },
+  {
+    "names": ["temaki", "temaki sushi", "hand roll"],
+    "ingredients": ["nori seaweed", "sushi rice", "raw fish", "avocado", "cucumber"],
+    "allergens": ["fish", "soy", "sesame"]
+  },
+  {
+    "names": ["chow mein", "chow mein de pollo"],
+    "ingredients": ["wheat noodles", "vegetables", "chicken or pork", "soy sauce", "sesame oil"],
+    "allergens": ["gluten", "soy", "sesame"]
+  },
+  {
+    "names": ["lo mein"],
+    "ingredients": ["wheat noodles", "vegetables", "meat", "soy sauce", "oyster sauce", "sesame oil"],
+    "allergens": ["gluten", "soy", "sesame", "mollusks"]
+  },
+  {
+    "names": ["mapo tofu", "tofu mapo"],
+    "ingredients": ["tofu", "ground pork", "doubanjiang", "soy sauce", "garlic", "green onion", "sichuan pepper"],
+    "allergens": ["soy", "fodmap"]
+  },
+  {
+    "names": ["char siu", "char siu pork", "cerdo char siu"],
+    "ingredients": ["pork", "soy sauce", "hoisin sauce", "honey", "five spice", "garlic"],
+    "allergens": ["soy", "gluten", "fructose", "fodmap"]
+  },
+  {
+    "names": ["congee", "jook", "arroz congee"],
+    "ingredients": ["rice", "broth", "ginger", "green onion", "meat or eggs"],
+    "allergens": []
+  },
+  {
+    "names": ["satay", "chicken satay", "satay de pollo"],
+    "ingredients": ["chicken skewers", "peanut sauce", "coconut milk", "lemongrass", "turmeric", "soy sauce"],
+    "allergens": ["peanuts", "soy"]
+  },
+  {
+    "names": ["nasi goreng", "arroz frito indonesio"],
+    "ingredients": ["rice", "shrimp paste", "soy sauce", "eggs", "vegetables", "garlic", "shallots"],
+    "allergens": ["crustaceans", "eggs", "soy", "fodmap"]
+  },
+  {
+    "names": ["laksa"],
+    "ingredients": ["rice noodles", "coconut milk", "shrimp", "tofu", "laksa paste", "fish sauce", "bean sprouts"],
+    "allergens": ["crustaceans", "fish", "soy"]
+  },
+  {
+    "names": ["rendang", "beef rendang"],
+    "ingredients": ["beef", "coconut milk", "lemongrass", "galangal", "garlic", "chili", "spices"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["Korean fried chicken", "pollo frito coreano", "yangnyeom chicken"],
+    "ingredients": ["chicken", "flour", "cornstarch", "gochujang", "soy sauce", "garlic", "ginger", "sugar"],
+    "allergens": ["gluten", "soy", "fodmap"]
+  },
+  {
+    "names": ["kimchi", "kimchi coreano"],
+    "ingredients": ["napa cabbage", "gochugaru", "garlic", "ginger", "fish sauce", "salt"],
+    "allergens": ["fish", "fodmap", "histamine"]
+  },
+  {
+    "names": ["japchae"],
+    "ingredients": ["sweet potato noodles", "vegetables", "beef", "soy sauce", "sesame oil", "garlic", "sugar"],
+    "allergens": ["soy", "sesame", "fodmap"]
+  },
+  {
+    "names": ["tteokbokki", "topokki", "tteok-bokki"],
+    "ingredients": ["rice cakes", "gochujang", "sugar", "soy sauce", "fish cakes", "green onion"],
+    "allergens": ["gluten", "fish", "soy"]
+  },
+  {
+    "names": ["gyudon", "beef bowl"],
+    "ingredients": ["beef", "rice", "onion", "soy sauce", "mirin", "sugar", "ginger"],
+    "allergens": ["soy", "gluten", "fodmap"]
+  },
+  {
+    "names": ["yakisoba"],
+    "ingredients": ["wheat noodles", "pork", "cabbage", "carrots", "yakisoba sauce", "ginger"],
+    "allergens": ["gluten", "soy"]
+  },
+  {
+    "names": ["karaage", "chicken karaage", "pollo karaage"],
+    "ingredients": ["chicken", "soy sauce", "ginger", "garlic", "flour", "cornstarch"],
+    "allergens": ["gluten", "soy", "fodmap"]
+  },
+  {
+    "names": ["poke", "poke bowl"],
+    "ingredients": ["raw tuna or salmon", "rice", "soy sauce", "sesame oil", "avocado", "seaweed", "edamame"],
+    "allergens": ["fish", "soy", "sesame"]
+  },
+  {
+    "names": ["bánh xèo"],
+    "ingredients": ["rice flour", "turmeric", "coconut milk", "shrimp", "pork", "bean sprouts"],
+    "allergens": ["crustaceans"]
+  },
+
+  {
+    "names": ["pulled pork", "cerdo deshebrado"],
+    "ingredients": ["pork shoulder", "bbq sauce", "spices", "bread bun"],
+    "allergens": ["gluten", "mustard", "sulfites"]
+  },
+  {
+    "names": ["clam chowder", "sopa de almejas"],
+    "ingredients": ["clams", "potatoes", "cream", "onion", "celery", "butter", "flour"],
+    "allergens": ["mollusks", "dairy", "gluten", "celery", "lactose", "fodmap"]
+  },
+  {
+    "names": ["BLT", "BLT sandwich"],
+    "ingredients": ["bread", "bacon", "lettuce", "tomato", "mayonnaise"],
+    "allergens": ["gluten", "eggs", "histamine"]
+  },
+  {
+    "names": ["Reuben sandwich", "sándwich Reuben"],
+    "ingredients": ["rye bread", "corned beef", "sauerkraut", "Swiss cheese", "thousand island dressing"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose", "histamine"]
+  },
+  {
+    "names": ["Philly cheesesteak", "cheesesteak", "Philadelphia cheesesteak"],
+    "ingredients": ["hoagie roll", "sliced beef", "onions", "peppers", "provolone cheese"],
+    "allergens": ["gluten", "dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["lobster roll", "rollo de langosta"],
+    "ingredients": ["lobster meat", "hot dog bun", "butter", "mayonnaise", "lemon", "celery"],
+    "allergens": ["crustaceans", "gluten", "dairy", "eggs", "celery", "lactose"]
+  },
+  {
+    "names": ["grilled cheese", "grilled cheese sandwich", "sándwich de queso"],
+    "ingredients": ["bread", "cheddar cheese", "butter"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["meatloaf", "pastel de carne"],
+    "ingredients": ["ground beef", "breadcrumbs", "eggs", "onion", "ketchup", "garlic"],
+    "allergens": ["gluten", "eggs", "fodmap"]
+  },
+  {
+    "names": ["chicken fried steak"],
+    "ingredients": ["beef steak", "flour", "eggs", "buttermilk", "oil", "gravy"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["corn dog"],
+    "ingredients": ["hot dog sausage", "cornmeal batter", "flour", "eggs"],
+    "allergens": ["gluten", "eggs"]
+  },
+  {
+    "names": ["onion rings", "aros de cebolla"],
+    "ingredients": ["onion", "flour", "eggs", "breadcrumbs", "oil"],
+    "allergens": ["gluten", "eggs", "fodmap"]
+  },
+  {
+    "names": ["coleslaw", "ensalada coleslaw"],
+    "ingredients": ["cabbage", "carrots", "mayonnaise", "vinegar", "sugar"],
+    "allergens": ["eggs", "sulfites"]
+  },
+  {
+    "names": ["potato salad", "ensalada de papa"],
+    "ingredients": ["potatoes", "mayonnaise", "mustard", "celery", "onion", "eggs"],
+    "allergens": ["eggs", "mustard", "celery", "fodmap"]
+  },
+  {
+    "names": ["brisket", "pecho de res", "brisket de res"],
+    "ingredients": ["beef brisket", "salt", "pepper", "spices"],
+    "allergens": []
+  },
+  {
+    "names": ["jambalaya"],
+    "ingredients": ["rice", "andouille sausage", "shrimp", "chicken", "onion", "celery", "peppers", "tomato", "garlic"],
+    "allergens": ["crustaceans", "celery", "fodmap", "histamine"]
+  },
+  {
+    "names": ["gumbo"],
+    "ingredients": ["okra", "andouille sausage", "shrimp", "chicken", "onion", "celery", "peppers", "roux", "rice"],
+    "allergens": ["crustaceans", "gluten", "celery", "fodmap", "histamine"]
+  },
+  {
+    "names": ["po' boy", "po boy", "poboy"],
+    "ingredients": ["French bread", "fried shrimp or oysters", "lettuce", "tomato", "mayonnaise", "pickles"],
+    "allergens": ["gluten", "crustaceans", "mollusks", "eggs"]
+  },
+  {
+    "names": ["chicken tenders", "chicken nuggets", "tiras de pollo"],
+    "ingredients": ["chicken breast", "flour", "eggs", "breadcrumbs", "oil"],
+    "allergens": ["gluten", "eggs"]
+  },
+  {
+    "names": ["brownies", "brownie de chocolate"],
+    "ingredients": ["chocolate", "butter", "sugar", "eggs", "flour"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["apple pie", "pay de manzana", "tarta de manzana"],
+    "ingredients": ["flour", "butter", "apples", "sugar", "cinnamon"],
+    "allergens": ["gluten", "dairy", "lactose", "fructose"]
+  },
+  {
+    "names": ["milkshake", "malteada", "batido"],
+    "ingredients": ["milk", "ice cream", "sugar", "flavorings"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["banana split"],
+    "ingredients": ["banana", "ice cream", "chocolate sauce", "whipped cream", "nuts", "cherries"],
+    "allergens": ["dairy", "tree_nuts", "lactose", "fructose"]
+  },
+
+  {
+    "names": ["jamón ibérico", "jamón", "ibérico ham"],
+    "ingredients": ["cured pork leg"],
+    "allergens": ["histamine"]
+  },
+  {
+    "names": ["pulpo a la gallega", "polbo á feira", "Galician octopus"],
+    "ingredients": ["octopus", "potatoes", "olive oil", "paprika", "salt"],
+    "allergens": ["mollusks"]
+  },
+  {
+    "names": ["gambas al ajillo", "garlic shrimp"],
+    "ingredients": ["shrimp", "garlic", "olive oil", "chili", "parsley"],
+    "allergens": ["crustaceans", "fodmap"]
+  },
+  {
+    "names": ["fabada asturiana", "fabada"],
+    "ingredients": ["white beans", "chorizo", "morcilla", "bacon", "saffron"],
+    "allergens": ["fodmap", "histamine"]
+  },
+  {
+    "names": ["pimientos de padrón", "padrón peppers"],
+    "ingredients": ["padrón peppers", "olive oil", "coarse salt"],
+    "allergens": []
+  },
+  {
+    "names": ["pan con tomate", "pa amb tomàquet"],
+    "ingredients": ["bread", "tomato", "olive oil", "garlic", "salt"],
+    "allergens": ["gluten", "fodmap"]
+  },
+  {
+    "names": ["crema catalana", "crema catalane"],
+    "ingredients": ["milk", "egg yolks", "sugar", "cornstarch", "cinnamon", "lemon zest"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["turrón", "turrón de Jijona", "turrón de Alicante"],
+    "ingredients": ["almonds", "honey", "sugar", "egg whites"],
+    "allergens": ["tree_nuts", "eggs", "fructose"]
+  },
+  {
+    "names": ["salmorejo", "salmorejo cordobés"],
+    "ingredients": ["tomatoes", "bread", "garlic", "olive oil", "vinegar", "ham", "hard-boiled egg"],
+    "allergens": ["gluten", "eggs", "fodmap", "sulfites", "histamine"]
+  },
+  {
+    "names": ["pisto", "pisto manchego"],
+    "ingredients": ["tomatoes", "zucchini", "peppers", "onion", "garlic", "olive oil"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["callos a la madrileña", "callos"],
+    "ingredients": ["beef tripe", "chorizo", "morcilla", "chickpeas", "onion", "garlic", "paprika"],
+    "allergens": ["fodmap", "histamine"]
+  },
+  {
+    "names": ["bocadillo de calamares", "calamari sandwich"],
+    "ingredients": ["bread", "fried squid rings", "flour", "lemon"],
+    "allergens": ["gluten", "mollusks"]
+  },
+  {
+    "names": ["tortillitas de camarones", "tortilla de camarones"],
+    "ingredients": ["chickpea flour", "shrimp", "onion", "parsley"],
+    "allergens": ["crustaceans", "fodmap"]
+  },
+  {
+    "names": ["sangría", "sangria de vino"],
+    "ingredients": ["red wine", "fruit", "orange juice", "sugar", "brandy", "soda"],
+    "allergens": ["sulfites", "fructose", "histamine"]
+  },
+  {
+    "names": ["albóndigas", "albóndigas en salsa", "Spanish meatballs"],
+    "ingredients": ["ground beef", "breadcrumbs", "eggs", "garlic", "parsley", "tomato sauce"],
+    "allergens": ["gluten", "eggs", "fodmap"]
+  },
+
+  {
+    "names": ["boeuf bourguignon", "estofado bourguignon"],
+    "ingredients": ["beef", "red wine", "bacon", "mushrooms", "carrots", "onions", "garlic", "butter"],
+    "allergens": ["dairy", "sulfites", "histamine", "fodmap", "lactose"]
+  },
+  {
+    "names": ["bouillabaisse"],
+    "ingredients": ["fish", "shellfish", "tomatoes", "onion", "garlic", "saffron", "fennel", "olive oil", "bread"],
+    "allergens": ["fish", "crustaceans", "mollusks", "gluten", "fodmap"]
+  },
+  {
+    "names": ["croque monsieur"],
+    "ingredients": ["bread", "ham", "gruyère cheese", "béchamel", "butter"],
+    "allergens": ["gluten", "dairy", "lactose", "histamine"]
+  },
+  {
+    "names": ["croque madame"],
+    "ingredients": ["bread", "ham", "gruyère cheese", "béchamel", "butter", "fried egg"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose", "histamine"]
+  },
+  {
+    "names": ["confit de canard", "duck confit"],
+    "ingredients": ["duck leg", "duck fat", "garlic", "thyme", "salt"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["tarte tatin"],
+    "ingredients": ["apples", "butter", "sugar", "puff pastry"],
+    "allergens": ["gluten", "dairy", "lactose", "fructose"]
+  },
+  {
+    "names": ["profiteroles"],
+    "ingredients": ["choux pastry", "cream", "chocolate sauce", "eggs", "butter", "flour"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["mousse au chocolat", "chocolate mousse", "mousse de chocolate"],
+    "ingredients": ["chocolate", "eggs", "sugar", "cream"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["soufflé", "soufflé au fromage", "cheese soufflé"],
+    "ingredients": ["eggs", "butter", "flour", "milk", "cheese"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["salade niçoise", "niçoise salad", "ensalada niçoise"],
+    "ingredients": ["tuna", "hard-boiled eggs", "green beans", "potatoes", "olives", "anchovies", "tomatoes"],
+    "allergens": ["fish", "eggs"]
+  },
+  {
+    "names": ["pot-au-feu"],
+    "ingredients": ["beef", "carrots", "turnips", "leeks", "celery", "onion", "broth"],
+    "allergens": ["celery", "fodmap"]
+  },
+  {
+    "names": ["cassoulet"],
+    "ingredients": ["white beans", "duck confit", "sausage", "pork", "onion", "garlic", "tomato"],
+    "allergens": ["fodmap", "histamine"]
+  },
+  {
+    "names": ["gratin dauphinois", "potato gratin", "gratén dauphinois"],
+    "ingredients": ["potatoes", "cream", "garlic", "nutmeg", "gruyère cheese"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["madeleines", "magdalenas"],
+    "ingredients": ["flour", "butter", "eggs", "sugar", "lemon zest"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["macaron", "macarons", "macaron français"],
+    "ingredients": ["almond flour", "egg whites", "sugar", "filling cream or ganache"],
+    "allergens": ["tree_nuts", "eggs", "dairy", "lactose"]
+  },
+  {
+    "names": ["duck à l'orange", "canard à l'orange", "pato a la naranja"],
+    "ingredients": ["duck", "orange juice", "orange zest", "sugar", "vinegar", "butter"],
+    "allergens": ["dairy", "sulfites", "fructose", "lactose"]
+  },
+  {
+    "names": ["steak tartare", "tartar de res"],
+    "ingredients": ["raw beef", "egg yolk", "capers", "onion", "mustard", "Worcestershire sauce"],
+    "allergens": ["eggs", "mustard", "fish", "fodmap"]
+  },
+
+  {
+    "names": ["butter chicken", "murgh makhani", "pollo con mantequilla"],
+    "ingredients": ["chicken", "butter", "cream", "tomato sauce", "garlic", "ginger", "spices"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["dal", "daal", "lentil curry"],
+    "ingredients": ["lentils", "onion", "garlic", "ginger", "tomato", "turmeric", "cumin", "ghee"],
+    "allergens": ["dairy", "fodmap", "lactose"]
+  },
+  {
+    "names": ["paneer tikka"],
+    "ingredients": ["paneer cheese", "yogurt", "bell peppers", "onion", "garlic", "ginger", "spices"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["vindaloo", "chicken vindaloo", "pork vindaloo"],
+    "ingredients": ["meat", "vinegar", "garlic", "ginger", "chili", "spices", "onion"],
+    "allergens": ["sulfites", "fodmap"]
+  },
+  {
+    "names": ["korma", "chicken korma"],
+    "ingredients": ["chicken", "yogurt", "cream", "cashews", "onion", "garlic", "ginger", "spices"],
+    "allergens": ["dairy", "tree_nuts", "lactose", "fodmap"]
+  },
+  {
+    "names": ["palak paneer", "spinach paneer"],
+    "ingredients": ["spinach", "paneer cheese", "onion", "garlic", "ginger", "cream", "spices"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["aloo gobi", "aloo gobhi"],
+    "ingredients": ["potatoes", "cauliflower", "onion", "garlic", "ginger", "turmeric", "cumin"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["gulab jamun"],
+    "ingredients": ["milk powder", "flour", "ghee", "sugar syrup", "cardamom", "rose water"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["raita"],
+    "ingredients": ["yogurt", "cucumber", "cumin", "mint", "salt"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["pakora", "pakoras", "bhaji"],
+    "ingredients": ["vegetables", "chickpea flour", "spices", "oil"],
+    "allergens": []
+  },
+  {
+    "names": ["chana masala", "chickpea curry"],
+    "ingredients": ["chickpeas", "tomato", "onion", "garlic", "ginger", "cumin", "coriander", "garam masala"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["malai kofta"],
+    "ingredients": ["paneer", "potatoes", "cashews", "cream sauce", "tomato", "onion", "garlic", "spices"],
+    "allergens": ["dairy", "tree_nuts", "lactose", "fodmap"]
+  },
+  {
+    "names": ["dosa", "masala dosa"],
+    "ingredients": ["rice flour", "black lentils", "potatoes", "onion", "mustard seeds", "curry leaves"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["idli"],
+    "ingredients": ["rice flour", "black lentils", "salt"],
+    "allergens": []
+  },
+  {
+    "names": ["rogan josh"],
+    "ingredients": ["lamb", "yogurt", "onion", "garlic", "ginger", "kashmiri chili", "spices"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["chicken 65"],
+    "ingredients": ["chicken", "yogurt", "flour", "chili", "garlic", "ginger", "curry leaves"],
+    "allergens": ["gluten", "dairy", "lactose", "fodmap"]
+  },
+
+  {
+    "names": ["baba ganoush", "baba ghanoush", "mutabal"],
+    "ingredients": ["eggplant", "tahini", "lemon", "garlic", "olive oil"],
+    "allergens": ["sesame", "fodmap"]
+  },
+  {
+    "names": ["dolma", "dolmas", "dolmades", "sarma"],
+    "ingredients": ["grape leaves", "rice", "ground meat", "onion", "pine nuts", "herbs", "lemon"],
+    "allergens": ["tree_nuts", "fodmap"]
+  },
+  {
+    "names": ["kibbeh", "kibbe"],
+    "ingredients": ["bulgur wheat", "ground lamb", "onion", "pine nuts", "spices"],
+    "allergens": ["gluten", "tree_nuts", "fodmap"]
+  },
+  {
+    "names": ["lahmacun", "Turkish pizza", "pizza turca"],
+    "ingredients": ["flatbread dough", "ground lamb", "tomato", "onion", "peppers", "parsley"],
+    "allergens": ["gluten", "fodmap"]
+  },
+  {
+    "names": ["baklava"],
+    "ingredients": ["phyllo dough", "pistachios", "walnuts", "butter", "sugar syrup", "honey"],
+    "allergens": ["gluten", "dairy", "tree_nuts", "lactose", "fructose"]
+  },
+  {
+    "names": ["kunafa", "knafeh", "kanafeh"],
+    "ingredients": ["shredded phyllo", "cheese", "sugar syrup", "butter", "pistachios"],
+    "allergens": ["gluten", "dairy", "tree_nuts", "lactose"]
+  },
+  {
+    "names": ["fattoush"],
+    "ingredients": ["pita bread", "lettuce", "tomato", "cucumber", "radish", "sumac", "olive oil", "lemon"],
+    "allergens": ["gluten"]
+  },
+  {
+    "names": ["muhammara"],
+    "ingredients": ["roasted red peppers", "walnuts", "breadcrumbs", "pomegranate molasses", "olive oil"],
+    "allergens": ["gluten", "tree_nuts"]
+  },
+  {
+    "names": ["manakish", "manoushe", "man'oushe"],
+    "ingredients": ["flatbread dough", "za'atar", "olive oil", "cheese"],
+    "allergens": ["gluten", "dairy", "sesame", "lactose"]
+  },
+  {
+    "names": ["shakshuka", "huevos en salsa de tomate"],
+    "ingredients": ["eggs", "tomato sauce", "onion", "garlic", "peppers", "cumin", "paprika"],
+    "allergens": ["eggs", "fodmap"]
+  },
+  {
+    "names": ["börek", "borek", "burek"],
+    "ingredients": ["phyllo dough", "cheese", "spinach", "eggs", "butter"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["kofta", "keftedes", "kafta"],
+    "ingredients": ["ground lamb or beef", "onion", "parsley", "spices"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["tzatziki"],
+    "ingredients": ["yogurt", "cucumber", "garlic", "dill", "olive oil", "lemon"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["pita", "pita bread", "pan pita"],
+    "ingredients": ["flour", "yeast", "water", "salt", "olive oil"],
+    "allergens": ["gluten"]
+  },
+  {
+    "names": ["tagine", "tajine"],
+    "ingredients": ["lamb or chicken", "onion", "garlic", "dried fruits", "almonds", "spices", "olive oil"],
+    "allergens": ["tree_nuts", "fructose", "fodmap"]
+  },
+  {
+    "names": ["koshari", "koshary"],
+    "ingredients": ["rice", "lentils", "macaroni", "chickpeas", "tomato sauce", "fried onions", "garlic"],
+    "allergens": ["gluten", "fodmap"]
+  },
+
+  {
+    "names": ["red curry", "curry rojo", "Thai red curry"],
+    "ingredients": ["coconut milk", "red curry paste", "chicken or beef", "bamboo shoots", "basil", "fish sauce"],
+    "allergens": ["fish"]
+  },
+  {
+    "names": ["massaman curry", "curry massaman"],
+    "ingredients": ["coconut milk", "beef or chicken", "potatoes", "peanuts", "onion", "massaman curry paste", "fish sauce"],
+    "allergens": ["peanuts", "fish", "fodmap"]
+  },
+  {
+    "names": ["tom kha", "tom kha gai"],
+    "ingredients": ["coconut milk", "chicken", "galangal", "lemongrass", "lime", "mushrooms", "fish sauce"],
+    "allergens": ["fish"]
+  },
+  {
+    "names": ["pad see ew"],
+    "ingredients": ["wide rice noodles", "soy sauce", "eggs", "Chinese broccoli", "chicken or pork", "garlic"],
+    "allergens": ["soy", "eggs", "gluten", "fodmap"]
+  },
+  {
+    "names": ["som tam", "green papaya salad", "ensalada de papaya"],
+    "ingredients": ["green papaya", "tomatoes", "green beans", "peanuts", "dried shrimp", "fish sauce", "lime", "chili"],
+    "allergens": ["peanuts", "crustaceans", "fish"]
+  },
+  {
+    "names": ["mango sticky rice", "khao niao mamuang", "arroz con mango"],
+    "ingredients": ["sticky rice", "coconut milk", "mango", "sugar", "salt"],
+    "allergens": ["fructose"]
+  },
+  {
+    "names": ["khao pad", "Thai fried rice", "arroz frito tailandés"],
+    "ingredients": ["rice", "eggs", "fish sauce", "soy sauce", "garlic", "onion", "vegetables"],
+    "allergens": ["eggs", "fish", "soy", "fodmap"]
+  },
+  {
+    "names": ["larb", "laab", "ensalada larb"],
+    "ingredients": ["ground meat", "fish sauce", "lime juice", "shallots", "mint", "cilantro", "chili", "toasted rice"],
+    "allergens": ["fish", "fodmap"]
+  },
+  {
+    "names": ["panang curry", "curry panang"],
+    "ingredients": ["coconut milk", "panang curry paste", "beef or chicken", "peanuts", "basil", "kaffir lime", "fish sauce"],
+    "allergens": ["peanuts", "fish"]
+  },
+  {
+    "names": ["pad krapao", "Thai basil chicken", "pollo con albahaca tailandesa"],
+    "ingredients": ["chicken", "Thai basil", "garlic", "chili", "soy sauce", "fish sauce", "oyster sauce", "fried egg"],
+    "allergens": ["soy", "fish", "eggs", "gluten", "mollusks", "fodmap"]
+  },
+  {
+    "names": ["Thai iced tea", "cha yen", "té tailandés"],
+    "ingredients": ["Thai tea", "condensed milk", "sugar", "ice"],
+    "allergens": ["dairy", "lactose"]
+  },
+
+  {
+    "names": ["avocado toast", "tostada de aguacate"],
+    "ingredients": ["bread", "avocado", "salt", "lemon", "chili flakes"],
+    "allergens": ["gluten"]
+  },
+  {
+    "names": ["eggs florentine", "huevos florentinos"],
+    "ingredients": ["english muffin", "poached eggs", "spinach", "hollandaise sauce", "butter"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["waldorf salad", "ensalada waldorf"],
+    "ingredients": ["apples", "celery", "walnuts", "mayonnaise", "lettuce", "grapes"],
+    "allergens": ["tree_nuts", "eggs", "celery", "fructose"]
+  },
+  {
+    "names": ["greek salad", "ensalada griega", "horiatiki"],
+    "ingredients": ["tomatoes", "cucumber", "onion", "olives", "feta cheese", "olive oil", "oregano"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["acai bowl", "bowl de açaí"],
+    "ingredients": ["acai berry", "banana", "granola", "berries", "honey"],
+    "allergens": ["gluten", "fructose"]
+  },
+  {
+    "names": ["caldo de pollo", "chicken soup", "sopa de pollo"],
+    "ingredients": ["chicken", "carrots", "celery", "onion", "garlic", "rice or noodles"],
+    "allergens": ["celery", "fodmap"]
+  },
+  {
+    "names": ["sopa azteca", "tortilla soup", "sopa de tortilla"],
+    "ingredients": ["corn tortilla strips", "tomato", "onion", "garlic", "chili", "cheese", "cream", "avocado"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["pizza quattro stagioni", "four seasons pizza"],
+    "ingredients": ["pizza dough", "tomato sauce", "mozzarella", "ham", "artichokes", "mushrooms", "olives"],
+    "allergens": ["gluten", "dairy", "lactose", "histamine"]
+  },
+  {
+    "names": ["pizza diavola", "spicy salami pizza"],
+    "ingredients": ["pizza dough", "tomato sauce", "mozzarella", "spicy salami"],
+    "allergens": ["gluten", "dairy", "lactose", "histamine"]
+  },
+  {
+    "names": ["orecchiette con cime di rapa", "orecchiette"],
+    "ingredients": ["orecchiette pasta", "broccoli rabe", "garlic", "anchovies", "chili", "olive oil"],
+    "allergens": ["gluten", "fish", "fodmap"]
+  },
+  {
+    "names": ["linguine alle vongole", "spaghetti alle vongole", "clam pasta"],
+    "ingredients": ["pasta", "clams", "garlic", "white wine", "parsley", "olive oil", "chili"],
+    "allergens": ["gluten", "mollusks", "sulfites", "fodmap"]
+  },
+  {
+    "names": ["insalata di riso", "rice salad", "ensalada de arroz"],
+    "ingredients": ["rice", "tuna", "olives", "corn", "tomatoes", "pickled vegetables"],
+    "allergens": ["fish"]
+  },
+  {
+    "names": ["polenta"],
+    "ingredients": ["cornmeal", "butter", "parmesan", "water"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["risotto alla milanese"],
+    "ingredients": ["arborio rice", "saffron", "onion", "butter", "parmesan", "white wine", "broth"],
+    "allergens": ["dairy", "lactose", "sulfites", "fodmap"]
+  },
+  {
+    "names": ["vitello alla milanese", "veal milanese"],
+    "ingredients": ["veal cutlet", "eggs", "breadcrumbs", "butter", "lemon"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["crostini", "crostini toscani"],
+    "ingredients": ["bread", "chicken liver pâté", "capers", "butter"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["stracciatella soup", "stracciatella romana"],
+    "ingredients": ["broth", "eggs", "parmesan", "semolina"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["taco al pastor"],
+    "ingredients": ["pork", "pineapple", "achiote", "corn tortilla", "onion", "cilantro", "salsa"],
+    "allergens": ["fodmap", "fructose"]
+  },
+  {
+    "names": ["enchiladas suizas"],
+    "ingredients": ["corn tortilla", "chicken", "tomatillo cream sauce", "cheese", "cream"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["mole negro", "mole oaxaqueño"],
+    "ingredients": ["dried chili peppers", "chocolate", "onion", "garlic", "sesame seeds", "plantain", "spices"],
+    "allergens": ["sesame", "fodmap"]
+  },
+  {
+    "names": ["agua de jamaica", "hibiscus tea"],
+    "ingredients": ["hibiscus flowers", "water", "sugar"],
+    "allergens": []
+  },
+  {
+    "names": ["taco dorado", "tacos dorados"],
+    "ingredients": ["corn tortilla", "chicken or potato", "oil", "lettuce", "cream", "cheese", "salsa"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["chalupa", "chalupas"],
+    "ingredients": ["corn masa", "beans", "meat", "lettuce", "cheese", "salsa"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["pambazos"],
+    "ingredients": ["bread", "potatoes", "chorizo", "guajillo chili sauce", "lettuce", "cream", "cheese"],
+    "allergens": ["gluten", "dairy", "lactose", "histamine"]
+  },
+  {
+    "names": ["tamales de elote", "sweet corn tamales"],
+    "ingredients": ["fresh corn", "butter", "sugar", "corn husks"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["sashimi", "sashimi platter"],
+    "ingredients": ["assorted raw fish", "soy sauce", "wasabi", "pickled ginger"],
+    "allergens": ["fish", "soy"]
+  },
+  {
+    "names": ["edamame gyoza"],
+    "ingredients": ["wheat wrapper", "edamame", "garlic", "ginger", "soy sauce"],
+    "allergens": ["gluten", "soy", "fodmap"]
+  },
+  {
+    "names": ["chicken katsu", "katsu de pollo"],
+    "ingredients": ["chicken breast", "breadcrumbs", "eggs", "flour", "cabbage"],
+    "allergens": ["gluten", "eggs"]
+  },
+  {
+    "names": ["agedashi tofu"],
+    "ingredients": ["tofu", "cornstarch", "dashi broth", "soy sauce", "mirin", "green onion"],
+    "allergens": ["soy", "fish", "gluten"]
+  },
+  {
+    "names": ["General Tso's chicken", "pollo General Tso"],
+    "ingredients": ["chicken", "flour", "soy sauce", "vinegar", "sugar", "garlic", "ginger", "chili"],
+    "allergens": ["gluten", "soy", "sulfites", "fodmap"]
+  },
+  {
+    "names": ["egg drop soup", "sopa de huevo china"],
+    "ingredients": ["eggs", "chicken broth", "cornstarch", "green onion", "sesame oil"],
+    "allergens": ["eggs", "sesame"]
+  },
+  {
+    "names": ["peking duck", "pato pekinés"],
+    "ingredients": ["duck", "pancakes", "hoisin sauce", "cucumber", "green onion"],
+    "allergens": ["gluten", "soy"]
+  },
+  {
+    "names": ["dan dan noodles", "dan dan mian"],
+    "ingredients": ["wheat noodles", "ground pork", "sichuan pepper", "chili oil", "soy sauce", "peanuts", "garlic"],
+    "allergens": ["gluten", "soy", "peanuts", "fodmap"]
+  },
+  {
+    "names": ["hot pot", "Chinese hot pot", "fondue china"],
+    "ingredients": ["broth", "assorted meats", "vegetables", "tofu", "noodles", "soy sauce", "sesame paste"],
+    "allergens": ["soy", "sesame", "gluten"]
+  },
+  {
+    "names": ["banh cuon"],
+    "ingredients": ["rice flour", "ground pork", "wood ear mushrooms", "shallots", "fish sauce"],
+    "allergens": ["fish", "fodmap"]
+  },
+  {
+    "names": ["bún bò Huế", "bun bo hue"],
+    "ingredients": ["rice noodles", "beef", "lemongrass", "chili", "shrimp paste", "onion"],
+    "allergens": ["crustaceans", "fodmap"]
+  },
+  {
+    "names": ["crab rangoon", "crab wontons"],
+    "ingredients": ["wonton wrapper", "cream cheese", "crab meat", "garlic", "green onion"],
+    "allergens": ["gluten", "dairy", "crustaceans", "lactose", "fodmap"]
+  },
+  {
+    "names": ["moo shu pork"],
+    "ingredients": ["pork", "eggs", "mushrooms", "cabbage", "hoisin sauce", "pancakes"],
+    "allergens": ["gluten", "eggs", "soy"]
+  },
+  {
+    "names": ["dak galbi", "spicy Korean chicken"],
+    "ingredients": ["chicken", "gochujang", "rice cakes", "cabbage", "sweet potatoes", "garlic", "soy sauce"],
+    "allergens": ["soy", "gluten", "fodmap"]
+  },
+  {
+    "names": ["sundubu-jjigae", "soft tofu stew"],
+    "ingredients": ["soft tofu", "gochugaru", "clams", "shrimp", "eggs", "garlic", "green onion"],
+    "allergens": ["soy", "mollusks", "crustaceans", "eggs", "fodmap"]
+  },
+
+  {
+    "names": ["cobb salad", "ensalada cobb"],
+    "ingredients": ["lettuce", "chicken", "bacon", "hard-boiled eggs", "avocado", "blue cheese", "tomato"],
+    "allergens": ["dairy", "eggs", "lactose", "histamine"]
+  },
+  {
+    "names": ["eggs Sardou"],
+    "ingredients": ["poached eggs", "artichoke hearts", "creamed spinach", "hollandaise sauce"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["hash browns", "papas hash brown"],
+    "ingredients": ["potatoes", "oil", "salt"],
+    "allergens": []
+  },
+  {
+    "names": ["waffles", "wafles", "gofres"],
+    "ingredients": ["flour", "eggs", "milk", "butter", "sugar", "baking powder"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["banana bread", "pan de plátano"],
+    "ingredients": ["flour", "banana", "eggs", "butter", "sugar", "baking soda"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose", "fructose"]
+  },
+  {
+    "names": ["pecan pie", "pay de nuez"],
+    "ingredients": ["pecans", "corn syrup", "eggs", "butter", "sugar", "pie crust"],
+    "allergens": ["tree_nuts", "gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["key lime pie", "pay de limón"],
+    "ingredients": ["lime juice", "condensed milk", "eggs", "graham cracker crust", "butter"],
+    "allergens": ["dairy", "eggs", "gluten", "lactose"]
+  },
+  {
+    "names": ["pumpkin pie", "pay de calabaza"],
+    "ingredients": ["pumpkin puree", "condensed milk", "eggs", "cinnamon", "ginger", "pie crust"],
+    "allergens": ["dairy", "eggs", "gluten", "lactose"]
+  },
+  {
+    "names": ["beignets", "beignet"],
+    "ingredients": ["flour", "eggs", "milk", "butter", "yeast", "powdered sugar"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+
+  {
+    "names": ["poke bowl hawaiano", "Hawaiian poke bowl"],
+    "ingredients": ["raw tuna", "rice", "soy sauce", "sesame oil", "seaweed salad", "cucumber", "avocado"],
+    "allergens": ["fish", "soy", "sesame"]
+  },
+  {
+    "names": ["pierogi", "pierogies"],
+    "ingredients": ["flour dough", "potatoes", "cheese", "onion", "butter", "sour cream"],
+    "allergens": ["gluten", "dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["schnitzel", "Wiener schnitzel"],
+    "ingredients": ["veal or pork cutlet", "flour", "eggs", "breadcrumbs", "lemon"],
+    "allergens": ["gluten", "eggs"]
+  },
+  {
+    "names": ["bratwurst"],
+    "ingredients": ["pork sausage", "bread bun", "mustard", "sauerkraut"],
+    "allergens": ["gluten", "mustard", "histamine"]
+  },
+  {
+    "names": ["currywurst"],
+    "ingredients": ["pork sausage", "curry ketchup", "curry powder"],
+    "allergens": []
+  },
+  {
+    "names": ["spätzle", "spaetzle"],
+    "ingredients": ["flour", "eggs", "milk", "nutmeg"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["strudel", "apfelstrudel", "strudel de manzana"],
+    "ingredients": ["flour dough", "apples", "sugar", "cinnamon", "raisins", "breadcrumbs", "butter"],
+    "allergens": ["gluten", "dairy", "lactose", "fructose"]
+  },
+  {
+    "names": ["bacalhau", "bacalao", "salt cod"],
+    "ingredients": ["dried salt cod", "potatoes", "onion", "garlic", "olive oil", "eggs"],
+    "allergens": ["fish", "eggs", "fodmap"]
+  },
+  {
+    "names": ["pastel de nata", "pastéis de nata", "Portuguese egg tart"],
+    "ingredients": ["puff pastry", "egg yolks", "cream", "sugar", "cinnamon"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["coxinha"],
+    "ingredients": ["chicken", "cream cheese", "flour", "eggs", "breadcrumbs"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["feijoada"],
+    "ingredients": ["black beans", "pork", "sausage", "bacon", "garlic", "onion", "rice"],
+    "allergens": ["fodmap", "histamine"]
+  },
+  {
+    "names": ["acarajé"],
+    "ingredients": ["black-eyed peas", "onion", "shrimp", "palm oil", "vatapá"],
+    "allergens": ["crustaceans", "fodmap"]
+  },
+  {
+    "names": ["empanada argentina"],
+    "ingredients": ["wheat dough", "ground beef", "onion", "olives", "hard-boiled egg", "cumin"],
+    "allergens": ["gluten", "eggs", "fodmap"]
+  },
+  {
+    "names": ["choripán"],
+    "ingredients": ["chorizo sausage", "bread", "chimichurri"],
+    "allergens": ["gluten", "histamine"]
+  },
+  {
+    "names": ["chimichurri"],
+    "ingredients": ["parsley", "garlic", "olive oil", "vinegar", "oregano", "chili flakes"],
+    "allergens": ["fodmap", "sulfites"]
+  },
+  {
+    "names": ["asado", "parrillada"],
+    "ingredients": ["assorted beef cuts", "chorizo", "morcilla", "chimichurri"],
+    "allergens": ["histamine"]
+  },
+  {
+    "names": ["dulce de leche"],
+    "ingredients": ["milk", "sugar"],
+    "allergens": ["dairy", "lactose"]
+  },
+  {
+    "names": ["alfajor", "alfajores"],
+    "ingredients": ["cornstarch", "flour", "butter", "dulce de leche", "coconut"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["creme caramel", "pudin de caramelo"],
+    "ingredients": ["eggs", "milk", "sugar", "vanilla", "caramel"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["croque forestière"],
+    "ingredients": ["bread", "mushrooms", "gruyère cheese", "béchamel", "butter"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["tartare de saumon", "salmon tartare", "tartar de salmón"],
+    "ingredients": ["raw salmon", "shallots", "capers", "lemon", "olive oil", "dill"],
+    "allergens": ["fish", "fodmap"]
+  },
+  {
+    "names": ["pain au chocolat", "chocolatine"],
+    "ingredients": ["puff pastry", "butter", "chocolate", "sugar"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["quiche florentine"],
+    "ingredients": ["pie crust", "eggs", "cream", "spinach", "gruyère cheese"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["vol-au-vent"],
+    "ingredients": ["puff pastry", "chicken", "mushrooms", "cream sauce", "butter"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["galette bretonne", "buckwheat crepe", "galette"],
+    "ingredients": ["buckwheat flour", "ham", "cheese", "egg", "butter"],
+    "allergens": ["dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["nasi lemak"],
+    "ingredients": ["coconut rice", "sambal", "anchovies", "peanuts", "cucumber", "hard-boiled egg"],
+    "allergens": ["fish", "peanuts", "eggs"]
+  },
+  {
+    "names": ["chicken adobo", "adobo de pollo", "adobo filipino"],
+    "ingredients": ["chicken", "soy sauce", "vinegar", "garlic", "bay leaves", "peppercorns"],
+    "allergens": ["soy", "sulfites", "fodmap"]
+  },
+  {
+    "names": ["lumpia", "lumpias", "Filipino spring rolls"],
+    "ingredients": ["wheat wrapper", "ground pork", "vegetables", "garlic", "soy sauce"],
+    "allergens": ["gluten", "soy", "fodmap"]
+  },
+  {
+    "names": ["sisig"],
+    "ingredients": ["pork cheeks", "onion", "chili", "calamansi", "mayonnaise", "egg"],
+    "allergens": ["eggs", "fodmap"]
+  },
+  {
+    "names": ["jollof rice", "arroz jollof"],
+    "ingredients": ["rice", "tomatoes", "onion", "peppers", "garlic", "spices", "chicken"],
+    "allergens": ["fodmap"]
+  },
+  {
+    "names": ["injera"],
+    "ingredients": ["teff flour", "water"],
+    "allergens": []
+  },
+  {
+    "names": ["doro wat", "doro wot"],
+    "ingredients": ["chicken", "onion", "berbere spice", "butter", "hard-boiled eggs", "garlic"],
+    "allergens": ["dairy", "eggs", "lactose", "fodmap"]
+  },
+  {
+    "names": ["biltong"],
+    "ingredients": ["dried cured beef", "vinegar", "coriander", "salt", "pepper"],
+    "allergens": ["sulfites", "histamine"]
+  },
+  {
+    "names": ["bobotie"],
+    "ingredients": ["ground beef", "bread", "milk", "eggs", "curry powder", "raisins", "almonds"],
+    "allergens": ["gluten", "dairy", "eggs", "tree_nuts", "lactose", "fructose"]
+  },
+  {
+    "names": ["pavlova"],
+    "ingredients": ["egg whites", "sugar", "cornstarch", "cream", "fresh fruit"],
+    "allergens": ["eggs", "dairy", "lactose", "fructose"]
+  },
+  {
+    "names": ["meat pie", "Australian meat pie"],
+    "ingredients": ["pie crust", "ground beef", "onion", "gravy", "tomato paste"],
+    "allergens": ["gluten", "fodmap"]
+  },
+  {
+    "names": ["fish and grits"],
+    "ingredients": ["fried fish", "grits", "butter", "salt"],
+    "allergens": ["fish", "gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["shakshuka verde", "green shakshuka"],
+    "ingredients": ["eggs", "spinach", "zucchini", "feta cheese", "garlic", "onion"],
+    "allergens": ["eggs", "dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["crumble", "apple crumble", "crumble de manzana"],
+    "ingredients": ["apples", "flour", "butter", "sugar", "oats"],
+    "allergens": ["gluten", "dairy", "lactose", "fructose"]
+  },
+  {
+    "names": ["tiramisu al pistacchio", "pistachio tiramisu"],
+    "ingredients": ["mascarpone", "eggs", "ladyfingers", "pistachio cream", "sugar"],
+    "allergens": ["gluten", "dairy", "eggs", "tree_nuts", "lactose"]
+  },
+  {
+    "names": ["eton mess"],
+    "ingredients": ["meringue", "cream", "strawberries", "sugar"],
+    "allergens": ["eggs", "dairy", "lactose", "fructose"]
+  },
+  {
+    "names": ["sticky toffee pudding"],
+    "ingredients": ["dates", "flour", "butter", "eggs", "toffee sauce", "cream"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose", "fructose"]
+  },
+  {
+    "names": ["shepherd's pie", "pastel de pastor"],
+    "ingredients": ["ground lamb", "potatoes", "carrots", "peas", "onion", "butter", "gravy"],
+    "allergens": ["dairy", "lactose", "fodmap"]
+  },
+  {
+    "names": ["fish pie"],
+    "ingredients": ["white fish", "shrimp", "potatoes", "cream", "butter", "cheese", "peas"],
+    "allergens": ["fish", "crustaceans", "dairy", "lactose"]
+  },
+  {
+    "names": ["bangers and mash"],
+    "ingredients": ["pork sausages", "mashed potatoes", "butter", "onion gravy"],
+    "allergens": ["gluten", "dairy", "sulfites", "lactose", "fodmap"]
+  },
+  {
+    "names": ["beef Wellington"],
+    "ingredients": ["beef fillet", "pâté", "mushrooms", "puff pastry", "eggs"],
+    "allergens": ["gluten", "eggs"]
+  },
+  {
+    "names": ["Yorkshire pudding"],
+    "ingredients": ["flour", "eggs", "milk", "oil"],
+    "allergens": ["gluten", "dairy", "eggs", "lactose"]
+  },
+  {
+    "names": ["scones"],
+    "ingredients": ["flour", "butter", "sugar", "milk", "baking powder"],
+    "allergens": ["gluten", "dairy", "lactose"]
+  },
+  {
+    "names": ["full English breakfast", "English breakfast", "desayuno inglés"],
+    "ingredients": ["bacon", "eggs", "sausages", "baked beans", "toast", "tomatoes", "mushrooms"],
+    "allergens": ["gluten", "eggs", "histamine"]
+  },
+  {
+    "names": ["carbonade flamande", "Flemish stew"],
+    "ingredients": ["beef", "onions", "beer", "brown sugar", "mustard", "bread"],
+    "allergens": ["gluten", "mustard", "fodmap"]
+  },
+  {
+    "names": ["bibim naengmyeon", "cold noodles"],
+    "ingredients": ["buckwheat noodles", "gochujang", "cucumber", "pear", "hard-boiled egg", "vinegar"],
+    "allergens": ["gluten", "eggs", "sulfites", "fructose"]
+  }
+]

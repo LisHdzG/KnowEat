@@ -12,6 +12,10 @@ struct WelcomeView: View {
     @State private var viewModel = OnboardingViewModel()
     @State private var showLanguagePicker = false
 
+    private var strings: AppStrings {
+        AppStrings(viewModel.selectedLanguage)
+    }
+
     private let columns = [
         GridItem(.flexible(), spacing: 12),
         GridItem(.flexible(), spacing: 12)
@@ -19,11 +23,11 @@ struct WelcomeView: View {
 
     private var sections: [(DietaryCategory, String, String, [Allergen])] {
         [
-            (.allergens, "Allergens", "Most common food allergens.", viewModel.allergens),
-            (.intolerances, "Intolerances", "Foods your body has trouble digesting.", viewModel.intolerances),
-            (.conditions, "Medical Conditions", "Conditions that affect your diet.", viewModel.conditions),
-            (.diets, "Diets", "Lifestyle or religious diets.", viewModel.diets),
-            (.situations, "Situations", "Temporary situations.", viewModel.situations),
+            (.allergens, strings.allergens, strings.allergensDesc, viewModel.allergens),
+            (.intolerances, strings.intolerances, strings.intolerancesDesc, viewModel.intolerances),
+            (.conditions, strings.medicalConditions, strings.conditionsDesc, viewModel.conditions),
+            (.diets, strings.diets, strings.dietsDesc, viewModel.diets),
+            (.situations, strings.situations, strings.situationsDesc, viewModel.situations),
         ]
     }
 
@@ -68,7 +72,7 @@ struct WelcomeView: View {
 
     private var headerSection: some View {
         VStack(spacing: 2) {
-            Text("Welcome to")
+            Text(strings.welcomeTo)
                 .font(.interRegular(size: 20))
                 .foregroundStyle(Color("SecondaryGray"))
 
@@ -80,7 +84,7 @@ struct WelcomeView: View {
     }
 
     private var descriptionText: some View {
-        Text("Set up your dietary profile. You can always change it later in Settings.")
+        Text(strings.setupDescription)
             .font(.interRegular(size: 15))
             .foregroundStyle(Color("SecondaryGray"))
             .lineSpacing(3)
@@ -88,7 +92,7 @@ struct WelcomeView: View {
 
     private var languageSection: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Primary language")
+            Text(strings.primaryLanguage)
                 .font(.interMedium(size: 13))
                 .foregroundStyle(Color("SecondaryGray"))
 
@@ -105,7 +109,7 @@ struct WelcomeView: View {
                                 .fill(Color("PrimaryOrange").opacity(0.12))
                         )
 
-                    Text("Native Language")
+                    Text(strings.nativeLanguage)
                         .font(.interSemiBold(size: 16))
                         .foregroundStyle(.primary)
 
@@ -127,8 +131,8 @@ struct WelcomeView: View {
                 )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Primary language, \(viewModel.selectedLanguage)")
-            .accessibilityHint("Opens language picker to set your native language")
+            .accessibilityLabel("\(strings.primaryLanguage), \(viewModel.selectedLanguage)")
+            .accessibilityHint(strings.languagePickerHint)
         }
     }
 
@@ -168,7 +172,7 @@ struct WelcomeView: View {
         Button {
             profileStore.profile = viewModel.buildProfile()
         } label: {
-            Text("Continue")
+            Text(strings.continueButton)
                 .font(.interSemiBold(size: 18))
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
@@ -178,8 +182,8 @@ struct WelcomeView: View {
                         .fill(Color("PrimaryOrange"))
                 )
         }
-        .accessibilityLabel("Continue")
-        .accessibilityHint("Saves your dietary profile and starts using KnowEat")
+        .accessibilityLabel(strings.continueButton)
+        .accessibilityHint(strings.continueHint)
     }
 }
 

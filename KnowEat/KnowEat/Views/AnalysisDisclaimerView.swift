@@ -11,8 +11,13 @@ struct AnalysisDisclaimerView: View {
     let isPrivacyUpdate: Bool
     let onAccept: () -> Void
 
+    @Environment(UserProfileStore.self) private var profileStore
     @Environment(\.openURL) private var openURL
     @State private var hasAccepted = false
+
+    private var strings: AppStrings {
+        AppStrings(profileStore.profile?.nativeLanguage ?? "English")
+    }
 
     init(isPrivacyUpdate: Bool = false, onAccept: @escaping () -> Void) {
         self.isPrivacyUpdate = isPrivacyUpdate
@@ -29,7 +34,9 @@ struct AnalysisDisclaimerView: View {
             ScrollView(showsIndicators: false) {
                 VStack(spacing: 32) {
                     heroSection
-                    disclaimerCard
+                    if isPrivacyUpdate {
+                        disclaimerCard
+                    }
                     featureRows
                 }
                 .padding(.horizontal, 28)
@@ -46,19 +53,13 @@ struct AnalysisDisclaimerView: View {
 
     private var heroSection: some View {
         VStack(spacing: 16) {
-            Image(systemName: isPrivacyUpdate ? "arrow.triangle.2.circlepath" : "apple.intelligence")
+            Image(systemName: isPrivacyUpdate ? "arrow.triangle.2.circlepath" : "doc.text.fill")
                 .font(.system(size: 52))
                 .foregroundStyle(Color("PrimaryOrange"))
                 .padding(.bottom, 4)
 
-            Text(isPrivacyUpdate ? "Privacy Policy Updated" : "How KnowEat works")
+            Text(isPrivacyUpdate ? strings.privacyPolicyUpdated : strings.howKnowEatWorks)
                 .font(.interSemiBold(size: 28))
-
-            Text(isPrivacyUpdate
-                 ? "Please review and accept to continue."
-                 : "Your data stays on your device.")
-                .font(.interRegular(size: 16))
-                .foregroundStyle(.secondary)
 
             HStack(spacing: 6) {
                 Image(systemName: "apple.intelligence")
@@ -81,11 +82,11 @@ struct AnalysisDisclaimerView: View {
                     .font(.system(size: 22))
                     .foregroundStyle(.orange)
 
-                Text("Always double-check")
+                Text(strings.alwaysDoubleCheck)
                     .font(.interSemiBold(size: 17))
             }
 
-            Text("KnowEat suggests — you decide. Always confirm with staff for severe allergies.")
+            Text(strings.suggestsYouDecide)
                 .font(.interRegular(size: 14))
                 .foregroundStyle(.secondary)
                 .lineSpacing(2)
@@ -107,19 +108,26 @@ struct AnalysisDisclaimerView: View {
     private var featureRows: some View {
         VStack(alignment: .leading, spacing: 24) {
             featureRow(
-                icon: "lock.shield.fill",
-                iconColor: .blue,
-                title: "Private & secure",
-                subtitle: "All processing happens on-device."
+                icon: "hand.raised.fill",
+                iconColor: Color(red: 0.45, green: 0.35, blue: 0.85),
+                title: strings.alwaysDoubleCheck,
+                subtitle: strings.doubleCheckDesc
             )
-
+            featureRow(
+                icon: "lock.shield.fill",
+                iconColor: Color(red: 0.25, green: 0.48, blue: 0.85),
+                title: strings.noDataSent,
+                subtitle: strings.noDataSentDesc
+            )
             featureRow(
                 icon: "person.text.rectangle",
                 iconColor: Color("PrimaryOrange"),
-                title: "Personalized for you",
-                subtitle: "Results match your dietary profile."
+                title: strings.personalizedForYou,
+                subtitle: strings.personalizedDesc
             )
         }
+        .frame(maxWidth: 400)
+        .frame(maxWidth: .infinity)
     }
 
     // MARK: - Bottom Section
@@ -128,20 +136,8 @@ struct AnalysisDisclaimerView: View {
         VStack(spacing: 16) {
             acceptanceCard
 
-            if let url = privacyURL {
-                Button {
-                    openURL(url)
-                } label: {
-                    Text("Read our Privacy Policy")
-                        .font(.system(size: 13, weight: .medium))
-                        .foregroundStyle(Color("PrimaryOrange"))
-                }
-                .accessibilityLabel("Read our Privacy Policy")
-                .accessibilityHint("Opens the privacy policy in Safari")
-            }
-
             Button(action: onAccept) {
-                Text(isPrivacyUpdate ? "Accept & Continue" : "Continue")
+                Text(isPrivacyUpdate ? strings.acceptContinue : strings.continueButton)
                     .font(.interSemiBold(size: 17))
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
@@ -153,8 +149,21 @@ struct AnalysisDisclaimerView: View {
             }
             .disabled(!hasAccepted)
             .animation(.easeInOut(duration: 0.25), value: hasAccepted)
-            .accessibilityLabel(isPrivacyUpdate ? "Accept updated privacy notice" : "Continue")
-            .accessibilityHint(hasAccepted ? "Continues to the app" : "You must accept the notice first")
+            .accessibilityLabel(isPrivacyUpdate ? strings.acceptUpdatedPrivacyNotice : strings.continueButton)
+            .accessibilityHint(hasAccepted ? strings.continuesToApp : strings.mustAcceptFirst)
+            
+            if let url = privacyURL {
+                Button {
+                    openURL(url)
+                } label: {
+                    Text(strings.readPrivacyPolicy)
+                        .font(.system(size: 13, weight: .medium))
+                        .foregroundStyle(Color("PrimaryOrange"))
+                }
+                .accessibilityLabel(strings.readPrivacyPolicy)
+                .accessibilityHint(strings.opensPrivacyInSafari)
+            }
+
         }
         .padding(.horizontal, 28)
         .padding(.bottom, 32)
@@ -168,53 +177,59 @@ struct AnalysisDisclaimerView: View {
                 hasAccepted.toggle()
             }
         } label: {
-            HStack(spacing: 14) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 7)
-                        .strokeBorder(
-                            hasAccepted ? Color("PrimaryOrange") : Color(.systemGray3),
-                            lineWidth: 2
-                        )
-                        .frame(width: 26, height: 26)
-                        .background(
-                            RoundedRectangle(cornerRadius: 7)
-                                .fill(hasAccepted ? Color("PrimaryOrange") : .clear)
-                        )
+            HStack(spacing: 16) {
 
-                    if hasAccepted {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 13, weight: .bold))
-                            .foregroundStyle(.white)
-                            .transition(.scale.combined(with: .opacity))
+                HStack(spacing: 12) {
+                    ZStack {
+                        RoundedRectangle(cornerRadius: 8)
+                            .strokeBorder(
+                                hasAccepted ? Color("PrimaryOrange") : Color(.systemGray4),
+                                lineWidth: 2
+                            )
+                            .frame(width: 24, height: 24)
+                            .background(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .fill(hasAccepted ? Color("PrimaryOrange") : Color(.secondarySystemBackground))
+                            )
+
+                        if hasAccepted {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 12, weight: .bold))
+                                .foregroundStyle(.white)
+                                .transition(.scale.combined(with: .opacity))
+                        }
                     }
-                }
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text("I understand")
-                        .font(.interSemiBold(size: 15))
+                    Text(strings.understandNotMedical)
+                        .font(.interSemiBold(size: 12))
                         .foregroundStyle(.primary)
-
-                    Text("This is not medical advice")
-                        .font(.interRegular(size: 13))
-                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.leading)
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
 
-                Spacer()
+                Spacer(minLength: 0)
             }
-            .padding(14)
+            .padding(16)
             .background(
-                RoundedRectangle(cornerRadius: 12)
-                    .fill(hasAccepted ? Color("PrimaryOrange").opacity(0.06) : .clear)
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color(.secondarySystemBackground).opacity(0.6))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .strokeBorder(
+                                hasAccepted ? Color("PrimaryOrange").opacity(0.3) : Color.clear,
+                                lineWidth: 1.5
+                            )
+                    )
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("I understand this is not medical advice")
-        .accessibilityHint(hasAccepted ? "Accepted. Tap to uncheck" : "Tap to accept")
+        .accessibilityLabel(strings.understandNotMedical)
+        .accessibilityHint(hasAccepted ? strings.acceptedTapToUncheck : strings.tapToAccept)
         .accessibilityAddTraits(hasAccepted ? [.isButton, .isSelected] : .isButton)
     }
 
-    private func featureRow(icon: String, iconColor: Color, title: String, subtitle: String) -> some View {
-        HStack(alignment: .top, spacing: 16) {
+    private func featureRow(icon: String, iconColor: Color, title: String, subtitle: String, smallSubtitle: Bool = false) -> some View {
+        HStack(alignment: .center, spacing: 16) {
             Image(systemName: icon)
                 .font(.system(size: 22))
                 .foregroundStyle(iconColor)
@@ -225,8 +240,9 @@ struct AnalysisDisclaimerView: View {
                     .font(.interSemiBold(size: 15))
 
                 Text(subtitle)
-                    .font(.interRegular(size: 14))
+                    .font(smallSubtitle ? .interRegular(size: 11) : .interRegular(size: 14))
                     .foregroundStyle(.secondary)
+                    .lineSpacing(smallSubtitle ? 1.5 : 2)
             }
         }
     }
@@ -234,8 +250,10 @@ struct AnalysisDisclaimerView: View {
 
 #Preview("First time") {
     AnalysisDisclaimerView(onAccept: {})
+        .environment(UserProfileStore())
 }
 
 #Preview("Privacy update") {
     AnalysisDisclaimerView(isPrivacyUpdate: true, onAccept: {})
+        .environment(UserProfileStore())
 }

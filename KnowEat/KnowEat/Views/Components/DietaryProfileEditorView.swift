@@ -18,13 +18,17 @@ struct DietaryProfileEditorView: View {
         GridItem(.flexible(), spacing: 12)
     ]
 
+    private var strings: AppStrings {
+        AppStrings(profileStore.profile?.nativeLanguage ?? "English")
+    }
+
     private var sections: [(DietaryCategory, String, String, String, [Allergen])] {
         [
-            (.allergens, "Allergens", "exclamationmark.shield.fill", "Food allergens that can cause reactions.", viewModel.allergens),
-            (.intolerances, "Intolerances", "pills.fill", "Foods your body has trouble digesting.", viewModel.intolerances),
-            (.conditions, "Medical Conditions", "heart.text.clipboard.fill", "Conditions that affect your diet.", viewModel.conditions),
-            (.diets, "Diets", "fork.knife", "Lifestyle or religious diets.", viewModel.diets),
-            (.situations, "Situations", "figure.and.child.holdinghands", "Temporary situations.", viewModel.situations),
+            (.allergens, strings.allergens, "exclamationmark.shield.fill", strings.foodAllergensDesc, viewModel.allergens),
+            (.intolerances, strings.intolerances, "pills.fill", strings.intolerancesDesc, viewModel.intolerances),
+            (.conditions, strings.medicalConditions, "heart.text.clipboard.fill", strings.conditionsDesc, viewModel.conditions),
+            (.diets, strings.diets, "fork.knife", strings.dietsDesc, viewModel.diets),
+            (.situations, strings.situations, "figure.and.child.holdinghands", strings.situationsDesc, viewModel.situations),
         ]
     }
 
@@ -49,18 +53,18 @@ struct DietaryProfileEditorView: View {
                 .padding(.bottom, 32)
             }
             .background(Color(.systemBackground))
-            .navigationTitle("Dietary Profile")
+            .navigationTitle(strings.dietaryProfile)
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
-                    Button("Done") {
+                    Button(strings.done) {
                         syncAllToProfile()
                         onProfileUpdated?()
                         dismiss()
                     }
                     .font(.interMedium(size: 16))
                     .tint(Color("PrimaryOrange"))
-                    .accessibilityLabel("Done")
+                    .accessibilityLabel(strings.done)
                     .accessibilityHint("Saves your dietary profile and closes the editor")
                 }
                 ToolbarItem(placement: .topBarLeading) {
@@ -71,7 +75,7 @@ struct DietaryProfileEditorView: View {
                             .font(.system(size: 14, weight: .semibold))
                     }
                     .tint(Color("SecondaryGray"))
-                    .accessibilityLabel("Close")
+                    .accessibilityLabel(strings.close)
                     .accessibilityHint("Dismisses the dietary profile editor")
                 }
             }

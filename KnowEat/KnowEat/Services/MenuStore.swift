@@ -23,11 +23,15 @@ final class MenuStore {
     }
 
     func delete(at offsets: IndexSet) {
+        for index in offsets {
+            ImageStorageService.shared.deleteImages(forMenuId: menus[index].id)
+        }
         menus.remove(atOffsets: offsets)
         persist()
     }
 
     func delete(_ menu: ScannedMenu) {
+        ImageStorageService.shared.deleteImages(forMenuId: menu.id)
         menus.removeAll { $0.id == menu.id }
         persist()
     }
@@ -39,6 +43,9 @@ final class MenuStore {
     }
 
     func deleteAll() {
+        for menu in menus {
+            ImageStorageService.shared.deleteImages(forMenuId: menu.id)
+        }
         menus.removeAll()
         persist()
     }

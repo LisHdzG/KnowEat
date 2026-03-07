@@ -27,6 +27,10 @@ final class MenuScanViewModel {
     private var lastProfile: UserProfile?
     private var driftTask: Task<Void, Never>?
 
+    private var strings: AppStrings {
+        AppStrings(lastProfile?.nativeLanguage ?? "English")
+    }
+
     func openScanner() {
         errorMessage = nil
 
@@ -113,83 +117,206 @@ final class MenuScanViewModel {
         errorMessage = nil
         canRetry = false
         analysisProgress = 0.05
-        analysisStage = "Preparing images…"
+        analysisStage = strings.preparingImages
 
         Task {
             do {
                 analysisProgress = 0.15
-                analysisStage = "Reading menu text…"
-                let ocrText = try await OCRService.shared.extractText(from: images)
+                analysisStage = strings.readingMenuText
+                let ocrResult = try await OCRService.shared.extractTextWithRegions(from: images)
+
+                analysisProgress = 0.25
+                analysisStage = strings.validatingContent
+                try MenuValidator.validate(ocrResult.text)
 
                 analysisProgress = 0.40
-                analysisStage = "Analyzing dishes…"
-                startProgressDrift(from: 0.40, to: 0.78, over: 18)
+                analysisStage = strings.analyzingDishes
+                startProgressDrift(from: 0.40, to: 0.72, over: 18)
 
-                let menu: ScannedMenu
+                var menu: ScannedMenu
 
                 if FoundationModelAnalyzer.shared.isAvailable {
                     menu = try await FoundationModelAnalyzer.shared.analyze(
-                        ocrText: ocrText,
-                        userLanguage: profile.nativeLanguage
+                        ocrText: ocrResult.text,
+                        userLanguage: "English"
                     )
                 } else {
-                    menu = OfflineMenuAnalyzer.shared.analyze(
-                        ocrText: ocrText,
-                        userLanguage: profile.nativeLanguage
+                    let offlineMenu = OfflineMenuAnalyzer.shared.analyze(
+                        ocrText: ocrResult.text,
+                        userLanguage: "English"
                     )
+                    guard !offlineMenu.dishes.isEmpty else {
+                        throw FoundationModelError.notAMenu
+                    }
+                    menu = offlineMenu
                 }
 
                 stopProgressDrift()
-                analysisProgress = 0.82
-                analysisStage = "Checking your allergens…"
+
+                let fileNames = ImageStorageService.shared.save(images: images, forMenuId: menu.id)
+                menu.imageFileNames = fileNames
+                menu.textRegions = ocrResult.regions
+                menu.dishes = Self.matchDishesToRegions(dishes: menu.dishes, regions: ocrResult.regions)
+
+                let nativeLang = profile.nativeLanguage
+                if nativeLang != "English" && FoundationModelAnalyzer.shared.isAvailable {
+                    analysisProgress = 0.76
+                    analysisStage = strings.translatingDescriptions
+                    if let translated = try? await FoundationModelAnalyzer.shared.translateMenu(
+                        dishes: menu.dishes,
+                        restaurant: menu.restaurant,
+                        to: nativeLang
+                    ) {
+                        menu.dishes = translated.dishes
+                    }
+                }
+
+                analysisProgress = 0.85
+                analysisStage = strings.checkingAllergens
                 let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
 
                 analysisProgress = 1.0
-                analysisStage = "Done!"
+                analysisStage = strings.doneStage
                 try? await Task.sleep(for: .milliseconds(500))
 
                 self.scannedMenu = menu
                 self.analyzedDishes = analyzed
                 self.isAnalyzing = false
                 self.showResults = true
-            } catch is FoundationModelError {
+            } catch let validationError as MenuValidationError {
+                stopProgressDrift()
+                self.isAnalyzing = false
+                self.errorTitle = self.strings.notAMenuTitle
+                self.errorMessage = validationError.localizedDescription
+                self.canRetry = true
+            } catch FoundationModelError.notAMenu {
+                stopProgressDrift()
                 analysisProgress = 0.50
-                analysisStage = "Retrying with backup…"
-                if let ocrText = try? await OCRService.shared.extractText(from: images) {
-                    let menu = OfflineMenuAnalyzer.shared.analyze(ocrText: ocrText, userLanguage: profile.nativeLanguage)
-                    analysisProgress = 0.85
-                    analysisStage = "Checking your allergens…"
-                    let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
-                    analysisProgress = 1.0
-                    analysisStage = "Done!"
-                    try? await Task.sleep(for: .milliseconds(500))
-                    self.scannedMenu = menu
-                    self.analyzedDishes = analyzed
-                    self.isAnalyzing = false
-                    self.showResults = true
+                analysisStage = self.strings.retryingBackup
+                if let ocrResult = try? await OCRService.shared.extractTextWithRegions(from: images) {
+                    var menu = OfflineMenuAnalyzer.shared.analyze(ocrText: ocrResult.text, userLanguage: "English")
+                    if menu.dishes.isEmpty {
+                        self.isAnalyzing = false
+                        self.errorTitle = self.strings.notAMenuTitle
+                        self.errorMessage = self.strings.notAMenuMessage
+                        self.canRetry = true
+                    } else {
+                        let fileNames = ImageStorageService.shared.save(images: images, forMenuId: menu.id)
+                        menu.imageFileNames = fileNames
+                        menu.textRegions = ocrResult.regions
+                        menu.dishes = Self.matchDishesToRegions(dishes: menu.dishes, regions: ocrResult.regions)
+
+                        analysisProgress = 0.85
+                        analysisStage = self.strings.checkingAllergens
+                        let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
+                        analysisProgress = 1.0
+                        analysisStage = self.strings.doneStage
+                        try? await Task.sleep(for: .milliseconds(500))
+                        self.scannedMenu = menu
+                        self.analyzedDishes = analyzed
+                        self.isAnalyzing = false
+                        self.showResults = true
+                    }
                 } else {
                     self.isAnalyzing = false
-                    self.errorTitle = "Analysis Failed"
-                    self.errorMessage = "We couldn't identify any dishes in this image. Make sure you're photographing a food menu with dish names and descriptions."
+                    self.errorTitle = self.strings.notAMenuTitle
+                    self.errorMessage = self.strings.notAMenuMessage
+                    self.canRetry = true
+                }
+            } catch is FoundationModelError {
+                stopProgressDrift()
+                analysisProgress = 0.50
+                analysisStage = self.strings.retryingBackup
+                if let ocrResult = try? await OCRService.shared.extractTextWithRegions(from: images) {
+                    var menu = OfflineMenuAnalyzer.shared.analyze(ocrText: ocrResult.text, userLanguage: "English")
+                    if menu.dishes.isEmpty {
+                        self.isAnalyzing = false
+                        self.errorTitle = self.strings.analysisFailedTitle
+                        self.errorMessage = self.strings.analysisFailedMessage
+                        self.canRetry = true
+                    } else {
+                        let fileNames = ImageStorageService.shared.save(images: images, forMenuId: menu.id)
+                        menu.imageFileNames = fileNames
+                        menu.textRegions = ocrResult.regions
+                        menu.dishes = Self.matchDishesToRegions(dishes: menu.dishes, regions: ocrResult.regions)
+
+                        analysisProgress = 0.85
+                        analysisStage = self.strings.checkingAllergens
+                        let analyzed = AllergenChecker.analyze(menu: menu, profile: profile)
+                        analysisProgress = 1.0
+                        analysisStage = self.strings.doneStage
+                        try? await Task.sleep(for: .milliseconds(500))
+                        self.scannedMenu = menu
+                        self.analyzedDishes = analyzed
+                        self.isAnalyzing = false
+                        self.showResults = true
+                    }
+                } else {
+                    self.isAnalyzing = false
+                    self.errorTitle = self.strings.analysisFailedTitle
+                    self.errorMessage = self.strings.analysisFailedMessage
                     self.canRetry = true
                 }
             } catch let ocrError as OCRError {
+                stopProgressDrift()
                 self.isAnalyzing = false
                 switch ocrError {
                 case .noTextFound:
-                    self.errorTitle = "No Menu Text Found"
-                    self.errorMessage = "We couldn't detect any readable text in your photo. Please make sure you're photographing a restaurant menu."
+                    self.errorTitle = self.strings.noMenuTextFoundTitle
+                    self.errorMessage = self.strings.noTextMessage
                 case .recognitionFailed:
-                    self.errorTitle = "Couldn't Read Text"
-                    self.errorMessage = "The text in the image couldn't be processed. Try taking a clearer, well-lit photo with the menu fully visible."
+                    self.errorTitle = self.strings.couldntReadTextTitle
+                    self.errorMessage = self.strings.cantReadTextMessage
                 }
                 self.canRetry = true
             } catch {
+                stopProgressDrift()
                 self.isAnalyzing = false
-                self.errorTitle = "Something Went Wrong"
-                self.errorMessage = "An unexpected error occurred. Please try again with a new photo."
+                self.errorTitle = self.strings.somethingWentWrongTitle
+                self.errorMessage = self.strings.unexpectedError
                 self.canRetry = true
             }
+        }
+    }
+
+    private static func matchDishesToRegions(dishes: [Dish], regions: [TextRegion]) -> [Dish] {
+        dishes.map { dish in
+            let normalize: (String) -> String = { s in
+                s.lowercased()
+                 .folding(options: .diacriticInsensitive, locale: nil)
+                 .trimmingCharacters(in: .whitespacesAndNewlines)
+            }
+            let normalizedName = normalize(dish.name)
+            let nameWords = normalizedName.split(separator: " ")
+                .map(String.init)
+                .filter { $0.count > 2 }
+
+            var matchedIndices: [Int] = []
+            for (idx, region) in regions.enumerated() {
+                let normalizedRegion = normalize(region.text)
+                if normalizedRegion.contains(normalizedName) {
+                    matchedIndices.append(idx)
+                    continue
+                }
+                if !nameWords.isEmpty {
+                    let hits = nameWords.filter { normalizedRegion.contains($0) }.count
+                    if hits >= max(1, nameWords.count / 2) {
+                        matchedIndices.append(idx)
+                    }
+                }
+            }
+
+            return Dish(
+                name: dish.name,
+                description: dish.description,
+                price: dish.price,
+                category: dish.category,
+                ingredients: dish.ingredients,
+                allergenIds: dish.allergenIds,
+                inferredIngredients: dish.inferredIngredients,
+                suggestedAllergenIds: dish.suggestedAllergenIds,
+                textRegionIndices: matchedIndices
+            )
         }
     }
 }
