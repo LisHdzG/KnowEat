@@ -283,6 +283,37 @@ struct AppStrings {
         "Traduzione delle descrizioni…"
     ) }
 
+    var ingredientsLabel: String { t("Ingredients", "Ingredientes", "Ingredienti") }
+    var inferredByAI: String { t("AI inferred", "Inferido por IA", "Dedotto dall'IA") }
+
+    func localizedAllergenName(_ id: String) -> String {
+        switch id {
+        case "gluten": return t("Gluten", "Gluten", "Glutine")
+        case "dairy": return t("Dairy", "Lácteos", "Latticini")
+        case "eggs": return t("Eggs", "Huevos", "Uova")
+        case "fish": return t("Fish", "Pescado", "Pesce")
+        case "crustaceans": return t("Crustaceans", "Crustáceos", "Crostacei")
+        case "peanuts": return t("Peanuts", "Cacahuetes", "Arachidi")
+        case "soy": return t("Soy", "Soja", "Soia")
+        case "tree_nuts": return t("Tree Nuts", "Frutos secos", "Frutta a guscio")
+        case "celery": return t("Celery", "Apio", "Sedano")
+        case "mustard": return t("Mustard", "Mostaza", "Senape")
+        case "sesame": return t("Sesame", "Sésamo", "Sesamo")
+        case "sulfites": return t("Sulfites", "Sulfitos", "Solfiti")
+        case "lupins": return t("Lupins", "Altramuces", "Lupini")
+        case "mollusks": return t("Mollusks", "Moluscos", "Molluschi")
+        case "lactose": return t("Lactose", "Lactosa", "Lattosio")
+        case "fructose": return t("Fructose", "Fructosa", "Fruttosio")
+        case "histamine": return t("Histamine", "Histamina", "Istamina")
+        case "fodmap": return "FODMAP"
+        case "meat": return t("Meat", "Carne", "Carne")
+        case "poultry": return t("Poultry", "Aves", "Pollame")
+        case "pork": return t("Pork", "Cerdo", "Maiale")
+        case "alcohol": return t("Alcohol", "Alcohol", "Alcol")
+        default: return id.replacingOccurrences(of: "_", with: " ").capitalized
+        }
+    }
+
     // MARK: - Analysis Disclaimer
 
     var howKnowEatWorks: String { t(

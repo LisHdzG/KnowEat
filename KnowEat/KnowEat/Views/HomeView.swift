@@ -154,8 +154,8 @@ struct HomeView: View {
 
             if scanVM.isAnalyzing {
                 LoaderView(progress: scanVM.analysisProgress, stage: scanVM.analysisStage)
-                    .transition(.opacity)
                     .ignoresSafeArea()
+                    .zIndex(10)
             }
 
         }

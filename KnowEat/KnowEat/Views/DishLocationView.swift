@@ -6,14 +6,15 @@
 import SwiftUI
 
 struct DishLocationView: View {
-    let dish: Dish
+    let item: AnalyzedDish
+    let allergens: [Allergen]
     let menu: ScannedMenu
     let strings: AppStrings
 
     @Environment(\.dismiss) private var dismiss
     @State private var scale: CGFloat = 1.0
-    @State private var offset: CGSize = .zero
-    @State private var lastOffset: CGSize = .zero
+
+    private var dish: Dish { item.dish }
 
     private var menuImages: [UIImage] {
         ImageStorageService.shared.loadImages(forMenuId: menu.id)
@@ -30,17 +31,40 @@ struct DishLocationView: View {
         matchedRegions.first?.imageIndex ?? 0
     }
 
+    private var accentColor: Color {
+        if item.isSafe { return .green }
+        if item.isDanger { return .red }
+        return .orange
+    }
+
+    private var hasExplicitIngredients: Bool {
+        !dish.ingredients.isEmpty
+    }
+
+    private var isUnrecognizedDish: Bool {
+        dish.inferredIngredients.contains { $0.lowercased().contains("unrecognized") }
+    }
+
+    private func nameFor(_ id: String) -> String {
+        strings.localizedAllergenName(id)
+    }
+
     var body: some View {
         NavigationStack {
-            GeometryReader { geo in
-                let images = menuImages
-                if images.isEmpty {
-                    noImagePlaceholder
-                } else if targetImageIndex < images.count {
-                    imageWithHighlight(image: images[targetImageIndex], size: geo.size)
-                } else {
-                    noImagePlaceholder
+            VStack(spacing: 0) {
+                GeometryReader { geo in
+                    let images = menuImages
+                    if images.isEmpty {
+                        noImagePlaceholder
+                    } else if targetImageIndex < images.count {
+                        imageWithHighlight(image: images[targetImageIndex], size: geo.size)
+                    } else {
+                        noImagePlaceholder
+                    }
                 }
+                .background(Color.black)
+
+                dishInfoPanel
             }
             .background(Color.black)
             .navigationBarTitleDisplayMode(.inline)
@@ -49,15 +73,17 @@ struct DishLocationView: View {
                     Text(dish.name)
                         .font(.interSemiBold(size: 14))
                         .foregroundStyle(.white)
+                        .lineLimit(1)
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         dismiss()
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 22))
-                            .symbolRenderingMode(.hierarchical)
-                            .foregroundStyle(.white.opacity(0.7))
+                        Image(systemName: "xmark")
+                            .font(.system(size: 14, weight: .bold))
+                            .foregroundStyle(.white.opacity(0.8))
+                            .frame(width: 28, height: 28)
+                            .background(.ultraThinMaterial, in: Circle())
                     }
                     .accessibilityLabel(strings.close)
                 }
@@ -66,6 +92,91 @@ struct DishLocationView: View {
             .toolbarColorScheme(.dark, for: .navigationBar)
         }
     }
+
+    // MARK: - Dish Info Panel
+
+    private var dishInfoPanel: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 2)
+                    .fill(accentColor)
+                    .frame(width: 4, height: 18)
+
+                Text(dish.name)
+                    .font(.interSemiBold(size: 15))
+                    .foregroundStyle(.white)
+                    .lineLimit(1)
+            }
+
+            if let description = dish.description, !description.isEmpty {
+                Text(description)
+                    .font(.interRegular(size: 12))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .lineLimit(2)
+            }
+
+            if hasExplicitIngredients {
+                HStack(alignment: .top, spacing: 4) {
+                    Image(systemName: "list.bullet")
+                        .font(.system(size: 9))
+                        .foregroundStyle(.white.opacity(0.4))
+                        .padding(.top, 2)
+                    Text(dish.ingredients.joined(separator: ", "))
+                        .font(.interRegular(size: 11))
+                        .foregroundStyle(.white.opacity(0.6))
+                        .lineLimit(2)
+                }
+            } else if isUnrecognizedDish {
+                Label {
+                    Text(strings.unknownDishWarning)
+                        .font(.interRegular(size: 11))
+                } icon: {
+                    Image(systemName: "questionmark.circle")
+                        .font(.system(size: 9))
+                }
+                .foregroundStyle(.orange.opacity(0.8))
+            } else {
+                Label {
+                    Text(strings.noIngredientsDetected)
+                        .font(.interRegular(size: 11))
+                } icon: {
+                    Image(systemName: "info.circle")
+                        .font(.system(size: 9))
+                }
+                .foregroundStyle(.white.opacity(0.4))
+            }
+
+            if !item.isSafe {
+                HStack(spacing: 8) {
+                    if item.isDanger {
+                        Label {
+                            Text(item.matchedAllergenIds.map { nameFor($0) }.joined(separator: ", "))
+                        } icon: {
+                            Image(systemName: "exclamationmark.triangle.fill")
+                        }
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.red)
+                    }
+                    if item.isAdvisory {
+                        let ids = item.matchedIntoleranceIds + item.matchedDietIds + item.matchedSituationIds
+                        Label {
+                            Text(ids.map { nameFor($0) }.joined(separator: ", "))
+                        } icon: {
+                            Image(systemName: "info.circle.fill")
+                        }
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.orange)
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color(.systemBackground).opacity(0.12))
+    }
+
+    // MARK: - Image
 
     @ViewBuilder
     private func imageWithHighlight(image: UIImage, size: CGSize) -> some View {
@@ -134,7 +245,7 @@ struct DishLocationView: View {
                         }
                     }
                 }
-                .padding(.bottom, 24)
+                .padding(.bottom, 12)
             }
         }
         .gesture(

@@ -283,7 +283,7 @@ private struct DishCard: View {
     }
 
     private func nameFor(_ id: String) -> String {
-        allergens.first(where: { $0.id == id })?.name ?? id
+        strings.localizedAllergenName(id)
     }
 
     var body: some View {
@@ -293,9 +293,19 @@ private struct DishCard: View {
                 .frame(width: 5)
                 .padding(.vertical, 10)
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text(item.dish.name)
-                    .font(.interSemiBold(size: 16))
+            VStack(alignment: .leading, spacing: 6) {
+                HStack(alignment: .top) {
+                    Text(item.dish.name)
+                        .font(.interSemiBold(size: 16))
+
+                    Spacer()
+
+                    if canShowLocation {
+                        Image(systemName: "eye")
+                            .font(.system(size: 12, weight: .medium))
+                            .foregroundStyle(Color("PrimaryOrange").opacity(0.6))
+                    }
+                }
 
                 if let description = item.dish.description, !description.isEmpty {
                     Text(description)
@@ -304,48 +314,52 @@ private struct DishCard: View {
                 }
 
                 if hasExplicitIngredients {
-                    ingredientsText
-                        .font(.interRegular(size: 13))
-                        .lineLimit(3)
-                }
-
-                if isUnrecognizedDish {
-                    HStack(alignment: .top, spacing: 4) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 9))
-                            .padding(.top, 3)
-                        Text(strings.unknownDishWarning)
+                    VStack(alignment: .leading, spacing: 3) {
+                        Label(strings.ingredientsLabel, systemImage: "list.bullet")
+                            .font(.system(size: 10, weight: .medium))
+                            .foregroundStyle(.tertiary)
+                        ingredientsText
                             .font(.interRegular(size: 12))
-                            .lineLimit(2)
+                            .lineLimit(3)
+                    }
+                    .padding(.top, 2)
+                } else if isUnrecognizedDish {
+                    Label {
+                        Text(strings.unknownDishWarning)
+                            .font(.interRegular(size: 11))
+                    } icon: {
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: 10))
                     }
                     .foregroundStyle(.orange.opacity(0.8))
-                } else if hasInferredIngredients {
-                    HStack(alignment: .top, spacing: 4) {
-                        Image(systemName: "sparkles")
-                            .font(.system(size: 9))
-                            .padding(.top, 3)
-                        inferredIngredientsText
-                            .font(.interRegular(size: 12))
-                            .lineLimit(2)
-                    }
-                    .foregroundStyle(.secondary.opacity(0.7))
-                }
-
-                if !hasExplicitIngredients && !isUnrecognizedDish {
-                    HStack(alignment: .top, spacing: 4) {
+                    .padding(.top, 2)
+                } else {
+                    Label {
+                        Text(strings.noIngredientsDetected)
+                            .font(.interRegular(size: 11))
+                    } icon: {
                         Image(systemName: "info.circle")
                             .font(.system(size: 10))
-                            .padding(.top, 2)
-                        Text(strings.noIngredientsDetected)
-                            .font(.interRegular(size: 12))
                     }
                     .foregroundStyle(.gray)
+                    .padding(.top, 2)
+                }
+
+                if hasInferredIngredients {
+                    HStack(alignment: .top, spacing: 4) {
+                        Image(systemName: "sparkles")
+                            .font(.system(size: 8))
+                            .padding(.top, 3)
+                        inferredIngredientsText
+                            .font(.interRegular(size: 11))
+                            .lineLimit(2)
+                    }
+                    .foregroundStyle(.secondary.opacity(0.6))
                 }
 
                 if !item.isSafe {
                     Divider()
-
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 3) {
                         if item.isDanger {
                             Label {
                                 Text(dangerSummary)
@@ -355,7 +369,6 @@ private struct DishCard: View {
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.red)
                         }
-
                         if item.isAdvisory {
                             Label {
                                 Text(advisorySummary)
@@ -365,7 +378,6 @@ private struct DishCard: View {
                             .font(.system(size: 11, weight: .medium))
                             .foregroundStyle(.orange)
                         }
-
                         if item.hasSuggested {
                             Label {
                                 Text(suggestedSummary)
@@ -377,33 +389,31 @@ private struct DishCard: View {
                         }
                     }
                 }
-
-                if canShowLocation {
-                    Divider()
-                    Button {
-                        showLocation = true
-                    } label: {
-                        Label(strings.viewOnMenu, systemImage: "photo.on.rectangle")
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(Color("PrimaryOrange"))
-                    }
-                }
             }
             .padding(.leading, 12)
-            .padding(.vertical, 6)
+            .padding(.vertical, 8)
+
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 14)
                 .fill(Color(.systemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 8, y: 2)
+                .shadow(color: .black.opacity(0.06), radius: 6, y: 2)
         )
+        .contentShape(RoundedRectangle(cornerRadius: 14))
+        .onTapGesture {
+            if canShowLocation {
+                showLocation = true
+            }
+        }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(dishAccessibilityLabel)
-        .accessibilityHint(dishAccessibilityHint)
+        .accessibilityHint(canShowLocation ? strings.viewOnMenu : dishAccessibilityHint)
         .sheet(isPresented: $showLocation) {
-            DishLocationView(dish: item.dish, menu: menu, strings: strings)
+            DishLocationView(item: item, allergens: allergens, menu: menu, strings: strings)
         }
     }
 

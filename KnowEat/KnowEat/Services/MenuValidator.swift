@@ -26,7 +26,14 @@ enum MenuValidator {
 
     private static let priceRegex: NSRegularExpression = {
         try! NSRegularExpression(
-            pattern: #"[\$€£¥]\s*\d+[.,]?\d{0,2}|\d+[.,]\d{2}\s*[\$€£¥]|\d+[.,]\d{2}"#
+            pattern: #"[\$€£¥₺₱₩]\s*\d+[.,]?\d{0,2}|\d+[.,]\d{2}\s*[\$€£¥₺₱₩]|\d+[.,]\d{2}"#
+        )
+    }()
+
+    private static let integerPriceRegex: NSRegularExpression = {
+        try! NSRegularExpression(
+            pattern: #"(?:^|\s)\d{2,4}(?:\s*$)"#,
+            options: .anchorsMatchLines
         )
     }()
 
@@ -36,7 +43,7 @@ enum MenuValidator {
             .map { $0.trimmingCharacters(in: .whitespaces) }
             .filter { !$0.isEmpty }
 
-        if ocrText.trimmingCharacters(in: .whitespacesAndNewlines).count < 30 || lines.count < 2 {
+        if ocrText.trimmingCharacters(in: .whitespacesAndNewlines).count < 20 || lines.count < 2 {
             throw MenuValidationError.tooLittleText
         }
 
@@ -231,6 +238,13 @@ enum MenuValidator {
             range: NSRange(text.startIndex..., in: text)
         )
 
+        let intPriceCount = integerPriceRegex.numberOfMatches(
+            in: text,
+            range: NSRange(text.startIndex..., in: text)
+        )
+
+        let totalPriceSignals = priceCount + intPriceCount / 2
+
         let menuKeywords = [
             "menu", "menú", "menù", "carta", "appetizer", "appetizers",
             "entrée", "entree", "main course", "dessert", "desserts",
@@ -239,20 +253,75 @@ enum MenuValidator {
             "entrantes", "postres", "bebidas", "ensaladas", "carnes", "mariscos",
             "platos fuertes", "plato del día", "especialidades",
             "hors d'oeuvres", "entrées", "plats", "boissons",
+            // Turkish
+            "yemek", "içecek", "tatli", "tatlı", "başlangıç", "ana yemek",
+            // Portuguese
+            "prato", "sobremesa",
+            // German
+            "speisekarte", "vorspeisen", "hauptgerichte", "nachspeisen", "getränke",
+            // Generic structural
+            "para compartir", "para llevar", "para empezar", "formule", "formules",
+            "piatto", "piatti", "portata",
+            "quesadilla", "tacos", "burgers", "wraps", "volcán",
+            "antojitos", "gorditas", "huaraches", "flautas", "tamales",
+            "sopes", "tostadas",
         ]
         let hasMenuKeyword = menuKeywords.contains(where: { lower.contains($0) })
 
         let foodKeywords = [
+            // English
             "chicken", "beef", "pork", "fish", "salmon", "shrimp", "lamb",
             "pasta", "rice", "bread", "salad", "soup", "pizza", "sushi",
             "burger", "sandwich", "steak", "fries", "sauce", "cheese",
-            "grilled", "fried", "baked", "roasted",
+            "grilled", "fried", "baked", "roasted", "lobster", "crab",
+            "wings", "nachos", "calamari", "mozzarella", "caesar",
+            "wrap", "nuggets", "chowder", "chili",
+            // Spanish
             "pollo", "carne", "cerdo", "pescado", "arroz", "ensalada",
             "sopa", "hamburguesa", "tacos", "queso", "frijoles",
-            "asado", "frito", "al horno",
+            "asado", "frito", "al horno", "quesadilla", "burrito",
+            "empanada", "taco", "enchilada", "guacamole", "tortilla",
+            "chile", "mole", "pozole", "chilaquiles", "gordita",
+            "huarache", "flauta", "tamale", "tamal", "sope",
+            "tostada", "churro", "flan", "elote", "esquite",
+            "chicharrón", "chorizo", "arrachera", "sirloin",
+            "carnitas", "barbacoa", "pastor", "birria",
+            "costilla", "chuleta", "milanesa", "ceviche",
+            "agua fresca", "horchata", "limonada", "cerveza",
+            "refresco", "café", "postre",
+            // Italian
             "vitello", "manzo", "maiale", "insalata", "zuppa", "riso",
-            "formaggio", "prosciutto", "mozzarella", "risotto",
+            "formaggio", "prosciutto", "risotto", "bruschetta",
+            "lasagna", "ravioli", "gnocchi", "parmigiana", "carpaccio",
+            "tiramisu", "panna cotta", "gelato", "focaccia",
+            "calzone", "margherita", "marinara", "caprese",
+            "scaloppina", "tagliata", "frittura", "baccalà",
+            "salsiccia", "provoleta", "provolone",
+            "linguine", "pappardelle", "tonnarelli", "calamarata",
+            "orata", "salmone", "polpo", "gamberone", "calamaro",
+            // French
             "poisson", "poulet", "boeuf", "salade", "soupe", "fromage",
+            "crème", "gratin", "confit", "tartare", "foie gras",
+            "rémoulade", "bavette", "entrecôte", "côte", "filet",
+            "crêpe", "quiche", "ratatouille", "bouillabaisse",
+            "mousse", "crème brûlée", "tarte", "feuillantine",
+            "langoustine", "huître", "crevette",
+            "porc", "agneau", "canard", "veau",
+            // Turkish
+            "kebab", "köfte", "döner", "pide", "lahmacun", "börek",
+            "baklava", "manti", "çorba", "pilav", "kuzu",
+            "tavuk", "balık", "izgara", "sote",
+            // Argentine
+            "empanada", "choripan", "provoleta", "asado",
+            "bondiola", "entraña", "vacío", "picaña",
+            "matambre", "bife", "chimichurri", "morcilla",
+            "ribeye", "lomito",
+            // Puerto Rican / Caribbean
+            "alcapurria", "mofongo", "tostón", "plantain",
+            "sofrito", "arroz con", "pernil", "lechón",
+            // Generic
+            "cocktail", "spritz", "negroni", "margarita",
+            "prosecco", "cappuccino", "espresso",
         ]
         let foodCount = foodKeywords.filter { lower.contains($0) }.count
 
@@ -261,14 +330,24 @@ enum MenuValidator {
             return priceRegex.firstMatch(in: line, range: range) != nil
         }.count
 
-        let hasStructuralEvidence = linesWithPrices >= 3 && foodCount >= 1
+        let linesWithIntPrices = lines.filter { line in
+            let range = NSRange(line.startIndex..., in: line)
+            return integerPriceRegex.firstMatch(in: line, range: range) != nil
+        }.count
 
-        if hasStructuralEvidence { return true }
-        if priceCount >= 5 { return true }
-        if hasMenuKeyword && foodCount >= 2 { return true }
-        if linesWithPrices >= 2 && foodCount >= 2 { return true }
-        if foodCount >= 4 { return true }
-        if priceCount >= 2 && hasMenuKeyword && foodCount >= 1 { return true }
+        let totalPriceLines = linesWithPrices + linesWithIntPrices
+
+        if linesWithPrices >= 2 { return true }
+        if totalPriceSignals >= 3 { return true }
+        if priceCount >= 2 { return true }
+        if hasMenuKeyword && foodCount >= 1 { return true }
+        if hasMenuKeyword && totalPriceLines >= 2 { return true }
+        if linesWithPrices >= 1 && foodCount >= 1 { return true }
+        if foodCount >= 2 { return true }
+        if totalPriceSignals >= 1 && hasMenuKeyword { return true }
+        if lines.count >= 4 && foodCount >= 1 { return true }
+        if totalPriceLines >= 3 { return true }
+        if lines.count >= 6 && totalPriceLines >= 2 { return true }
 
         return false
     }

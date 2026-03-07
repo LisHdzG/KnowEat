@@ -33,10 +33,10 @@ struct GeneratedDish {
     @Guide(description: "true if this is a real orderable food or drink item. false if it is a section header, category title, restaurant name, subtitle, decoration, or any non-orderable text.")
     var isActualDish: Bool
 
-    @Guide(description: "Ingredients written on the menu for this dish, translated to English. Empty array if none listed.")
+    @Guide(description: "Ingredients written on the menu for this dish, in the user's language. Empty array if none listed.")
     var ingredients: [String]
 
-    @Guide(description: "Common ingredients this dish typically contains but NOT written on the menu, in English. Empty array if you truly cannot infer any.")
+    @Guide(description: "Common ingredients this dish typically contains but NOT written on the menu, in the user's language. Empty array if you truly cannot infer any.")
     var inferredIngredients: [String]
 
     @Guide(description: "Allergen/content IDs based ONLY on explicit ingredients listed on the menu. Valid IDs: gluten, dairy, eggs, fish, crustaceans, peanuts, soy, tree_nuts, celery, mustard, sesame, sulfites, lupins, mollusks, lactose, fructose, histamine, fodmap, meat, poultry, pork, alcohol")
@@ -83,7 +83,7 @@ final class FoundationModelAnalyzer {
         "meat", "poultry", "pork", "alcohol"
     ]
 
-    private static let maxOCRCharacters = 6000
+    private static let maxOCRCharacters = 8000
 
     var isAvailable: Bool {
         SystemLanguageModel.default.availability == .available
@@ -111,6 +111,7 @@ final class FoundationModelAnalyzer {
             \
             STEP 2 — EXTRACT (only if it IS a menu): \
             1. Find the restaurant name from headers, logos, or branding. "Unknown" if not visible. \
+            The restaurant name is NEVER a dish — do not include it as a dish. \
             2. Extract every dish and drink that is clearly written in the menu. \
             \
             CRITICAL ORDER RULE: \
@@ -133,11 +134,11 @@ final class FoundationModelAnalyzer {
             - Skip non-food text: addresses, phone numbers, URLs, slogans, decorative text, \
             allergen disclaimers, service charges, cover charges, section dividers. \
             - Translate the dishDescription to \(userLanguage). \
-            - Write ALL ingredient names in English, regardless of the menu language. \
+            - Write ALL ingredient names in \(userLanguage). \
             \
             INGREDIENT RULES: \
-            - List ingredients explicitly written on the menu for each dish (translated to English). \
-            - Infer common additional ingredients the dish typically contains (in English). \
+            - List ingredients explicitly written on the menu for each dish (translated to \(userLanguage)). \
+            - Infer common additional ingredients the dish typically contains (in \(userLanguage)). \
             - If you cannot recognize a dish at all, set inferredIngredients to ["Unrecognized dish"]. \
             \
             ALLERGEN RULES: \
@@ -269,8 +270,19 @@ final class FoundationModelAnalyzer {
             )
         }
 
+        let restaurantLower = generated.restaurant.lowercased()
+            .folding(options: .diacriticInsensitive, locale: nil)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
+
         let ocrValidated = candidateDishes.filter { dish in
-            Self.dishNameFoundInOCR(dish.name, ocrText: ocrText)
+            let dishLower = dish.name.lowercased()
+                .folding(options: .diacriticInsensitive, locale: nil)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+            if !restaurantLower.isEmpty && restaurantLower != "unknown"
+                && (dishLower == restaurantLower || restaurantLower.contains(dishLower) || dishLower.contains(restaurantLower)) {
+                return false
+            }
+            return Self.dishNameFoundInOCR(dish.name, ocrText: ocrText)
         }
 
         let dishes = Self.deduplicateDishes(ocrValidated)
@@ -438,6 +450,29 @@ final class FoundationModelAnalyzer {
                 "carni", "pesce",
             ]
             if categoryHeaders.contains(lower) { return true }
+        }
+
+        let letterChars = name.unicodeScalars.filter { CharacterSet.letters.contains($0) }
+        let totalChars = name.unicodeScalars.filter { !CharacterSet.whitespacesAndNewlines.contains($0) }
+        if !totalChars.isEmpty && letterChars.count < totalChars.count / 2 { return true }
+
+        if letters.count >= 3 {
+            let vowels: Set<Character> = ["a","e","i","o","u","á","é","í","ó","ú","à","è","ì","ò","ù","ä","ö","ü","â","ê","î","ô","û"]
+            let consonants = letters.lowercased().filter { !vowels.contains($0) }
+            let vowelCount = letters.lowercased().filter { vowels.contains($0) }.count
+            if vowelCount == 0 && consonants.count >= 3 { return true }
+
+            var maxConsecutiveConsonants = 0
+            var currentRun = 0
+            for ch in letters.lowercased() {
+                if vowels.contains(ch) {
+                    currentRun = 0
+                } else {
+                    currentRun += 1
+                    maxConsecutiveConsonants = max(maxConsecutiveConsonants, currentRun)
+                }
+            }
+            if maxConsecutiveConsonants >= 5 { return true }
         }
 
         return false

@@ -65,6 +65,9 @@ final class MenuScanViewModel {
     func handleScannedImages(_ images: [UIImage], profile: UserProfile) {
         lastImages = images
         lastProfile = profile
+        isAnalyzing = true
+        analysisProgress = 0.05
+        analysisStage = strings.preparingImages
         isShowingScanner = false
         performAnalysis(images: images, profile: profile)
     }
@@ -135,15 +138,17 @@ final class MenuScanViewModel {
 
                 var menu: ScannedMenu
 
+                let nativeLang = profile.nativeLanguage
+
                 if FoundationModelAnalyzer.shared.isAvailable {
                     menu = try await FoundationModelAnalyzer.shared.analyze(
                         ocrText: ocrResult.text,
-                        userLanguage: "English"
+                        userLanguage: nativeLang
                     )
                 } else {
                     let offlineMenu = OfflineMenuAnalyzer.shared.analyze(
                         ocrText: ocrResult.text,
-                        userLanguage: "English"
+                        userLanguage: nativeLang
                     )
                     guard !offlineMenu.dishes.isEmpty else {
                         throw FoundationModelError.notAMenu
@@ -157,19 +162,6 @@ final class MenuScanViewModel {
                 menu.imageFileNames = fileNames
                 menu.textRegions = ocrResult.regions
                 menu.dishes = Self.matchDishesToRegions(dishes: menu.dishes, regions: ocrResult.regions)
-
-                let nativeLang = profile.nativeLanguage
-                if nativeLang != "English" && FoundationModelAnalyzer.shared.isAvailable {
-                    analysisProgress = 0.76
-                    analysisStage = strings.translatingDescriptions
-                    if let translated = try? await FoundationModelAnalyzer.shared.translateMenu(
-                        dishes: menu.dishes,
-                        restaurant: menu.restaurant,
-                        to: nativeLang
-                    ) {
-                        menu.dishes = translated.dishes
-                    }
-                }
 
                 analysisProgress = 0.85
                 analysisStage = strings.checkingAllergens
@@ -291,20 +283,26 @@ final class MenuScanViewModel {
                 .map(String.init)
                 .filter { $0.count > 2 }
 
-            var matchedIndices: [Int] = []
+            var bestIdx: Int? = nil
+            var bestScore: Int = 0
+
             for (idx, region) in regions.enumerated() {
                 let normalizedRegion = normalize(region.text)
                 if normalizedRegion.contains(normalizedName) {
-                    matchedIndices.append(idx)
-                    continue
+                    bestIdx = idx
+                    break
                 }
                 if !nameWords.isEmpty {
                     let hits = nameWords.filter { normalizedRegion.contains($0) }.count
-                    if hits >= max(1, nameWords.count / 2) {
-                        matchedIndices.append(idx)
+                    let needed = nameWords.count <= 2 ? nameWords.count : (nameWords.count * 2 + 2) / 3
+                    if hits >= needed && hits > bestScore {
+                        bestScore = hits
+                        bestIdx = idx
                     }
                 }
             }
+
+            let matchedIndices = bestIdx.map { [$0] } ?? []
 
             return Dish(
                 name: dish.name,
