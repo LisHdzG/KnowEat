@@ -276,15 +276,12 @@ private struct DishCard: View {
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            // Columna 1: Solo barra de color (sin icono)
             RoundedRectangle(cornerRadius: 3)
                 .fill(accentColor)
                 .frame(width: 5)
                 .padding(.top, 14)
 
-            // Columna 2: Contenido principal (alineación consistente)
             VStack(alignment: .leading, spacing: rowSpacing) {
-                // Nombre del plato
                 Text(item.dish.name)
                     .font(.interSemiBold(size: 16))
                     .lineLimit(nil)
@@ -301,7 +298,6 @@ private struct DishCard: View {
                         .foregroundStyle(.secondary)
                 }
 
-                // Bloque de ingredientes/estado (iconos con ancho fijo para alineación)
                 if hasExplicitIngredients {
                     HStack(alignment: .top, spacing: 6) {
                         Image(systemName: "list.bullet")

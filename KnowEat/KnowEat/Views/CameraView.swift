@@ -307,15 +307,13 @@ struct CameraView: View {
         .allowsHitTesting(false)
     }
 
-    // MARK: - Preview Mode (estilo WhatsApp: foto a pantalla completa, edición inline)
+    // MARK: - Preview Mode
 
     private var previewMode: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
-            // Siempre la misma vista: foto + overlays (sin present separado)
             ZStack {
-                // Foto: en modo crop se reserva espacio abajo para que quede centrada y no la tape el blur
                 TabView(selection: $previewIndex) {
                     ForEach(capturedPhotos.indices, id: \.self) { index in
                         Image(uiImage: capturedPhotos[index])
@@ -340,7 +338,6 @@ struct CameraView: View {
                     }
                 }
                 .overlay {
-                    // Crop overlay inline: borde, dim, handles (sobre la foto, sin present)
                     if isCropMode, previewIndex < capturedPhotos.count {
                         GeometryReader { geo in
                             InlineCropOverlay(
@@ -365,11 +362,9 @@ struct CameraView: View {
                 }
                 .ignoresSafeArea()
 
-                // Overlay superior
                 VStack {
                     previewTopOverlay
                     Spacer()
-                    // Panel inferior: preview normal; en crop el InlineCropOverlay dibuja su propio panel
                     if isCropMode {
                         Spacer(minLength: 100)
                     } else {
@@ -382,7 +377,6 @@ struct CameraView: View {
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: isCropMode)
     }
 
-    /// Botones superiores superpuestos sobre la foto (X, Flash, Crop)
     private var previewTopOverlay: some View {
         HStack {
             Button {
@@ -434,13 +428,10 @@ struct CameraView: View {
     }
 
 
-    /// Barra inferior: botón cámara (izq) y enviar (der), estilo WhatsApp
     private var previewBottomOverlay: some View {
         VStack(spacing: 0) {
             Spacer(minLength: 0)
-            // Degradado + blur (suave) para que los botones resalten y se vea más la foto
             HStack {
-                // Botón circular: agregar más fotos / volver a cámara
                 Button {
                     withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showPreview = false }
                 } label: {
@@ -467,7 +458,6 @@ struct CameraView: View {
 
                 Spacer()
 
-                // Botón circular verde: analizar menú
                 Button {
                     CameraManager.shared.setTorch(false)
                     onPhotosReady(capturedPhotos)
@@ -733,7 +723,7 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
     }
 }
 
-// MARK: - Inline Crop Overlay (borde, dim, handles + panel blur abajo)
+// MARK: - Inline Crop Overlay
 
 private struct InlineCropOverlay: View {
     let image: UIImage
@@ -758,7 +748,6 @@ private struct InlineCropOverlay: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Área de crop
             ZStack {
                 dimOverlay
                 cropBorder
@@ -771,13 +760,11 @@ private struct InlineCropOverlay: View {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onAppear { setupRect() }
 
-            // Panel blur abajo: Cancel y Done (estilo referencia)
             cropBottomBar
         }
         .background(Color.clear)
     }
 
-    /// Área visible para recortar (debajo del top overlay, encima del panel blur)
     private let topInset: CGFloat = 56
     private let bottomBarHeight: CGFloat = 100
 
@@ -785,7 +772,6 @@ private struct InlineCropOverlay: View {
         CGSize(width: size.width, height: max(0, size.height - bottomBarHeight))
     }
 
-    /// Donde está la foto (con top inset para alinear con la vista real)
     private var contentAreaSize: CGSize {
         let h = max(0, size.height - topInset - bottomBarHeight)
         return CGSize(width: size.width, height: h)
