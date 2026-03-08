@@ -14,6 +14,7 @@ struct DishLocationView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var scale: CGFloat = 1.0
     @State private var lastScale: CGFloat = 1.0
+    @State private var didAppear = false
 
     private var dish: Dish { item.dish }
 
@@ -51,147 +52,136 @@ struct DishLocationView: View {
     }
 
     var body: some View {
-        GeometryReader { geo in
-            let images = menuImages
-            ZStack(alignment: .topTrailing) {
-                ZStack(alignment: .bottom) {
-                    Group {
-                        if images.isEmpty {
-                            noImagePlaceholder
-                        } else if targetImageIndex < images.count {
-                            imageWithHighlight(image: images[targetImageIndex], size: geo.size)
-                        } else {
-                            noImagePlaceholder
-                        }
+        VStack(spacing: 0) {
+            // Card arriba con datos y botón cerrar dentro
+            dishInfoPanel
+
+            // Foto debajo (con zoom)
+            GeometryReader { geo in
+                let images = menuImages
+                Group {
+                    if images.isEmpty {
+                        noImagePlaceholder
+                    } else if targetImageIndex < images.count {
+                        imageWithHighlight(image: images[targetImageIndex], size: geo.size)
+                    } else {
+                        noImagePlaceholder
                     }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(Color.black)
-                    .ignoresSafeArea()
-
-                    LinearGradient(
-                        stops: [
-                            .init(color: .clear, location: 0),
-                            .init(color: .black.opacity(0.4), location: 0.4),
-                            .init(color: .black.opacity(0.9), location: 1)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                    .frame(height: 260)
-                    .allowsHitTesting(false)
-
-                    dishInfoPanel
                 }
-
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 16, weight: .medium))
-                        .frame(width: 36, height: 36)
-                        .contentShape(Circle())
-                }
-                .buttonStyle(.glass)
-                .buttonBorderShape(.circle)
-                .padding(.top, 12)
-                .padding(.trailing, 16)
-                .accessibilityLabel(strings.close)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(Color(.systemBackground))
             }
         }
-        .background(Color.black)
-        .ignoresSafeArea()
+        .background(Color(.systemBackground))
+        .onAppear {
+            withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
+                didAppear = true
+            }
+        }
     }
 
-    // MARK: - Dish Info Panel
+    // MARK: - Dish Info Card (arriba, sin X)
 
     private var dishInfoPanel: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 6) {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack(spacing: 8) {
                 RoundedRectangle(cornerRadius: 2)
                     .fill(accentColor)
-                    .frame(width: 4, height: 18)
+                    .frame(width: 3, height: 20)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(dish.name)
-                        .font(.interSemiBold(size: 15))
-                        .foregroundStyle(.white)
-                        .lineLimit(1)
+                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .foregroundStyle(.primary)
 
                     if let translated = dish.translatedName, !translated.isEmpty {
                         Text(translated)
-                            .font(.interRegular(size: 12))
-                            .foregroundStyle(Color("PrimaryOrange").opacity(0.8))
+                            .font(.system(size: 13, weight: .regular))
+                            .foregroundStyle(Color("PrimaryOrange"))
                             .lineLimit(1)
                     }
                 }
             }
 
-            if let description = dish.description, !description.isEmpty {
-                Text(description)
-                    .font(.interRegular(size: 12))
-                    .foregroundStyle(.white.opacity(0.7))
-                    .lineLimit(2)
-            }
-
-            if hasExplicitIngredients {
-                HStack(alignment: .top, spacing: 4) {
-                    Image(systemName: "list.bullet")
-                        .font(.system(size: 9))
-                        .foregroundStyle(.white.opacity(0.4))
-                        .padding(.top, 2)
-                    Text(dish.ingredients.joined(separator: ", "))
-                        .font(.interRegular(size: 11))
-                        .foregroundStyle(.white.opacity(0.6))
+                if let description = dish.description, !description.isEmpty {
+                    Text(description)
+                        .font(.system(size: 13))
+                        .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
-            } else if isUnrecognizedDish {
-                Label {
-                    Text(strings.unknownDishWarning)
-                        .font(.interRegular(size: 11))
-                } icon: {
-                    Image(systemName: "questionmark.circle")
-                        .font(.system(size: 9))
-                }
-                .foregroundStyle(.orange.opacity(0.8))
-            } else {
-                Label {
-                    Text(strings.noIngredientsDetected)
-                        .font(.interRegular(size: 11))
-                } icon: {
-                    Image(systemName: "info.circle")
-                        .font(.system(size: 9))
-                }
-                .foregroundStyle(.white.opacity(0.4))
-            }
 
-            if !item.isSafe {
-                HStack(spacing: 8) {
-                    if item.isDanger {
-                        Label {
-                            Text(item.matchedAllergenIds.map { nameFor($0) }.joined(separator: ", "))
-                        } icon: {
-                            Image(systemName: "exclamationmark.triangle.fill")
-                        }
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.red)
+                if hasExplicitIngredients {
+                    HStack(alignment: .top, spacing: 5) {
+                        Image(systemName: "list.bullet")
+                            .font(.system(size: 10))
+                            .foregroundStyle(.tertiary)
+                            .padding(.top, 2)
+                        Text(dish.ingredients.joined(separator: ", "))
+                            .font(.system(size: 12))
+                            .foregroundStyle(.secondary)
+                            .lineLimit(2)
                     }
-                    if item.isAdvisory {
-                        let ids = item.matchedIntoleranceIds + item.matchedDietIds + item.matchedSituationIds
-                        Label {
-                            Text(ids.map { nameFor($0) }.joined(separator: ", "))
-                        } icon: {
-                            Image(systemName: "info.circle.fill")
+                } else if isUnrecognizedDish {
+                    Label {
+                        Text(strings.unknownDishWarning)
+                            .font(.system(size: 12))
+                    } icon: {
+                        Image(systemName: "questionmark.circle")
+                            .font(.system(size: 11))
+                    }
+                    .foregroundStyle(.orange)
+                } else {
+                    Label {
+                        Text(strings.noIngredientsDetected)
+                            .font(.system(size: 12))
+                    } icon: {
+                        Image(systemName: "info.circle")
+                            .font(.system(size: 11))
+                    }
+                    .foregroundStyle(.tertiary)
+                }
+
+                if !item.isSafe {
+                    HStack(spacing: 10) {
+                        if item.isDanger {
+                            Label {
+                                Text(item.matchedAllergenIds.map { nameFor($0) }.joined(separator: ", "))
+                            } icon: {
+                                Image(systemName: "exclamationmark.triangle.fill")
+                            }
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.red)
                         }
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.orange)
+                        if item.isAdvisory {
+                            let ids = item.matchedIntoleranceIds + item.matchedDietIds + item.matchedSituationIds
+                            Label {
+                                Text(ids.map { nameFor($0) }.joined(separator: ", "))
+                            } icon: {
+                                Image(systemName: "info.circle.fill")
+                            }
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.orange)
+                        }
                     }
                 }
             }
-        }
-        .padding(.horizontal, 20)
-        .padding(.vertical, 20)
-        .padding(.bottom, 8)
-        .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 20)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .background {
+                RoundedRectangle(cornerRadius: 20, style: .continuous)
+                    .fill(Color(.secondarySystemGroupedBackground))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 20, style: .continuous)
+                            .strokeBorder(Color(.separator).opacity(0.5), lineWidth: 0.5)
+                    )
+                    .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 12)
+            .padding(.bottom, 8)
+        .scaleEffect(didAppear ? 1 : 0.98)
+        .opacity(didAppear ? 1 : 0)
     }
 
     // MARK: - Image
@@ -214,11 +204,11 @@ struct DishLocationView: View {
 
                 ForEach(Array(regionsForThisImage.enumerated()), id: \.offset) { _, region in
                     let rect = convertBoundingBox(region, imageWidth: fitWidth * scale, imageHeight: fitHeight * scale)
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.orange, lineWidth: 3)
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .strokeBorder(Color("PrimaryOrange").opacity(0.9), lineWidth: 2)
                         .background(
-                            RoundedRectangle(cornerRadius: 4)
-                                .fill(Color.orange.opacity(0.15))
+                            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                .fill(Color("PrimaryOrange").opacity(0.08))
                         )
                         .frame(width: rect.width + 8, height: rect.height + 6)
                         .offset(x: rect.minX - 4, y: rect.minY - 3)
@@ -249,10 +239,10 @@ struct DishLocationView: View {
     private var noImagePlaceholder: some View {
         VStack(spacing: 12) {
             Image(systemName: "photo.on.rectangle.angled")
-                .font(.system(size: 48))
-                .foregroundStyle(.secondary)
+                .font(.system(size: 44, weight: .light))
+                .foregroundStyle(.tertiary)
             Text(strings.noPhotoAvailable)
-                .font(.interRegular(size: 15))
+                .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)

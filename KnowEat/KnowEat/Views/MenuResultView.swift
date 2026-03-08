@@ -288,8 +288,12 @@ private struct DishCard: View {
         return "info.circle.fill"
     }
 
+    private let iconWidth: CGFloat = 16
+    private let rowSpacing: CGFloat = 8
+
     var body: some View {
-        HStack(spacing: 0) {
+        HStack(alignment: .top, spacing: 0) {
+            // Columna 1: Indicador de estado
             HStack(spacing: 6) {
                 RoundedRectangle(cornerRadius: 3)
                     .fill(accentColor)
@@ -298,28 +302,19 @@ private struct DishCard: View {
                     .font(.system(size: 11, weight: .medium))
                     .foregroundStyle(accentColor)
             }
-            .padding(.vertical, 10)
+            .frame(width: 24)
+            .padding(.top, 14)
 
-            VStack(alignment: .leading, spacing: 6) {
-                HStack(alignment: .top) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(item.dish.name)
-                            .font(.interSemiBold(size: 16))
+            // Columna 2: Contenido principal (alineación consistente)
+            VStack(alignment: .leading, spacing: rowSpacing) {
+                // Nombre del plato
+                Text(item.dish.name)
+                    .font(.interSemiBold(size: 16))
 
-                        if let translated = item.dish.translatedName, !translated.isEmpty {
-                            Text(translated)
-                                .font(.interRegular(size: 13))
-                                .foregroundStyle(Color("PrimaryOrange").opacity(0.8))
-                        }
-                    }
-
-                    Spacer()
-
-                    if canShowLocation {
-                        Image(systemName: "eye")
-                            .font(.system(size: 12, weight: .medium))
-                            .foregroundStyle(Color("PrimaryOrange").opacity(0.6))
-                    }
+                if let translated = item.dish.translatedName, !translated.isEmpty {
+                    Text(translated)
+                        .font(.interRegular(size: 13))
+                        .foregroundStyle(Color("PrimaryOrange").opacity(0.8))
                 }
 
                 if let description = item.dish.description, !description.isEmpty {
@@ -328,66 +323,86 @@ private struct DishCard: View {
                         .foregroundStyle(.secondary)
                 }
 
+                // Bloque de ingredientes/estado (iconos con ancho fijo para alineación)
                 if hasExplicitIngredients {
-                    VStack(alignment: .leading, spacing: 3) {
-                        Label(strings.ingredientsLabel, systemImage: "list.bullet")
+                    HStack(alignment: .top, spacing: 6) {
+                        Image(systemName: "list.bullet")
                             .font(.system(size: 10, weight: .medium))
                             .foregroundStyle(.tertiary)
-                        ingredientsText
-                            .font(.interRegular(size: 12))
-                            .lineLimit(3)
+                            .frame(width: iconWidth, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(strings.ingredientsLabel)
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(.tertiary)
+                            ingredientsText
+                                .font(.interRegular(size: 12))
+                                .lineLimit(3)
+                        }
                     }
-                    .padding(.top, 2)
                 } else if isUnrecognizedDish {
-                    Label {
-                        Text(strings.unknownDishWarning)
-                            .font(.interRegular(size: 11))
-                    } icon: {
+                    HStack(alignment: .top, spacing: 6) {
                         Image(systemName: "questionmark.circle")
                             .font(.system(size: 10))
-                    }
-                    .foregroundStyle(.orange.opacity(0.8))
-                    .padding(.top, 2)
-                } else {
-                    Label {
-                        Text(strings.noIngredientsDetected)
+                            .foregroundStyle(.orange.opacity(0.8))
+                            .frame(width: iconWidth, alignment: .leading)
+                        Text(strings.unknownDishWarning)
                             .font(.interRegular(size: 11))
-                    } icon: {
+                            .foregroundStyle(.orange.opacity(0.8))
+                    }
+                } else {
+                    HStack(alignment: .top, spacing: 6) {
                         Image(systemName: "info.circle")
                             .font(.system(size: 10))
+                            .foregroundStyle(.gray)
+                            .frame(width: iconWidth, alignment: .leading)
+                        Text(strings.noIngredientsDetected)
+                            .font(.interRegular(size: 11))
+                            .foregroundStyle(.gray)
                     }
-                    .foregroundStyle(.gray)
-                    .padding(.top, 2)
                 }
 
                 if !item.isSafe {
                     Divider()
-                    VStack(alignment: .leading, spacing: 3) {
-                        if item.isDanger {
-                            Label {
+                        .padding(.vertical, 2)
+                    HStack(alignment: .top, spacing: 6) {
+                        Image(systemName: item.isDanger ? "exclamationmark.triangle.fill" : "info.circle.fill")
+                            .font(.system(size: 10))
+                            .foregroundStyle(item.isDanger ? .red : .orange)
+                            .frame(width: iconWidth, alignment: .leading)
+                        VStack(alignment: .leading, spacing: 4) {
+                            if item.isDanger {
                                 Text(dangerSummary)
-                            } icon: {
-                                Image(systemName: "exclamationmark.triangle.fill")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.red)
                             }
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.red)
-                        }
-                        if item.isAdvisory {
-                            Label {
+                            if item.isAdvisory {
                                 Text(advisorySummary)
-                            } icon: {
-                                Image(systemName: "info.circle.fill")
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundStyle(.orange)
                             }
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.orange)
                         }
                     }
                 }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.leading, 12)
-            .padding(.vertical, 8)
+            .padding(.trailing, canShowLocation ? 4 : 0)
+            .padding(.vertical, 12)
 
-            Spacer(minLength: 0)
+            // Columna 3: Botón ojito (posición fija)
+            if canShowLocation {
+                Button {
+                    showLocation = true
+                } label: {
+                    Image(systemName: "eye")
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundStyle(Color("PrimaryOrange").opacity(0.8))
+                        .frame(width: 36, height: 36)
+                        .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .padding(.top, 10)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)
@@ -408,7 +423,8 @@ private struct DishCard: View {
         .accessibilityHint(canShowLocation ? strings.viewOnMenu : dishAccessibilityHint)
         .sheet(isPresented: $showLocation) {
             DishLocationView(item: item, allergens: allergens, menu: menu, strings: strings)
-                .presentationDetents([.large])
+                .presentationDetents([.medium, .large])
+                .presentationDragIndicator(.visible)
         }
     }
 

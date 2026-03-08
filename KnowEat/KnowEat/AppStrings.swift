@@ -510,6 +510,8 @@ struct AppStrings {
     var takePhoto: String { t("Take photo", "Tomar foto", "Scatta foto") }
     var photoLibrary: String { t("Photo library", "Biblioteca de fotos", "Libreria foto") }
     var resetCrop: String { t("Reset crop", "Restablecer recorte", "Ripristina ritaglio") }
+    var discardCrop: String { t("Discard", "Descartar", "Annulla") }
+    var applyCrop: String { t("Apply", "Aplicar", "Applica") }
 
     // MARK: - Loader / Analysis Stages
 

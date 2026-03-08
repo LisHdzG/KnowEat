@@ -286,195 +286,194 @@ struct CameraView: View {
         .allowsHitTesting(false)
     }
 
-    // MARK: - Preview Mode
+    // MARK: - Preview Mode (estilo WhatsApp: foto a pantalla completa, edición inline)
 
     private var previewMode: some View {
         ZStack {
-            Color(.systemBackground).ignoresSafeArea()
+            Color.black.ignoresSafeArea()
 
-            if isCropMode, previewIndex < capturedPhotos.count {
-                PhotoCropView(
-                    image: capturedPhotos[previewIndex],
-                    strings: strings,
-                    isLightMode: true
-                ) { cropped in
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                        capturedPhotos[previewIndex] = cropped
-                        isCropMode = false
-                    }
-                } onCancel: {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
-                        isCropMode = false
+            // Siempre la misma vista: foto + overlays (sin present separado)
+            ZStack {
+                // Foto: en modo crop se reserva espacio abajo para que quede centrada y no la tape el blur
+                TabView(selection: $previewIndex) {
+                    ForEach(capturedPhotos.indices, id: \.self) { index in
+                        Image(uiImage: capturedPhotos[index])
+                            .resizable()
+                            .scaledToFit()
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .ignoresSafeArea()
+                            .clipped()
+                            .tag(index)
                     }
                 }
-                .transition(.opacity.combined(with: .scale(scale: 0.98)))
-            } else {
-                VStack(spacing: 0) {
-                    previewTopBar
-
-                    TabView(selection: $previewIndex) {
-                        ForEach(capturedPhotos.indices, id: \.self) { index in
-                            Image(uiImage: capturedPhotos[index])
-                                .resizable()
-                                .scaledToFit()
-                                .frame(maxWidth: .infinity, maxHeight: .infinity)
-                                .clipped()
-                                .tag(index)
+                .tabViewStyle(.page(indexDisplayMode: .never))
+                .disabled(isCropMode)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    if isCropMode {
+                        Color.clear.frame(height: 56)
+                    }
+                }
+                .safeAreaInset(edge: .bottom, spacing: 0) {
+                    if isCropMode {
+                        Color.clear.frame(height: 100)
+                    }
+                }
+                .overlay {
+                    // Crop overlay inline: borde, dim, handles (sobre la foto, sin present)
+                    if isCropMode, previewIndex < capturedPhotos.count {
+                        GeometryReader { geo in
+                            InlineCropOverlay(
+                                image: capturedPhotos[previewIndex],
+                                size: geo.size,
+                                strings: strings,
+                                onCropped: { cropped in
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                                        capturedPhotos[previewIndex] = cropped
+                                        isCropMode = false
+                                    }
+                                },
+                                onCancel: {
+                                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                                        isCropMode = false
+                                    }
+                                }
+                            )
                         }
+                        .allowsHitTesting(isCropMode)
                     }
-                    .tabViewStyle(.page(indexDisplayMode: .never))
-
-                    if capturedPhotos.count > 1 {
-                        previewThumbnailStrip
-                    }
-
-                    previewActionBar
                 }
-                .transition(.opacity)
+                .ignoresSafeArea()
+
+                // Overlay superior
+                VStack {
+                    previewTopOverlay
+                    Spacer()
+                    // Panel inferior: preview normal; en crop el InlineCropOverlay dibuja su propio panel
+                    if isCropMode {
+                        Spacer(minLength: 100)
+                    } else {
+                        previewBottomOverlay
+                    }
+                }
+                .ignoresSafeArea()
             }
         }
         .animation(.spring(response: 0.45, dampingFraction: 0.85), value: isCropMode)
     }
 
-    // MARK: - Preview Top Bar
-
-    private var previewTopBar: some View {
+    /// Botones superiores superpuestos sobre la foto (X, Flash, Crop)
+    private var previewTopOverlay: some View {
         HStack {
             Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showPreview = false }
+                if isCropMode {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { isCropMode = false }
+                } else {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showPreview = false }
+                }
             } label: {
-                Image(systemName: "chevron.left")
+                Image(systemName: "xmark")
                     .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.primary)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .accessibilityLabel(strings.backToCamera)
-
-            Spacer()
-
-            if capturedPhotos.count > 1 {
-                HStack(spacing: 5) {
-                    ForEach(capturedPhotos.indices, id: \.self) { index in
-                        Circle()
-                            .fill(previewIndex == index ? Color("PrimaryOrange") : Color(.tertiaryLabel).opacity(0.4))
-                            .frame(width: previewIndex == index ? 8 : 6, height: previewIndex == index ? 8 : 6)
-                    }
-                }
-                .animation(.spring(response: 0.35, dampingFraction: 0.7), value: previewIndex)
-            }
-
-            Spacer()
-
-            HStack(spacing: 12) {
-                Button {
-                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { isCropMode = true }
-                } label: {
-                    Image(systemName: "crop")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.primary)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityLabel(strings.cropPhoto)
-
-                Button {
-                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
-                        capturedPhotos.remove(at: previewIndex)
-                        if capturedPhotos.isEmpty {
-                            showPreview = false
-                        } else if previewIndex >= capturedPhotos.count {
-                            previewIndex = capturedPhotos.count - 1
-                        }
-                    }
-                } label: {
-                    Image(systemName: "trash")
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.red)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .accessibilityLabel(strings.deletePhoto)
-            }
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 8)
-        .background(Color(.systemBackground))
-    }
-
-    // MARK: - Preview Thumbnails
-
-    private var previewThumbnailStrip: some View {
-        ScrollViewReader { proxy in
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(capturedPhotos.indices, id: \.self) { index in
-                        Image(uiImage: capturedPhotos[index])
-                            .resizable()
-                            .scaledToFill()
-                            .frame(width: 48, height: 48)
-                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                    .stroke(previewIndex == index ? Color("PrimaryOrange") : Color.clear, lineWidth: 2)
-                            )
-                            .opacity(previewIndex == index ? 1.0 : 0.6)
-                            .onTapGesture {
-                                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { previewIndex = index }
-                            }
-                            .id(index)
-                            .accessibilityLabel("Photo \(index + 1) of \(capturedPhotos.count)")
-                            .accessibilityAddTraits(previewIndex == index ? [.isButton, .isSelected] : .isButton)
-                    }
-                }
-                .padding(.horizontal, 16)
-            }
-            .onChange(of: previewIndex) { _, newIndex in
-                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { proxy.scrollTo(newIndex, anchor: .center) }
-            }
-        }
-        .frame(height: 64)
-        .padding(.vertical, 10)
-        .background(Color(.systemBackground))
-    }
-
-    // MARK: - Preview Actions
-
-    private var previewActionBar: some View {
-        HStack(spacing: 12) {
-            Button {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showPreview = false }
-            } label: {
-                Label(strings.addMore, systemImage: "camera.fill")
-                    .font(.system(size: 15, weight: .semibold, design: .rounded))
-                    .foregroundStyle(.primary)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
-            }
-            .buttonStyle(.bordered)
-            .tint(Color(.systemGray5))
-            .accessibilityLabel("Add more photos")
-
-            Button {
-                CameraManager.shared.setTorch(false)
-                onPhotosReady(capturedPhotos)
-            } label: {
-                Label(strings.analyze, systemImage: "sparkles")
-                    .font(.system(size: 15, weight: .bold, design: .rounded))
                     .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 48)
+                    .frame(width: 40, height: 40)
+                    .background(.ultraThinMaterial.opacity(0.9), in: Circle())
             }
-            .buttonStyle(.borderedProminent)
-            .tint(Color("PrimaryOrange"))
-            .accessibilityLabel("Analyze menu")
+            .accessibilityLabel(isCropMode ? strings.cancel : strings.closeCamera)
+
+            Spacer()
+
+            if !isCropMode {
+                HStack(spacing: 12) {
+                    Button {
+                        isTorchOn.toggle()
+                        CameraManager.shared.setTorch(isTorchOn)
+                    } label: {
+                        Image(systemName: isTorchOn ? "bolt.fill" : "bolt.slash.fill")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(isTorchOn ? .yellow : .white)
+                            .frame(width: 40, height: 40)
+                            .background(.ultraThinMaterial.opacity(0.9), in: Circle())
+                    }
+                    .accessibilityLabel(isTorchOn ? strings.flashOn : strings.flashOff)
+
+                    Button {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { isCropMode = true }
+                    } label: {
+                        Image(systemName: "crop")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 40, height: 40)
+                            .background(.ultraThinMaterial.opacity(0.9), in: Circle())
+                    }
+                    .accessibilityLabel(strings.cropPhoto)
+                }
+            }
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 12)
-        .padding(.bottom, 24)
-        .background(Color(.systemBackground))
-        .overlay(Divider(), alignment: .top)
-        .ignoresSafeArea(edges: .bottom)
+        .padding(.top, 56)
+    }
+
+
+    /// Barra inferior: botón cámara (izq) y enviar (der), estilo WhatsApp
+    private var previewBottomOverlay: some View {
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            // Degradado + blur (suave) para que los botones resalten y se vea más la foto
+            HStack {
+                // Botón circular: agregar más fotos / volver a cámara
+                Button {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showPreview = false }
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.system(size: 22))
+                        .foregroundStyle(.white)
+                        .frame(width: 50, height: 50)
+                        .background(.white.opacity(0.25), in: Circle())
+                }
+                .accessibilityLabel(strings.addMore)
+
+                Spacer()
+
+                if capturedPhotos.count > 1 {
+                    HStack(spacing: 5) {
+                        ForEach(capturedPhotos.indices, id: \.self) { index in
+                            Circle()
+                                .fill(previewIndex == index ? Color.white : Color.white.opacity(0.6))
+                                .frame(width: previewIndex == index ? 6 : 5, height: previewIndex == index ? 6 : 5)
+                        }
+                    }
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: previewIndex)
+                }
+
+                Spacer()
+
+                // Botón circular verde: analizar menú
+                Button {
+                    CameraManager.shared.setTorch(false)
+                    onPhotosReady(capturedPhotos)
+                } label: {
+                    Image(systemName: "sparkles")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(.white)
+                        .frame(width: 50, height: 50)
+                        .background(Color("PrimaryOrange"), in: Circle())
+                }
+                .accessibilityLabel(strings.analyze)
+            }
+            .frame(height: 90)
+            .padding(.horizontal, 28)
+            .background(alignment: .center) {
+                ZStack {
+                    Rectangle().fill(.ultraThinMaterial.opacity(0.6))
+                    LinearGradient(
+                        colors: [.clear, .black.opacity(0.3)],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                }
+                .frame(height: 100)
+            }
+        }
+        .padding(.bottom, 0)
     }
 
     // MARK: - Actions
@@ -702,6 +701,284 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
         let cropped = Self.cropToPreviewAspect(image)
         DispatchQueue.main.async { [weak self] in
             self?.completion?(cropped)
+        }
+    }
+}
+
+// MARK: - Inline Crop Overlay (borde, dim, handles + panel blur abajo)
+
+private struct InlineCropOverlay: View {
+    let image: UIImage
+    let size: CGSize
+    let strings: AppStrings
+    let onCropped: (UIImage) -> Void
+    let onCancel: () -> Void
+
+    @State private var cropRect: CGRect = .zero
+    @State private var imageRect: CGRect = .zero
+    @State private var activeDrag: InlineCropDragType? = nil
+    @State private var dragStartRect: CGRect = .zero
+
+    private let minCrop: CGFloat = 60
+    private let hitRadius: CGFloat = 44
+
+    enum InlineCropDragType {
+        case topLeft, topRight, bottomLeft, bottomRight
+        case top, bottom, left, right
+        case move
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            // Área de crop
+            ZStack {
+                dimOverlay
+                cropBorder
+                if activeDrag != nil { gridOverlay }
+                cropDecorations
+                Color.clear
+                    .contentShape(Rectangle())
+                    .gesture(cropDragGesture)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear { setupRect() }
+
+            // Panel blur abajo: Cancel y Done (estilo referencia)
+            cropBottomBar
+        }
+        .background(Color.clear)
+    }
+
+    /// Área visible para recortar (debajo del top overlay, encima del panel blur)
+    private let topInset: CGFloat = 56
+    private let bottomBarHeight: CGFloat = 100
+
+    private var cropAreaSize: CGSize {
+        CGSize(width: size.width, height: max(0, size.height - bottomBarHeight))
+    }
+
+    /// Donde está la foto (con top inset para alinear con la vista real)
+    private var contentAreaSize: CGSize {
+        let h = max(0, size.height - topInset - bottomBarHeight)
+        return CGSize(width: size.width, height: h)
+    }
+
+    private func setupRect() {
+        let content = contentAreaSize
+        guard content.width > 0, content.height > 0 else { return }
+        let r = imageFitRect(in: content).offsetBy(dx: 0, dy: topInset)
+        imageRect = r
+        cropRect = r
+    }
+
+    private func imageFitRect(in sz: CGSize) -> CGRect {
+        guard sz.width > 0, sz.height > 0 else { return .zero }
+        let imgAspect = image.size.width / image.size.height
+        let viewAspect = sz.width / sz.height
+        var fitSize: CGSize
+        if imgAspect > viewAspect {
+            fitSize = CGSize(width: sz.width, height: sz.width / imgAspect)
+        } else {
+            fitSize = CGSize(width: sz.height * imgAspect, height: sz.height)
+        }
+        return CGRect(
+            x: (sz.width - fitSize.width) / 2,
+            y: (sz.height - fitSize.height) / 2,
+            width: fitSize.width,
+            height: fitSize.height
+        )
+    }
+
+    private var dimOverlay: some View {
+        Path { path in
+            path.addRect(CGRect(origin: .zero, size: cropAreaSize))
+            path.addRect(cropRect)
+        }
+        .fill(style: FillStyle(eoFill: true))
+        .foregroundStyle(Color.black.opacity(0.5))
+        .allowsHitTesting(false)
+    }
+
+    private var cropBorder: some View {
+        Rectangle()
+            .strokeBorder(Color.white.opacity(0.9), lineWidth: 1.5)
+            .frame(width: max(0, cropRect.width), height: max(0, cropRect.height))
+            .position(x: cropRect.midX, y: cropRect.midY)
+            .allowsHitTesting(false)
+    }
+
+    private var gridOverlay: some View {
+        let r = cropRect
+        return Path { p in
+            let thirdW = r.width / 3, thirdH = r.height / 3
+            for i in 1...2 {
+                let x = r.minX + thirdW * CGFloat(i)
+                p.move(to: CGPoint(x: x, y: r.minY))
+                p.addLine(to: CGPoint(x: x, y: r.maxY))
+                let y = r.minY + thirdH * CGFloat(i)
+                p.move(to: CGPoint(x: r.minX, y: y))
+                p.addLine(to: CGPoint(x: r.maxX, y: y))
+            }
+        }
+        .stroke(Color.white.opacity(0.3), lineWidth: 0.5)
+        .allowsHitTesting(false)
+    }
+
+    private var cropDecorations: some View {
+        let r = cropRect
+        let cLen: CGFloat = 24, eLen: CGFloat = 22, w: CGFloat = 3.0
+        return Path { p in
+            p.move(to: CGPoint(x: r.minX - 1, y: r.minY + cLen))
+            p.addLine(to: CGPoint(x: r.minX - 1, y: r.minY - 1))
+            p.addLine(to: CGPoint(x: r.minX + cLen, y: r.minY - 1))
+            p.move(to: CGPoint(x: r.maxX - cLen, y: r.minY - 1))
+            p.addLine(to: CGPoint(x: r.maxX + 1, y: r.minY - 1))
+            p.addLine(to: CGPoint(x: r.maxX + 1, y: r.minY + cLen))
+            p.move(to: CGPoint(x: r.minX - 1, y: r.maxY - cLen))
+            p.addLine(to: CGPoint(x: r.minX - 1, y: r.maxY + 1))
+            p.addLine(to: CGPoint(x: r.minX + cLen, y: r.maxY + 1))
+            p.move(to: CGPoint(x: r.maxX - cLen, y: r.maxY + 1))
+            p.addLine(to: CGPoint(x: r.maxX + 1, y: r.maxY + 1))
+            p.addLine(to: CGPoint(x: r.maxX + 1, y: r.maxY - cLen))
+            let midX = r.midX, midY = r.midY
+            p.move(to: CGPoint(x: midX - eLen, y: r.minY - 1))
+            p.addLine(to: CGPoint(x: midX + eLen, y: r.minY - 1))
+            p.move(to: CGPoint(x: midX - eLen, y: r.maxY + 1))
+            p.addLine(to: CGPoint(x: midX + eLen, y: r.maxY + 1))
+            p.move(to: CGPoint(x: r.minX - 1, y: midY - eLen))
+            p.addLine(to: CGPoint(x: r.minX - 1, y: midY + eLen))
+            p.move(to: CGPoint(x: r.maxX + 1, y: midY - eLen))
+            p.addLine(to: CGPoint(x: r.maxX + 1, y: midY + eLen))
+        }
+        .stroke(Color.white, lineWidth: w)
+        .allowsHitTesting(false)
+    }
+
+    private var cropDragGesture: some Gesture {
+        DragGesture(minimumDistance: 1)
+            .onChanged { value in
+                if activeDrag == nil {
+                    activeDrag = determineDragType(at: value.startLocation)
+                    dragStartRect = cropRect
+                }
+                guard let drag = activeDrag else { return }
+                applyDrag(drag, translation: value.translation)
+            }
+            .onEnded { _ in
+                withAnimation(.easeOut(duration: 0.15)) { activeDrag = nil }
+            }
+    }
+
+    private func determineDragType(at point: CGPoint) -> InlineCropDragType? {
+        let r = cropRect
+        func dist(_ a: CGPoint, _ b: CGPoint) -> CGFloat { hypot(a.x - b.x, a.y - b.y) }
+        if dist(point, CGPoint(x: r.minX, y: r.minY)) < hitRadius { return .topLeft }
+        if dist(point, CGPoint(x: r.maxX, y: r.minY)) < hitRadius { return .topRight }
+        if dist(point, CGPoint(x: r.minX, y: r.maxY)) < hitRadius { return .bottomLeft }
+        if dist(point, CGPoint(x: r.maxX, y: r.maxY)) < hitRadius { return .bottomRight }
+        if abs(point.y - r.minY) < hitRadius && point.x > r.minX && point.x < r.maxX { return .top }
+        if abs(point.y - r.maxY) < hitRadius && point.x > r.minX && point.x < r.maxX { return .bottom }
+        if abs(point.x - r.minX) < hitRadius && point.y > r.minY && point.y < r.maxY { return .left }
+        if abs(point.x - r.maxX) < hitRadius && point.y > r.minY && point.y < r.maxY { return .right }
+        if r.contains(point) { return .move }
+        return nil
+    }
+
+    private func applyDrag(_ drag: InlineCropDragType, translation: CGSize) {
+        let dx = translation.width, dy = translation.height
+        let s = dragStartRect, img = imageRect
+        func clamp(_ v: CGFloat, lo: CGFloat, hi: CGFloat) -> CGFloat { max(lo, min(hi, v)) }
+        switch drag {
+        case .topLeft:
+            let x = clamp(s.minX + dx, lo: img.minX, hi: s.maxX - minCrop)
+            let y = clamp(s.minY + dy, lo: img.minY, hi: s.maxY - minCrop)
+            cropRect = CGRect(x: x, y: y, width: s.maxX - x, height: s.maxY - y)
+        case .topRight:
+            let mx = clamp(s.maxX + dx, lo: s.minX + minCrop, hi: img.maxX)
+            let y = clamp(s.minY + dy, lo: img.minY, hi: s.maxY - minCrop)
+            cropRect = CGRect(x: s.minX, y: y, width: mx - s.minX, height: s.maxY - y)
+        case .bottomLeft:
+            let x = clamp(s.minX + dx, lo: img.minX, hi: s.maxX - minCrop)
+            let my = clamp(s.maxY + dy, lo: s.minY + minCrop, hi: img.maxY)
+            cropRect = CGRect(x: x, y: s.minY, width: s.maxX - x, height: my - s.minY)
+        case .bottomRight:
+            let mx = clamp(s.maxX + dx, lo: s.minX + minCrop, hi: img.maxX)
+            let my = clamp(s.maxY + dy, lo: s.minY + minCrop, hi: img.maxY)
+            cropRect = CGRect(x: s.minX, y: s.minY, width: mx - s.minX, height: my - s.minY)
+        case .top:
+            let y = clamp(s.minY + dy, lo: img.minY, hi: s.maxY - minCrop)
+            cropRect = CGRect(x: s.minX, y: y, width: s.width, height: s.maxY - y)
+        case .bottom:
+            let my = clamp(s.maxY + dy, lo: s.minY + minCrop, hi: img.maxY)
+            cropRect = CGRect(x: s.minX, y: s.minY, width: s.width, height: my - s.minY)
+        case .left:
+            let x = clamp(s.minX + dx, lo: img.minX, hi: s.maxX - minCrop)
+            cropRect = CGRect(x: x, y: s.minY, width: s.maxX - x, height: s.height)
+        case .right:
+            let mx = clamp(s.maxX + dx, lo: s.minX + minCrop, hi: img.maxX)
+            cropRect = CGRect(x: s.minX, y: s.minY, width: mx - s.minX, height: s.height)
+        case .move:
+            let cdx = clamp(dx, lo: img.minX - s.minX, hi: img.maxX - s.maxX)
+            let cdy = clamp(dy, lo: img.minY - s.minY, hi: img.maxY - s.maxY)
+            cropRect = s.offsetBy(dx: cdx, dy: cdy)
+        }
+    }
+
+    private func performCrop() -> UIImage {
+        guard imageRect.width > 0, imageRect.height > 0 else { return image }
+        let nX = (cropRect.minX - imageRect.minX) / imageRect.width
+        let nY = (cropRect.minY - imageRect.minY) / imageRect.height
+        let nW = cropRect.width / imageRect.width
+        let nH = cropRect.height / imageRect.height
+        let pixRect = CGRect(
+            x: nX * image.size.width,
+            y: nY * image.size.height,
+            width: nW * image.size.width,
+            height: nH * image.size.height
+        )
+        guard pixRect.width > 0, pixRect.height > 0 else { return image }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = image.scale
+        let renderer = UIGraphicsImageRenderer(size: pixRect.size, format: format)
+        return renderer.image { _ in
+            image.draw(at: CGPoint(x: -pixRect.origin.x, y: -pixRect.origin.y))
+        }
+    }
+
+    private var cropBottomBar: some View {
+        HStack(spacing: 20) {
+            Button { onCancel() } label: {
+                Text(strings.discardCrop)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+            }
+            .accessibilityLabel(strings.discardCrop)
+
+            Button {
+                onCropped(performCrop())
+            } label: {
+                Text(strings.applyCrop)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
+                    .background(Color("PrimaryOrange"), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .accessibilityLabel(strings.applyCrop)
+        }
+        .padding(.horizontal, 24)
+        .padding(.vertical, 20)
+        .frame(height: bottomBarHeight)
+        .background(alignment: .center) {
+            ZStack {
+                Rectangle().fill(.ultraThinMaterial.opacity(0.6))
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.3)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            }
         }
     }
 }
