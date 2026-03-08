@@ -25,7 +25,7 @@ struct MenuResultView: View {
     @State private var displayMenu: ScannedMenu?
     @State private var displayDishes: [AnalyzedDish]?
     @State private var showDietaryEditor = false
-    @State private var showLegend = false
+    @State private var showStaffCard = false
     @State private var currentFilterGroups: [DietaryFilterGroup]?
 
     private var strings: AppStrings {
@@ -33,6 +33,9 @@ struct MenuResultView: View {
     }
     private var canSave: Bool {
         onSave != nil && (profileStore.profile?.saveHistory ?? true)
+    }
+    private var hasRestrictions: Bool {
+        (profileStore.profile?.allRestrictionCount ?? 0) > 0
     }
     private var activeMenu: ScannedMenu { displayMenu ?? menu }
     private var activeDishes: [AnalyzedDish] { displayDishes ?? analyzedDishes }
@@ -73,10 +76,6 @@ struct MenuResultView: View {
                     headerSection
                         .padding(.horizontal, 24)
 
-                    legendExpandableSection
-                        .padding(.horizontal, 24)
-                        .padding(.top, 4)
-
                     ActiveFiltersCard(
                         groups: currentFilterGroups ?? filterGroups,
                         showChevron: true,
@@ -109,6 +108,23 @@ struct MenuResultView: View {
                     .accessibilityLabel(strings.close)
                 }
             }
+            if hasRestrictions {
+                ToolbarItem(placement: .primaryAction) {
+                    Button {
+                        showStaffCard = true
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "bubble.left.and.text.bubble.right")
+                                .font(.system(size: 14))
+                            Text(strings.askStaffButton)
+                                .font(.interMedium(size: 14))
+                        }
+                        .tint(Color("PrimaryOrange"))
+                    }
+                    .accessibilityLabel(strings.askStaffButton)
+                    .accessibilityHint(strings.askStaffHint)
+                }
+            }
             if canSave {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -126,6 +142,17 @@ struct MenuResultView: View {
         .sheet(isPresented: $showDietaryEditor) {
             DietaryProfileEditorView {
                 reAnalyzeWithUpdatedProfile()
+            }
+        }
+        .sheet(isPresented: $showStaffCard) {
+            if let profile = profileStore.profile {
+                StaffCommunicationView(
+                    menu: activeMenu,
+                    profile: profile,
+                    strings: strings
+                )
+                .presentationDetents([.large])
+                .presentationDragIndicator(.visible)
             }
         }
         .alert(strings.restaurantNameTitle, isPresented: $showNamePrompt) {
@@ -168,70 +195,6 @@ struct MenuResultView: View {
         }
     }
 
-    // MARK: - Legend Desplegable
-
-    private var legendExpandableSection: some View {
-        VStack(alignment: .leading, spacing: 0) {
-            Button {
-                withAnimation(.easeOut(duration: 0.2)) {
-                    showLegend.toggle()
-                }
-            } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "circle.hexagongrid.fill")
-                        .font(.system(size: 12))
-                    Text(strings.legendButton)
-                        .font(.interRegular(size: 13))
-                    Spacer()
-                    Image(systemName: showLegend ? "chevron.up" : "chevron.down")
-                        .font(.system(size: 10, weight: .medium))
-                        .foregroundStyle(.tertiary)
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
-                .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .tint(.secondary)
-            .background(Color(.secondarySystemGroupedBackground).opacity(0.8), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
-            .accessibilityLabel(showLegend ? strings.legendTitle : "\(strings.legendButton), \(strings.legendTitle)")
-            .accessibilityHint(showLegend ? "Collapses the color guide" : "Expands the color guide")
-
-            if showLegend {
-                legendCardContent
-                    .padding(.top, 8)
-                    .transition(.opacity.animation(.easeOut(duration: 0.2)))
-            }
-        }
-    }
-
-    private var legendCardContent: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            legendRow(color: .green, icon: "checkmark.circle.fill", text: strings.legendSafe)
-            legendRow(color: .orange, icon: "info.circle.fill", text: strings.legendAdvisory)
-            legendRow(color: .red, icon: "exclamationmark.triangle.fill", text: strings.legendDanger)
-        }
-        .padding(12)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 10, style: .continuous)
-                .fill(Color(.tertiarySystemGroupedBackground.withAlphaComponent(0.5)))
-        )
-    }
-
-    private func legendRow(color: Color, icon: String, text: String) -> some View {
-        HStack(alignment: .center, spacing: 8) {
-            Image(systemName: icon)
-                .font(.system(size: 14))
-                .foregroundStyle(color)
-            Text(text)
-                .font(.interRegular(size: 12))
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.leading)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
     // MARK: - Dish List
 
     private var dishList: some View {
@@ -242,7 +205,7 @@ struct MenuResultView: View {
                     .padding(.top, 32)
             } else {
                 ForEach(filteredDishes) { item in
-                    DishCard(item: item, allergens: allergens, strings: strings, menu: activeMenu, onShowLegend: { showLegend = true })
+                    DishCard(item: item, allergens: allergens, strings: strings, menu: activeMenu, onShowLegend: nil)
                 }
             }
         }
@@ -377,9 +340,19 @@ private struct DishCard: View {
                     }
                 }
 
-                if !item.isSafe {
-                    Divider()
-                        .padding(.vertical, 2)
+                Divider()
+                    .padding(.vertical, 2)
+                if item.isSafe {
+                    HStack(alignment: .center, spacing: 8) {
+                        Image(systemName: "checkmark.circle.fill")
+                            .font(.system(size: 14))
+                            .foregroundStyle(.green)
+                        Text(strings.dishSafeMessage)
+                            .font(.system(size: 11, weight: .medium))
+                            .foregroundStyle(.green)
+                            .lineLimit(nil)
+                    }
+                } else {
                     HStack(alignment: .top, spacing: 8) {
                         Image(systemName: item.isDanger ? "exclamationmark.triangle.fill" : "info.circle.fill")
                             .font(.system(size: 14))

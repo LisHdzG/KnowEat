@@ -303,6 +303,12 @@ struct AppStrings {
         "Traduzione delle descrizioni…"
     ) }
 
+    var dishSafeMessage: String { t(
+        "This dish looks good for you",
+        "Este platillo se ve bien para ti",
+        "Questo piatto va bene per te"
+    ) }
+
     var ingredientsLabel: String { t("Ingredients", "Ingredientes", "Ingredienti") }
     var inferredByAI: String { t("AI inferred", "Inferido por IA", "Dedotto dall'IA") }
 
@@ -588,6 +594,59 @@ struct AppStrings {
         "Saves this menu to your recent menus list",
         "Guarda este menú en tu lista de menús recientes",
         "Salva questo menu nella lista dei menu recenti"
+    ) }
+
+    // MARK: - Staff Communication
+
+    var askStaffButton: String { t(
+        "Need help ordering?",
+        "¿Necesitas ayuda para pedir?",
+        "Hai bisogno di aiuto per ordinare?"
+    ) }
+
+    var askStaffHint: String { t(
+        "Get a ready-made message for the staff",
+        "Obtén un mensaje listo para el personal",
+        "Ottieni un messaggio pronto per il personale"
+    ) }
+
+    var staffCardTitle: String { t(
+        "Talk to the staff",
+        "Habla con el personal",
+        "Parla con il personale"
+    ) }
+
+    var staffCardSubtitle: String { t(
+        "If you have doubts about a food, show this message to the restaurant staff or play the audio.",
+        "Si tienes dudas sobre un alimento, muestra este mensaje al personal del restaurante o reproduce el audio.",
+        "Se hai dubbi su un alimento, mostra questo messaggio al personale del ristorante o riproduci l'audio."
+    ) }
+
+    var staffCardTipFriendly: String { t(
+        "Show your screen or tap play — the staff will understand",
+        "Muestra tu pantalla o reproduce el audio — el personal te entenderá",
+        "Mostra lo schermo o riproduci l'audio — il personale capirà"
+    ) }
+
+    var playAudio: String { t("Play audio", "Reproducir", "Riproduci") }
+    var stopAudio: String { t("Stop", "Detener", "Ferma") }
+
+    var yourLanguageLabel: String { t(
+        "Your language",
+        "Tu idioma",
+        "La tua lingua"
+    ) }
+
+    var staffCardTip: String { t(
+        "You can show your phone directly to the staff or use the audio button to hear the pronunciation.",
+        "Puedes mostrar tu teléfono directamente al personal o usar el botón de audio para escuchar la pronunciación.",
+        "Puoi mostrare il telefono direttamente al personale o usare il pulsante audio per ascoltare la pronuncia."
+    ) }
+
+    var staffCardTipShort: String { t(
+        "Show your screen or play audio.",
+        "Muestra tu pantalla o reproduce el audio.",
+        "Mostra lo schermo o riproduci l'audio."
     ) }
 
     // MARK: - Legend (colors & icons)
