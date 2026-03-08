@@ -18,6 +18,7 @@ struct HomeView: View {
     @State private var renameText = ""
     @State private var showRenameAlert = false
     @State private var searchText = ""
+    @State private var showProfileSetup = false
 
     private var strings: AppStrings {
         AppStrings(profileStore.profile?.nativeLanguage ?? "English")
@@ -53,6 +54,11 @@ struct HomeView: View {
                 VStack(alignment: .leading, spacing: 16) {
                     titleSection
                         .padding(.horizontal, 24)
+
+                    if profileStore.profile == nil {
+                        profileSetupBanner
+                            .padding(.horizontal, 24)
+                    }
 
                     menuListSection
                 }
@@ -162,6 +168,9 @@ struct HomeView: View {
             }
 
         }
+        .sheet(isPresented: $showProfileSetup) {
+            DietaryProfileEditorView()
+        }
         .sheet(isPresented: Binding(
             get: { scanVM.errorMessage != nil },
             set: { if !$0 { scanVM.errorMessage = nil } }
@@ -177,6 +186,50 @@ struct HomeView: View {
         Text(strings.recentMenus)
             .font(.interSemiBold(size: 28))
             .foregroundStyle(Color("PrimaryOrange"))
+    }
+
+    // MARK: - Profile Setup Banner
+
+    private var profileSetupBanner: some View {
+        Button {
+            showProfileSetup = true
+        } label: {
+            HStack(spacing: 14) {
+                Image(systemName: "person.crop.circle.badge.plus")
+                    .font(.system(size: 30))
+                    .foregroundStyle(Color("PrimaryOrange"))
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(strings.setupProfileTitle)
+                        .font(.interSemiBold(size: 15))
+                        .foregroundStyle(.primary)
+
+                    Text(strings.setupProfileSubtitle)
+                        .font(.interRegular(size: 12))
+                        .foregroundStyle(.secondary)
+                        .lineSpacing(2)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+
+                Spacer(minLength: 0)
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 12, weight: .semibold))
+                    .foregroundStyle(Color(.tertiaryLabel))
+            }
+            .padding(16)
+            .background(
+                RoundedRectangle(cornerRadius: 14)
+                    .fill(Color("PrimaryOrange").opacity(0.06))
+            )
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .strokeBorder(Color("PrimaryOrange").opacity(0.18), lineWidth: 1)
+            )
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(strings.setupProfileTitle)
+        .accessibilityHint(strings.setupProfileSubtitle)
     }
 
     // MARK: - Menu List

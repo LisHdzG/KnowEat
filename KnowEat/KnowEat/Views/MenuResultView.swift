@@ -282,12 +282,23 @@ private struct DishCard: View {
         strings.localizedAllergenName(id)
     }
 
+    private var riskIcon: String {
+        if item.isSafe { return "checkmark.circle.fill" }
+        if item.isDanger { return "exclamationmark.triangle.fill" }
+        return "info.circle.fill"
+    }
+
     var body: some View {
         HStack(spacing: 0) {
-            RoundedRectangle(cornerRadius: 3)
-                .fill(accentColor)
-                .frame(width: 5)
-                .padding(.vertical, 10)
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 3)
+                    .fill(accentColor)
+                    .frame(width: 5)
+                Image(systemName: riskIcon)
+                    .font(.system(size: 11, weight: .medium))
+                    .foregroundStyle(accentColor)
+            }
+            .padding(.vertical, 10)
 
             VStack(alignment: .leading, spacing: 6) {
                 HStack(alignment: .top) {

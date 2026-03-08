@@ -19,7 +19,7 @@ struct DietaryProfileEditorView: View {
     ]
 
     private var strings: AppStrings {
-        AppStrings(profileStore.profile?.nativeLanguage ?? "English")
+        AppStrings(viewModel.selectedLanguage)
     }
 
     private var sections: [(DietaryCategory, String, String, String, [Allergen])] {
@@ -36,6 +36,8 @@ struct DietaryProfileEditorView: View {
         NavigationStack {
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 28) {
+                    dataPrivacyReminderView
+
                     ForEach(sections, id: \.0) { category, title, icon, description, items in
                         if !items.isEmpty {
                             sectionView(
@@ -54,7 +56,7 @@ struct DietaryProfileEditorView: View {
             }
             .background(Color(.systemBackground))
             .navigationTitle(strings.dietaryProfile)
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {
                     Button(strings.done) {
@@ -82,9 +84,36 @@ struct DietaryProfileEditorView: View {
             .onAppear {
                 if let profile = profileStore.profile {
                     viewModel.load(from: profile)
+                } else {
+                    viewModel.selectedLanguage = Self.devicePreferredLanguage
                 }
             }
         }
+    }
+
+    private var dataPrivacyReminderView: some View {
+        HStack(alignment: .top, spacing: 10) {
+            Image(systemName: "lock.shield.fill")
+                .font(.system(size: 14))
+                .foregroundStyle(Color("PrimaryOrange").opacity(0.8))
+            Text(strings.dataPrivacyReminder)
+                .font(.interRegular(size: 13))
+                .foregroundStyle(.secondary)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(16)
+        .background(
+            RoundedRectangle(cornerRadius: 12)
+                .fill(Color(.secondarySystemBackground).opacity(0.5))
+        )
+    }
+
+    private static var devicePreferredLanguage: String {
+        let preferred = Locale.preferredLanguages.first ?? "en"
+        if preferred.hasPrefix("es") { return "Español" }
+        if preferred.hasPrefix("it") { return "Italiano" }
+        return "English"
     }
 
     private func sectionView(
@@ -126,7 +155,11 @@ struct DietaryProfileEditorView: View {
     }
 
     private func syncAllToProfile() {
-        guard var profile = profileStore.profile else { return }
+        var profile = profileStore.profile ?? UserProfile(
+            nativeLanguage: viewModel.selectedLanguage,
+            allergenIds: []
+        )
+        profile.nativeLanguage = viewModel.selectedLanguage
         profile.allergenIds = Array(viewModel.selectedIds(for: .allergens))
         profile.intoleranceIds = Array(viewModel.selectedIds(for: .intolerances))
         profile.conditionIds = Array(viewModel.selectedIds(for: .conditions))

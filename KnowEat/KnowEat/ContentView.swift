@@ -12,40 +12,26 @@ struct ContentView: View {
     @State private var showSplash = true
     @State private var privacyConfig = PrivacyConfigService.shared
 
-    private var showAnalysisDisclaimer: Bool {
-        profileStore.hasCompletedOnboarding && !profileStore.hasAcceptedAnalysisDisclaimer
-    }
-
     private var showPrivacyUpdate: Bool {
-        profileStore.hasCompletedOnboarding
-        && profileStore.hasAcceptedAnalysisDisclaimer
+        profileStore.hasAcceptedAnalysisDisclaimer
         && privacyConfig.isLoaded
         && profileStore.needsPrivacyUpdate(remoteVersion: privacyConfig.privacyNotice?.version)
+    }
+
+    private var showPrivacySheet: Bool {
+        (!profileStore.hasAcceptedAnalysisDisclaimer || showPrivacyUpdate) && !showSplash
     }
 
     var body: some View {
         ZStack {
             Group {
-                if profileStore.hasCompletedOnboarding {
-                    HomeView()
-                } else {
-                    WelcomeView()
-                }
+                HomeView()
             }
             .task {
                 await PrivacyConfigService.shared.fetch()
             }
-            .sheet(isPresented: .constant(showAnalysisDisclaimer && !showSplash)) {
-                AnalysisDisclaimerView {
-                    profileStore.acceptAnalysisDisclaimer()
-                }
-                .presentationDetents([.large])
-                .presentationDragIndicator(.visible)
-                .presentationCornerRadius(24)
-                .interactiveDismissDisabled()
-            }
-            .sheet(isPresented: .constant(showPrivacyUpdate && !showSplash)) {
-                AnalysisDisclaimerView(isPrivacyUpdate: true) {
+            .sheet(isPresented: .constant(showPrivacySheet)) {
+                AnalysisDisclaimerView(isPrivacyUpdate: showPrivacyUpdate) {
                     profileStore.acceptAnalysisDisclaimer()
                 }
                 .presentationDetents([.large])

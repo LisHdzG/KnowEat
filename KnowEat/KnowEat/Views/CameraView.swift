@@ -33,7 +33,7 @@ struct CameraView: View {
     @State private var lastZoomValue: CGFloat = 1.0
     @State private var showZoomLabel = false
 
-    @State private var showCrop = false
+    @State private var isCropMode = false
     @State private var isCapturing = false
 
     private var strings: AppStrings {
@@ -290,40 +290,50 @@ struct CameraView: View {
 
     private var previewMode: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color(.systemBackground).ignoresSafeArea()
 
-            VStack(spacing: 0) {
-                previewTopBar
-
-                TabView(selection: $previewIndex) {
-                    ForEach(capturedPhotos.indices, id: \.self) { index in
-                        Image(uiImage: capturedPhotos[index])
-                            .resizable()
-                            .scaledToFit()
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
-                            .padding(.horizontal, 8)
-                            .tag(index)
+            if isCropMode, previewIndex < capturedPhotos.count {
+                PhotoCropView(
+                    image: capturedPhotos[previewIndex],
+                    strings: strings,
+                    isLightMode: true
+                ) { cropped in
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                        capturedPhotos[previewIndex] = cropped
+                        isCropMode = false
+                    }
+                } onCancel: {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                        isCropMode = false
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: capturedPhotos.count > 1 ? .automatic : .never))
+                .transition(.opacity.combined(with: .scale(scale: 0.98)))
+            } else {
+                VStack(spacing: 0) {
+                    previewTopBar
 
-                if capturedPhotos.count > 1 {
-                    previewThumbnailStrip
+                    TabView(selection: $previewIndex) {
+                        ForEach(capturedPhotos.indices, id: \.self) { index in
+                            Image(uiImage: capturedPhotos[index])
+                                .resizable()
+                                .scaledToFit()
+                                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                                .clipped()
+                                .tag(index)
+                        }
+                    }
+                    .tabViewStyle(.page(indexDisplayMode: .never))
+
+                    if capturedPhotos.count > 1 {
+                        previewThumbnailStrip
+                    }
+
+                    previewActionBar
                 }
-
-                previewActionBar
+                .transition(.opacity)
             }
         }
-        .fullScreenCover(isPresented: $showCrop) {
-            if previewIndex < capturedPhotos.count {
-                PhotoCropView(image: capturedPhotos[previewIndex], strings: strings) { cropped in
-                    capturedPhotos[previewIndex] = cropped
-                    showCrop = false
-                } onCancel: {
-                    showCrop = false
-                }
-            }
-        }
+        .animation(.spring(response: 0.45, dampingFraction: 0.85), value: isCropMode)
     }
 
     // MARK: - Preview Top Bar
@@ -331,40 +341,45 @@ struct CameraView: View {
     private var previewTopBar: some View {
         HStack {
             Button {
-                withAnimation(.easeInOut(duration: 0.25)) { showPreview = false }
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showPreview = false }
             } label: {
                 Image(systemName: "chevron.left")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(12)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .font(.system(size: 16, weight: .semibold))
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .accessibilityLabel(strings.backToCamera)
-            .accessibilityHint("Returns to camera to add more photos")
 
             Spacer()
 
-            Text(strings.photoCount(capturedPhotos.count))
-                .font(.system(size: 15, weight: .medium))
-                .foregroundStyle(.white.opacity(0.8))
+            if capturedPhotos.count > 1 {
+                HStack(spacing: 5) {
+                    ForEach(capturedPhotos.indices, id: \.self) { index in
+                        Circle()
+                            .fill(previewIndex == index ? Color("PrimaryOrange") : Color(.tertiaryLabel).opacity(0.4))
+                            .frame(width: previewIndex == index ? 8 : 6, height: previewIndex == index ? 8 : 6)
+                    }
+                }
+                .animation(.spring(response: 0.35, dampingFraction: 0.7), value: previewIndex)
+            }
 
             Spacer()
 
             HStack(spacing: 12) {
                 Button {
-                    showCrop = true
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { isCropMode = true }
                 } label: {
                     Image(systemName: "crop")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(12)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .foregroundStyle(.primary)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel(strings.cropPhoto)
-                .accessibilityHint("Opens the crop editor for the current photo")
 
                 Button {
-                    withAnimation {
+                    withAnimation(.spring(response: 0.35, dampingFraction: 0.75)) {
                         capturedPhotos.remove(at: previewIndex)
                         if capturedPhotos.isEmpty {
                             showPreview = false
@@ -375,16 +390,16 @@ struct CameraView: View {
                 } label: {
                     Image(systemName: "trash")
                         .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(.white)
-                        .padding(12)
-                        .background(.ultraThinMaterial, in: Circle())
+                        .foregroundStyle(.red)
+                        .frame(width: 44, height: 44)
+                        .contentShape(Rectangle())
                 }
                 .accessibilityLabel(strings.deletePhoto)
-                .accessibilityHint("Removes the current photo from the selection")
             }
         }
-        .padding(.horizontal, 20)
-        .padding(.top, 8)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 8)
+        .background(Color(.systemBackground))
     }
 
     // MARK: - Preview Thumbnails
@@ -392,80 +407,74 @@ struct CameraView: View {
     private var previewThumbnailStrip: some View {
         ScrollViewReader { proxy in
             ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
+                HStack(spacing: 10) {
                     ForEach(capturedPhotos.indices, id: \.self) { index in
                         Image(uiImage: capturedPhotos[index])
                             .resizable()
                             .scaledToFill()
-                            .frame(width: 52, height: 52)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .frame(width: 48, height: 48)
+                            .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
                             .overlay(
-                                RoundedRectangle(cornerRadius: 8)
-                                    .stroke(previewIndex == index ? .white : .clear, lineWidth: 2)
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(previewIndex == index ? Color("PrimaryOrange") : Color.clear, lineWidth: 2)
                             )
-                            .scaleEffect(previewIndex == index ? 1.08 : 1.0)
-                            .animation(.easeOut(duration: 0.2), value: previewIndex)
+                            .opacity(previewIndex == index ? 1.0 : 0.6)
                             .onTapGesture {
-                                withAnimation { previewIndex = index }
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) { previewIndex = index }
                             }
                             .id(index)
                             .accessibilityLabel("Photo \(index + 1) of \(capturedPhotos.count)")
-                            .accessibilityHint(previewIndex == index ? "Currently selected" : "Selects this photo")
                             .accessibilityAddTraits(previewIndex == index ? [.isButton, .isSelected] : .isButton)
                     }
                 }
-                .padding(.horizontal, 24)
+                .padding(.horizontal, 16)
             }
             .onChange(of: previewIndex) { _, newIndex in
-                withAnimation { proxy.scrollTo(newIndex, anchor: .center) }
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) { proxy.scrollTo(newIndex, anchor: .center) }
             }
         }
-        .padding(.vertical, 12)
+        .frame(height: 64)
+        .padding(.vertical, 10)
+        .background(Color(.systemBackground))
     }
 
     // MARK: - Preview Actions
 
     private var previewActionBar: some View {
-        HStack(spacing: 16) {
+        HStack(spacing: 12) {
             Button {
-                withAnimation(.easeInOut(duration: 0.25)) { showPreview = false }
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { showPreview = false }
             } label: {
-                HStack(spacing: 6) {
-                    Image(systemName: "plus")
-                        .font(.system(size: 14, weight: .bold))
-                    Text(strings.addMore)
-                        .font(.system(size: 15, weight: .semibold))
-                }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 14)
-                .background(.ultraThinMaterial, in: Capsule())
+                Label(strings.addMore, systemImage: "camera.fill")
+                    .font(.system(size: 15, weight: .semibold, design: .rounded))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
             }
+            .buttonStyle(.bordered)
+            .tint(Color(.systemGray5))
             .accessibilityLabel("Add more photos")
-            .accessibilityHint("Returns to camera to capture or select more menu photos")
-
-            Spacer()
 
             Button {
                 CameraManager.shared.setTorch(false)
                 onPhotosReady(capturedPhotos)
             } label: {
-                HStack(spacing: 6) {
-                    Text(strings.analyze)
-                        .font(.system(size: 15, weight: .semibold))
-                    Image(systemName: "arrow.right")
-                        .font(.system(size: 14, weight: .bold))
-                }
-                .foregroundStyle(.white)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 14)
-                .background(Color("PrimaryOrange"), in: Capsule())
+                Label(strings.analyze, systemImage: "sparkles")
+                    .font(.system(size: 15, weight: .bold, design: .rounded))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 48)
             }
+            .buttonStyle(.borderedProminent)
+            .tint(Color("PrimaryOrange"))
             .accessibilityLabel("Analyze menu")
-            .accessibilityHint("Sends the selected photos for allergen and menu analysis")
         }
-        .padding(.horizontal, 24)
-        .padding(.bottom, 28)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 12)
+        .padding(.bottom, 24)
+        .background(Color(.systemBackground))
+        .overlay(Divider(), alignment: .top)
+        .ignoresSafeArea(edges: .bottom)
     }
 
     // MARK: - Actions
@@ -702,6 +711,7 @@ extension CameraManager: AVCapturePhotoCaptureDelegate {
 struct PhotoCropView: View {
     let image: UIImage
     let strings: AppStrings
+    var isLightMode: Bool = false
     let onCropped: (UIImage) -> Void
     let onCancel: () -> Void
 
@@ -712,7 +722,7 @@ struct PhotoCropView: View {
     @State private var viewSize: CGSize = .zero
 
     private let minCrop: CGFloat = 60
-    private let hitRadius: CGFloat = 32
+    private let hitRadius: CGFloat = 44
 
     enum DragType {
         case topLeft, topRight, bottomLeft, bottomRight
@@ -720,40 +730,44 @@ struct PhotoCropView: View {
         case move
     }
 
+    private var bgColor: Color {
+        isLightMode ? Color(.systemBackground) : Color.black
+    }
+
     var body: some View {
-        ZStack {
-            Color.black.ignoresSafeArea()
+        VStack(spacing: 0) {
+            cropTopBar
 
             GeometryReader { geo in
                 let size = geo.size
 
-                Image(uiImage: image)
-                    .resizable()
-                    .scaledToFit()
-                    .frame(width: size.width, height: size.height)
+                ZStack {
+                    Image(uiImage: image)
+                        .resizable()
+                        .scaledToFit()
+                        .frame(width: size.width, height: size.height)
 
-                dimOverlay(size: size)
-                cropBorder
-                if activeDrag != nil { gridOverlay }
-                cropDecorations
+                    dimOverlay(size: size)
+                    cropBorder
+                    if activeDrag != nil { gridOverlay }
+                    cropDecorations
 
-                Color.clear
-                    .contentShape(Rectangle())
-                    .gesture(cropDragGesture)
-                    .onAppear {
-                        viewSize = size
-                        let r = imageFitRect(in: size)
-                        imageRect = r
-                        cropRect = r
-                    }
+                    Color.clear
+                        .contentShape(Rectangle())
+                        .gesture(cropDragGesture)
+                }
+                .onAppear {
+                    viewSize = size
+                    let r = imageFitRect(in: size)
+                    imageRect = r
+                    cropRect = r
+                }
             }
+            .frame(maxHeight: .infinity)
 
-            VStack {
-                cropTopBar
-                Spacer()
-                cropBottomBar
-            }
+            cropBottomBar
         }
+        .background(bgColor.ignoresSafeArea())
         .statusBarHidden()
     }
 
@@ -784,7 +798,7 @@ struct PhotoCropView: View {
             path.addRect(cropRect)
         }
         .fill(style: FillStyle(eoFill: true))
-        .foregroundStyle(.black.opacity(0.55))
+        .foregroundStyle(isLightMode ? Color.black.opacity(0.35) : Color.black.opacity(0.55))
         .allowsHitTesting(false)
     }
 
@@ -792,7 +806,7 @@ struct PhotoCropView: View {
 
     private var cropBorder: some View {
         Rectangle()
-            .strokeBorder(.white.opacity(0.8), lineWidth: 1)
+            .strokeBorder(isLightMode ? Color.primary.opacity(0.6) : Color.white.opacity(0.8), lineWidth: 1)
             .frame(width: max(0, cropRect.width), height: max(0, cropRect.height))
             .position(x: cropRect.midX, y: cropRect.midY)
             .allowsHitTesting(false)
@@ -814,7 +828,7 @@ struct PhotoCropView: View {
                 p.addLine(to: CGPoint(x: r.maxX, y: y))
             }
         }
-        .stroke(.white.opacity(0.35), lineWidth: 0.5)
+        .stroke(isLightMode ? Color.primary.opacity(0.2) : Color.white.opacity(0.35), lineWidth: 0.5)
         .allowsHitTesting(false)
     }
 
@@ -822,8 +836,8 @@ struct PhotoCropView: View {
 
     private var cropDecorations: some View {
         let r = cropRect
-        let cLen: CGFloat = 20
-        let eLen: CGFloat = 16
+        let cLen: CGFloat = 24
+        let eLen: CGFloat = 22
         let w: CGFloat = 3.0
 
         return Path { p in
@@ -855,7 +869,7 @@ struct PhotoCropView: View {
             p.move(to: CGPoint(x: r.maxX + 1, y: midY - eLen))
             p.addLine(to: CGPoint(x: r.maxX + 1, y: midY + eLen))
         }
-        .stroke(.white, lineWidth: w)
+        .stroke(isLightMode ? Color.primary : Color.white, lineWidth: w)
         .allowsHitTesting(false)
     }
 
@@ -970,13 +984,13 @@ struct PhotoCropView: View {
     private var cropTopBar: some View {
         HStack {
             Button { onCancel() } label: {
-                Text(strings.cancel)
-                    .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial, in: Capsule())
+                Image(systemName: "xmark")
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(isLightMode ? Color.primary : Color.white)
+                    .frame(width: 44, height: 44)
+                    .background(isLightMode ? Color(.systemGray5) : Color.white.opacity(0.2), in: Circle())
             }
+            .accessibilityLabel(strings.cancel)
 
             Spacer()
 
@@ -986,31 +1000,50 @@ struct PhotoCropView: View {
                 }
             } label: {
                 Image(systemName: "arrow.counterclockwise")
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .padding(12)
-                    .background(.ultraThinMaterial, in: Circle())
+                    .font(.system(size: 15, weight: .semibold))
+                    .foregroundStyle(isLightMode ? Color.primary : Color.white)
+                    .frame(width: 44, height: 44)
+                    .background(isLightMode ? Color(.systemGray5) : Color.white.opacity(0.2), in: Circle())
             }
             .accessibilityLabel(strings.resetCrop)
         }
         .padding(.horizontal, 20)
-        .padding(.top, 12)
+        .padding(.vertical, 12)
+        .background(isLightMode ? Color(.systemBackground) : Color.black.opacity(0.3))
     }
 
     private var cropBottomBar: some View {
-        Button {
-            let cropped = performCrop()
-            onCropped(cropped)
-        } label: {
-            Text(strings.done)
-                .font(.system(size: 17, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .frame(height: 52)
-                .background(Color("PrimaryOrange"), in: RoundedRectangle(cornerRadius: 14))
+        HStack(spacing: 20) {
+            Button { onCancel() } label: {
+                Text(strings.cancel)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(isLightMode ? Color.primary : Color.white)
+            }
+            .frame(maxWidth: .infinity)
+            .accessibilityLabel(strings.cancel)
+
+            Button {
+                let cropped = performCrop()
+                onCropped(cropped)
+            } label: {
+                Text(strings.done)
+                    .font(.system(size: 17, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color("PrimaryOrange"), in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .frame(maxWidth: .infinity)
+            .accessibilityLabel(strings.done)
         }
-        .padding(.horizontal, 28)
-        .padding(.bottom, 32)
+        .padding(.horizontal, 24)
+        .padding(.vertical, 16)
+        .padding(.bottom, 34)
+        .background(
+            (isLightMode ? Color(.systemBackground) : Color.black.opacity(0.3))
+                .overlay(Divider(), alignment: .top)
+                .ignoresSafeArea(edges: .bottom)
+        )
     }
 }
 

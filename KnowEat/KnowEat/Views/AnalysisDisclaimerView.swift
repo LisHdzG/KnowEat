@@ -163,7 +163,6 @@ struct AnalysisDisclaimerView: View {
                 .accessibilityLabel(strings.readPrivacyPolicy)
                 .accessibilityHint(strings.opensPrivacyInSafari)
             }
-
         }
         .padding(.horizontal, 28)
         .padding(.bottom, 32)

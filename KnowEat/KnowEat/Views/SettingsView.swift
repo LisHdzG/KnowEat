@@ -90,7 +90,7 @@ struct SettingsView: View {
     }
 
     private var dietarySection: some View {
-        sectionContainer(header: strings.dietaryProfile) {
+        sectionContainer(header: strings.dietaryProfile, footer: strings.dataPrivacyReminder) {
             VStack(spacing: 0) {
                 dietaryRow(
                     icon: "exclamationmark.shield.fill",

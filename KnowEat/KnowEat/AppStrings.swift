@@ -101,6 +101,11 @@ struct AppStrings {
         "Todo se guarda en tu dispositivo. Si desinstalas la app, se borrarán tus datos.",
         "Tutto viene salvato sul tuo dispositivo. Disinstallando l'app, i dati verranno rimossi."
     ) }
+    var dataPrivacyReminder: String { t(
+        "Your data stays on your device. We don't share anything with third parties.",
+        "Tus datos se quedan en tu teléfono. No compartimos nada con terceros.",
+        "I tuoi dati restano sul tuo telefono. Non condividiamo nulla con terze parti."
+    ) }
     var cameraAccessRequired: String { t(
         "Camera Access Required",
         "Acceso a cámara requerido",
@@ -117,6 +122,22 @@ struct AppStrings {
     var rename: String { t("Rename", "Renombrar", "Rinomina") }
     var retakePhoto: String { t("Retake Photo", "Tomar otra foto", "Scatta un'altra foto") }
     var searchMenus: String { t("Search menus...", "Buscar menús...", "Cerca menu...") }
+
+    var setupProfileTitle: String { t(
+        "Set up your dietary profile",
+        "Configura tu perfil alimentario",
+        "Configura il tuo profilo alimentare"
+    ) }
+    var setupProfileSubtitle: String { t(
+        "Tell us about your allergies and dietary needs so we can personalize your experience.",
+        "Cuéntanos sobre tus alergias y necesidades alimentarias para personalizar tu experiencia.",
+        "Raccontaci le tue allergie e le tue esigenze alimentari per personalizzare la tua esperienza."
+    ) }
+    var setupProfileAction: String { t(
+        "Set up now",
+        "Configurar ahora",
+        "Configura ora"
+    ) }
 
     func dishesCount(_ count: Int) -> String {
         t("\(count) dishes", "\(count) platillos", "\(count) piatti")
@@ -432,6 +453,44 @@ struct AppStrings {
         "No dietary restrictions configured",
         "Sin restricciones alimentarias configuradas",
         "Nessuna restrizione alimentare configurata"
+    ) }
+
+    // MARK: - Scan Tutorial
+
+    var scanTutorialTitle: String { t(
+        "How to scan a menu",
+        "Cómo escanear un menú",
+        "Come scansionare un menu"
+    ) }
+    var scanTutorialTip1: String { t(
+        "Capture the full menu so we can read every dish",
+        "Captura todo el menú para que podamos leer cada platillo",
+        "Cattura l'intero menu così possiamo leggere ogni piatto"
+    ) }
+    var scanTutorialTip2: String { t(
+        "Center the text and hold your phone vertically",
+        "Centra el texto y sostén el teléfono verticalmente",
+        "Centra il testo e tieni il telefono in verticale"
+    ) }
+    var scanTutorialTip3: String { t(
+        "Works best with menus that list ingredients",
+        "Funciona mejor con menús que listen ingredientes",
+        "Funziona meglio con menu che elencano gli ingredienti"
+    ) }
+    var scanTutorialTip4: String { t(
+        "Use good lighting and avoid shadows or glare",
+        "Usa buena iluminación y evita sombras o reflejos",
+        "Usa una buona illuminazione ed evita ombre o riflessi"
+    ) }
+    var scanTutorialNote: String { t(
+        "These are suggestions — scan any menu and we'll do our best!",
+        "Son sugerencias — escanea cualquier menú y haremos nuestro mejor esfuerzo!",
+        "Sono suggerimenti — scansiona qualsiasi menu e faremo del nostro meglio!"
+    ) }
+    var scanTutorialAction: String { t(
+        "Let's scan!",
+        "¡Vamos a escanear!",
+        "Iniziamo a scansionare!"
     ) }
 
     // MARK: - Camera
