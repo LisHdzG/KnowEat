@@ -76,8 +76,8 @@ struct ActiveFiltersCard: View {
         }
         .buttonStyle(.plain)
         .disabled(onTap == nil)
-        .accessibilityLabel(allChips.isEmpty ? "Dietary profile, no restrictions configured" : "Dietary profile, \(allChips.count) restrictions")
-        .accessibilityHint(onTap != nil ? "Opens dietary profile editor to update your restrictions" : "Dietary profile")
+        .accessibilityLabel(strings.dietaryProfileRestrictionsLabel(allChips.count))
+        .accessibilityHint(onTap != nil ? strings.dietaryProfileEditorHint : strings.dietaryProfileStaticLabel)
     }
 
     private func chipColor(for groupId: String) -> Color {

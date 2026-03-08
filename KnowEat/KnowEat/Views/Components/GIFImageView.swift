@@ -10,6 +10,7 @@ import UIKit
 
 struct GIFImageView: UIViewRepresentable {
     let name: String
+    var animate: Bool = true
 
     func makeUIView(context: Context) -> UIImageView {
         let imageView = UIImageView()
@@ -17,8 +18,9 @@ struct GIFImageView: UIViewRepresentable {
         imageView.clipsToBounds = true
         imageView.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
         imageView.setContentCompressionResistancePriority(.defaultLow, for: .vertical)
+        imageView.isAccessibilityElement = false
 
-        if let path = Bundle.main.path(forResource: name, ofType: "gif"),
+        if animate, let path = Bundle.main.path(forResource: name, ofType: "gif"),
            let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
            let source = CGImageSourceCreateWithData(data as CFData, nil) {
             var images: [UIImage] = []
@@ -41,11 +43,22 @@ struct GIFImageView: UIViewRepresentable {
 
             imageView.animationImages = images
             imageView.animationDuration = duration
-            imageView.startAnimating()
+            if animate { imageView.startAnimating() }
+        } else if !animate, let path = Bundle.main.path(forResource: name, ofType: "gif"),
+                  let data = try? Data(contentsOf: URL(fileURLWithPath: path)),
+                  let source = CGImageSourceCreateWithData(data as CFData, nil),
+                  let cgImage = CGImageSourceCreateImageAtIndex(source, 0, nil) {
+            imageView.image = UIImage(cgImage: cgImage)
         }
 
         return imageView
     }
 
-    func updateUIView(_ uiView: UIImageView, context: Context) {}
+    func updateUIView(_ uiView: UIImageView, context: Context) {
+        if animate {
+            if !uiView.isAnimating { uiView.startAnimating() }
+        } else {
+            uiView.stopAnimating()
+        }
+    }
 }

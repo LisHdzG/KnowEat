@@ -9,6 +9,7 @@ import SwiftUI
 
 struct ContentView: View {
     @Environment(UserProfileStore.self) private var profileStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var showSplash = true
     @State private var privacyConfig = PrivacyConfigService.shared
 
@@ -42,11 +43,15 @@ struct ContentView: View {
 
             if showSplash {
                 SplashView {
-                    withAnimation(.easeInOut(duration: 0.3)) {
+                    if reduceMotion {
                         showSplash = false
+                    } else {
+                        withAnimation(.easeInOut(duration: 0.3)) {
+                            showSplash = false
+                        }
                     }
                 }
-                .transition(.opacity)
+                .transition(reduceMotion ? .opacity : .opacity)
                 .zIndex(1)
             }
         }

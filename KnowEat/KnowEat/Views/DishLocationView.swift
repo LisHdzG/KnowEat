@@ -12,6 +12,7 @@ struct DishLocationView: View {
     let strings: AppStrings
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var scale: CGFloat = 1.35
     @State private var lastScale: CGFloat = 1.35
     @State private var didAppear = false
@@ -74,8 +75,12 @@ struct DishLocationView: View {
         }
         .background(Color(.systemBackground))
         .onAppear {
-            withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
+            if reduceMotion {
                 didAppear = true
+            } else {
+                withAnimation(.spring(response: 0.45, dampingFraction: 0.78)) {
+                    didAppear = true
+                }
             }
         }
     }
@@ -91,12 +96,12 @@ struct DishLocationView: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(dish.name)
-                        .font(.system(size: 16, weight: .semibold, design: .rounded))
+                        .font(.system(.body, design: .rounded).weight(.semibold))
                         .foregroundStyle(.primary)
 
                     if let translated = dish.translatedName, !translated.isEmpty {
                         Text(translated)
-                            .font(.system(size: 13, weight: .regular))
+                            .font(.subheadline)
                             .foregroundStyle(Color("PrimaryOrange"))
                             .lineLimit(1)
                     }
@@ -105,7 +110,7 @@ struct DishLocationView: View {
 
                 if let description = dish.description, !description.isEmpty {
                     Text(description)
-                        .font(.system(size: 13))
+                        .font(.subheadline)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
                 }
@@ -117,14 +122,14 @@ struct DishLocationView: View {
                             .foregroundStyle(.tertiary)
                             .padding(.top, 2)
                         Text(dish.ingredients.joined(separator: ", "))
-                            .font(.system(size: 12))
+                            .font(.footnote)
                             .foregroundStyle(.secondary)
                             .lineLimit(2)
                     }
                 } else if isUnrecognizedDish {
                     Label {
                         Text(strings.unknownDishWarning)
-                            .font(.system(size: 12))
+                            .font(.footnote)
                     } icon: {
                         Image(systemName: "questionmark.circle")
                             .font(.system(size: 11))
@@ -133,7 +138,7 @@ struct DishLocationView: View {
                 } else {
                     Label {
                         Text(strings.noIngredientsDetected)
-                            .font(.system(size: 12))
+                            .font(.footnote)
                     } icon: {
                         Image(systemName: "info.circle")
                             .font(.system(size: 11))
@@ -149,7 +154,8 @@ struct DishLocationView: View {
                             } icon: {
                                 Image(systemName: "exclamationmark.triangle.fill")
                             }
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.caption)
+                            .fontWeight(.medium)
                             .foregroundStyle(.red)
                         }
                         if item.isAdvisory {
@@ -159,7 +165,8 @@ struct DishLocationView: View {
                             } icon: {
                                 Image(systemName: "info.circle.fill")
                             }
-                            .font(.system(size: 11, weight: .medium))
+                            .font(.caption)
+                            .fontWeight(.medium)
                             .foregroundStyle(.orange)
                         }
                     }
@@ -201,6 +208,8 @@ struct DishLocationView: View {
                     .resizable()
                     .aspectRatio(contentMode: .fit)
                     .frame(width: fitWidth * scale, height: fitHeight * scale)
+                    .accessibilityLabel(strings.dishLocationOnMenuHint(dish.name))
+                    .accessibilityHint(strings.zoomPinchHint)
 
                 ForEach(Array(regionsForThisImage.enumerated()), id: \.offset) { _, region in
                     let rect = convertBoundingBox(region, imageWidth: fitWidth * scale, imageHeight: fitHeight * scale)
@@ -242,9 +251,11 @@ struct DishLocationView: View {
                 .font(.system(size: 44, weight: .light))
                 .foregroundStyle(.tertiary)
             Text(strings.noPhotoAvailable)
-                .font(.system(size: 15, weight: .regular))
+                .font(.body)
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(strings.noPhotoAvailable)
     }
 }

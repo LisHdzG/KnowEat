@@ -67,7 +67,7 @@ struct DietaryProfileEditorView: View {
                     .font(.interMedium(size: 16))
                     .tint(Color("PrimaryOrange"))
                     .accessibilityLabel(strings.done)
-                    .accessibilityHint("Saves your dietary profile and closes the editor")
+                    .accessibilityHint(strings.dietaryProfileSaveHint)
                 }
                 ToolbarItem(placement: .topBarLeading) {
                     Button {
@@ -78,7 +78,7 @@ struct DietaryProfileEditorView: View {
                     }
                     .tint(Color("SecondaryGray"))
                     .accessibilityLabel(strings.close)
-                    .accessibilityHint("Dismisses the dietary profile editor")
+                    .accessibilityHint(strings.dietaryProfileCloseHint)
                 }
             }
             .onAppear {

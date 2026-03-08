@@ -11,6 +11,7 @@ import StoreKit
 struct SettingsView: View {
     @Environment(UserProfileStore.self) private var profileStore
     @Environment(MenuStore.self) private var menuStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.openURL) private var openURL
     @Environment(\.requestReview) private var requestReview
     @Environment(\.dismiss) private var dismiss
@@ -47,7 +48,7 @@ struct SettingsView: View {
                 }
                 .tint(Color("SecondaryGray"))
                 .accessibilityLabel(strings.close)
-                .accessibilityHint("Closes settings and returns to home")
+                .accessibilityHint(strings.closeSettingsHint)
             }
         }
         .onAppear {
@@ -84,8 +85,8 @@ struct SettingsView: View {
                 )
             }
             .buttonStyle(.plain)
-            .accessibilityLabel("Native language, \(viewModel.selectedLanguage)")
-            .accessibilityHint("Opens language picker for menu translations")
+            .accessibilityLabel("\(strings.nativeLanguage), \(viewModel.selectedLanguage)")
+            .accessibilityHint(strings.languagePickerHintSettings)
         }
     }
 
@@ -279,8 +280,8 @@ struct SettingsView: View {
                         )
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("Delete all menus, \(menuStore.menus.count) saved")
-                    .accessibilityHint("Permanently deletes all saved menus from history")
+                    .accessibilityLabel(strings.deleteAllMenusA11yLabel(menuStore.menus.count))
+                    .accessibilityHint(strings.deleteAllMenusHint)
                     .alert(strings.deleteAllMenusConfirm, isPresented: $showDeleteConfirmation) {
                         Button(strings.deleteAllButton, role: .destructive) {
                             showFinalConfirmation = true
@@ -291,7 +292,11 @@ struct SettingsView: View {
                     }
                     .alert(strings.areYouSure, isPresented: $showFinalConfirmation) {
                         Button(strings.yesDeleteAll, role: .destructive) {
-                            withAnimation { menuStore.deleteAll() }
+                            if reduceMotion {
+                                menuStore.deleteAll()
+                            } else {
+                                withAnimation { menuStore.deleteAll() }
+                            }
                         }
                         Button(strings.cancel, role: .cancel) {}
                     } message: {
@@ -319,7 +324,7 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(strings.privacyPolicy)
-                .accessibilityHint("Opens the privacy policy in Safari")
+                .accessibilityHint(strings.opensPrivacyInSafari)
 
                 Divider()
                     .padding(.leading, 62)
@@ -334,7 +339,7 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel(strings.rateKnowEat)
-                .accessibilityHint("Shows the rating dialog")
+                .accessibilityHint(strings.rateKnowEatHint)
             }
         }
     }

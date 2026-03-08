@@ -10,6 +10,7 @@ import SwiftUI
 struct HomeView: View {
     @Environment(UserProfileStore.self) private var profileStore
     @Environment(MenuStore.self) private var menuStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var viewModel = HomeViewModel()
     @State private var scanVM = MenuScanViewModel()
     @State private var selectedMenu: ScannedMenu?
@@ -73,7 +74,7 @@ struct HomeView: View {
                         }
                         .tint(Color("SecondaryGray"))
                         .accessibilityLabel(strings.settings)
-                        .accessibilityHint("Opens app settings and dietary profile")
+                        .accessibilityHint(strings.settingsHint)
                     }
                     ToolbarItem(placement: .topBarTrailing) {
                         Button {
@@ -83,7 +84,7 @@ struct HomeView: View {
                         }
                         .tint(Color("PrimaryOrange"))
                         .accessibilityLabel(strings.scanMenu)
-                        .accessibilityHint("Opens the camera to scan a restaurant menu")
+                        .accessibilityHint(strings.scanMenuHint)
                     }
                 }
                 .fullScreenCover(isPresented: $scanVM.isShowingScanner) {
@@ -162,7 +163,7 @@ struct HomeView: View {
             }
 
             if scanVM.isAnalyzing {
-                LoaderView(progress: scanVM.analysisProgress, stage: scanVM.analysisStage)
+                LoaderView(progress: scanVM.analysisProgress, stage: scanVM.analysisStage, strings: strings)
                     .ignoresSafeArea()
                     .zIndex(10)
             }
@@ -184,7 +185,7 @@ struct HomeView: View {
 
     private var titleSection: some View {
         Text(strings.recentMenus)
-            .font(.interSemiBold(size: 28))
+            .font(.interSemiBold(.title1))
             .foregroundStyle(Color("PrimaryOrange"))
     }
 
@@ -201,11 +202,11 @@ struct HomeView: View {
 
                 VStack(alignment: .leading, spacing: 4) {
                     Text(strings.setupProfileTitle)
-                        .font(.interSemiBold(size: 15))
+                        .font(.interSemiBold(.subheadline))
                         .foregroundStyle(.primary)
 
                     Text(strings.setupProfileSubtitle)
-                        .font(.interRegular(size: 12))
+                        .font(.interRegular(.footnote))
                         .foregroundStyle(.secondary)
                         .lineSpacing(2)
                         .fixedSize(horizontal: false, vertical: true)
@@ -258,10 +259,14 @@ struct HomeView: View {
                                 }
                                 .buttonStyle(.plain)
                                 .accessibilityLabel("\(menu.restaurant), \(strings.dishesCount(menu.dishes.count))")
-                                .accessibilityHint("Opens menu analysis and allergen check")
+                                .accessibilityHint(strings.opensMenuAnalysisHint)
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     Button(role: .destructive) {
+                                        if reduceMotion {
+                                        menuStore.delete(menu)
+                                    } else {
                                         withAnimation { menuStore.delete(menu) }
+                                    }
                                     } label: {
                                         Label(strings.delete, systemImage: "trash")
                                     }
@@ -282,7 +287,7 @@ struct HomeView: View {
                             }
                         } header: {
                             Text(dateLabel)
-                                .font(.interSemiBold(size: 16))
+                                .font(.interSemiBold(.body))
                                 .foregroundStyle(.secondary)
                                 .listRowInsets(EdgeInsets(top: 4, leading: 24, bottom: 0, trailing: 24))
                         }
@@ -309,17 +314,20 @@ struct HomeView: View {
                             .foregroundStyle(.orange)
                     )
                     .padding(.top, 8)
+                    .accessibilityHidden(true)
 
                 VStack(spacing: 10) {
                     Text(scanVM.errorTitle)
-                        .font(.interSemiBold(size: 20))
+                        .font(.interSemiBold(.title3))
 
                     Text(scanVM.errorMessage ?? "")
-                        .font(.interRegular(size: 14))
+                        .font(.interRegular(.footnote))
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .fixedSize(horizontal: false, vertical: true)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(scanVM.errorTitle). \(scanVM.errorMessage ?? "")")
 
                 VStack(alignment: .leading, spacing: 10) {
                     errorTipRow(icon: "menucard", text: strings.photographMenuTip)
@@ -332,6 +340,8 @@ struct HomeView: View {
                     RoundedRectangle(cornerRadius: 12)
                         .fill(Color(.secondarySystemBackground))
                 )
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(strings.photographMenuTip). \(strings.goodLightingTip). \(strings.keepFocusTip)")
             }
             .padding(.horizontal, 24)
             .padding(.top, 40)
@@ -346,13 +356,15 @@ struct HomeView: View {
                         Image(systemName: "camera.fill")
                             .font(.system(size: 14, weight: .semibold))
                         Text(strings.retakePhoto)
-                            .font(.interSemiBold(size: 16))
+                            .font(.interSemiBold(.body))
                     }
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .frame(height: 52)
                     .background(Color("PrimaryOrange"), in: RoundedRectangle(cornerRadius: 14))
                 }
+                .accessibilityLabel(strings.retakePhoto)
+                .accessibilityHint(strings.retakePhotoHint)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 16)
@@ -386,19 +398,19 @@ struct HomeView: View {
                 .foregroundStyle(Color("SecondaryGray").opacity(0.45))
         } description: {
             Text(strings.scanToGetStarted)
-                .font(.interRegular(size: 15))
+                .font(.interRegular(.subheadline))
                 .foregroundStyle(Color("SecondaryGray").opacity(0.5))
         } actions: {
             Button {
                 scanVM.openScanner()
             } label: {
                 Text(strings.scanMenu)
-                    .font(.interSemiBold(size: 16))
+                    .font(.interSemiBold(.body))
             }
             .buttonStyle(.borderedProminent)
             .tint(Color("PrimaryOrange"))
             .accessibilityLabel(strings.scanMenu)
-            .accessibilityHint("Opens the camera to scan your first restaurant menu")
+            .accessibilityHint(strings.scanMenuFirstHint)
         }
     }
 

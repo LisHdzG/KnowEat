@@ -222,6 +222,16 @@ struct AppStrings {
         )
     }
     var deleteAllButton: String { t("Delete All", "Eliminar todo", "Elimina tutto") }
+    func deleteAllMenusA11yLabel(_ count: Int) -> String { t(
+        "Delete all menus, \(count) saved",
+        "Eliminar todos los menús, \(count) guardados",
+        "Elimina tutti i menu, \(count) salvati"
+    ) }
+    var deleteAllMenusHint: String { t(
+        "Permanently deletes all saved menus from history",
+        "Elimina permanentemente todos los menús guardados",
+        "Elimina permanentemente tutti i menu salvati"
+    ) }
     var areYouSure: String { t("Are you sure?", "¿Estás seguro?", "Sei sicuro?") }
     var cannotBeUndone: String { t(
         "This action cannot be undone.",
@@ -237,6 +247,11 @@ struct AppStrings {
     var about: String { t("About", "Acerca de", "Informazioni") }
     var privacyPolicy: String { t("Privacy Policy", "Política de privacidad", "Informativa sulla privacy") }
     var rateKnowEat: String { t("Rate KnowEat", "Califica KnowEat", "Valuta KnowEat") }
+    var rateKnowEatHint: String { t(
+        "Shows the rating dialog",
+        "Muestra el cuadro de valoración",
+        "Mostra la finestra di valutazione"
+    ) }
 
     // MARK: - Menu Result
 
@@ -577,6 +592,86 @@ struct AppStrings {
         "Allergeni alimentari che possono causare reazioni."
     ) }
 
+    // MARK: - Accessibility hints (localized)
+
+    var settingsHint: String { t(
+        "Opens app settings and dietary profile",
+        "Abre ajustes y perfil alimentario",
+        "Apre impostazioni e profilo alimentare"
+    ) }
+    var scanMenuHint: String { t(
+        "Opens the camera to scan a restaurant menu",
+        "Abre la cámara para escanear un menú",
+        "Apre la fotocamera per scansionare un menu"
+    ) }
+    var scanMenuFirstHint: String { t(
+        "Opens the camera to scan your first restaurant menu",
+        "Abre la cámara para escanear tu primer menú",
+        "Apre la fotocamera per scansionare il tuo primo menu"
+    ) }
+    var opensMenuAnalysisHint: String { t(
+        "Opens menu analysis and allergen check",
+        "Abre análisis del menú y verificación de alérgenos",
+        "Apre analisi menu e verifica allergeni"
+    ) }
+    var dietaryProfileEditorHint: String { t(
+        "Opens dietary profile editor to update your restrictions",
+        "Abre el editor de perfil alimentario para actualizar restricciones",
+        "Apre l'editor del profilo alimentare per aggiornare le restrizioni"
+    ) }
+    func dietaryProfileRestrictionsLabel(_ count: Int) -> String { t(
+        count == 0 ? "Dietary profile, no restrictions configured" : "Dietary profile, \(count) restrictions",
+        count == 0 ? "Perfil alimentario, sin restricciones" : "Perfil alimentario, \(count) restricciones",
+        count == 0 ? "Profilo alimentare, nessuna restrizione" : "Profilo alimentare, \(count) restrizioni"
+    ) }
+    var dietaryProfileStaticLabel: String { t("Dietary profile", "Perfil alimentario", "Profilo alimentare") }
+    var dietaryProfileSaveHint: String { t(
+        "Saves your dietary profile and closes the editor",
+        "Guarda tu perfil alimentario y cierra el editor",
+        "Salva il profilo alimentare e chiude l'editor"
+    ) }
+    var dietaryProfileCloseHint: String { t(
+        "Dismisses the dietary profile editor",
+        "Cierra el editor de perfil alimentario",
+        "Chiude l'editor del profilo alimentare"
+    ) }
+    var closeSettingsHint: String { t(
+        "Closes settings and returns to home",
+        "Cierra ajustes y vuelve al inicio",
+        "Chiude impostazioni e torna alla home"
+    ) }
+    var retakePhotoHint: String { t(
+        "Dismisses this error and returns to camera to try again",
+        "Cierra el error y vuelve a la cámara para intentar de nuevo",
+        "Chiude l'errore e torna alla fotocamera per riprovare"
+    ) }
+    func dishLocationOnMenuHint(_ dishName: String) -> String { t(
+        "Location of \(dishName) on menu. Use two fingers to zoom.",
+        "Ubicación de \(dishName) en el menú. Usa dos dedos para hacer zoom.",
+        "Posizione di \(dishName) nel menu. Usa due dita per lo zoom."
+    ) }
+    func selectLanguageHint(_ language: String) -> String { t(
+        "Selects \(language) as the menu language",
+        "Selecciona \(language) como idioma del menú",
+        "Seleziona \(language) come lingua del menu"
+    ) }
+    var languagePickerHintSettings: String { t(
+        "Opens language picker for menu translations",
+        "Abre selector de idioma para traducciones del menú",
+        "Apre selettore lingua per traduzioni del menu"
+    ) }
+    var zoomPinchHint: String { t(
+        "Use two fingers to zoom in and out",
+        "Usa dos dedos para hacer zoom",
+        "Usa due dita per fare zoom"
+    ) }
+    var knowEatLogoLabel: String { t("KnowEat logo", "Logo de KnowEat", "Logo KnowEat") }
+    func progressPercent(_ value: Int) -> String { t(
+        "\(value) percent",
+        "\(value) por ciento",
+        "\(value) per cento"
+    ) }
+
     // MARK: - Accessibility (contextual)
 
     var analysisNoticeA11y: String { t(
@@ -647,6 +742,12 @@ struct AppStrings {
         "Show your screen or play audio.",
         "Muestra tu pantalla o reproduce el audio.",
         "Mostra lo schermo o riproduci l'audio."
+    ) }
+
+    var staffCardHint: String { t(
+        "Show this to the staff so they can help you",
+        "Enséñale esto al personal para que te ayude",
+        "Mostra questo al personale così ti possono aiutare"
     ) }
 
     // MARK: - Legend (colors & icons)

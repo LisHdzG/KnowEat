@@ -9,6 +9,7 @@ import SwiftUI
 
 struct LanguagePickerOverlay: View {
     @Environment(UserProfileStore.self) private var profileStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Binding var selectedLanguage: String
     let languages: [String]
     @Binding var isPresented: Bool
@@ -43,8 +44,12 @@ struct LanguagePickerOverlay: View {
             }
             .ignoresSafeArea()
             .onAppear {
-                withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+                if reduceMotion {
                     sheetAppeared = true
+                } else {
+                    withAnimation(.spring(response: 0.4, dampingFraction: 0.82)) {
+                        sheetAppeared = true
+                    }
                 }
             }
         }
@@ -109,8 +114,12 @@ struct LanguagePickerOverlay: View {
                    value.predictedEndTranslation.height > sheetHeight * 0.5 {
                     animateDismiss()
                 } else {
-                    withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                    if reduceMotion {
                         dragOffset = 0
+                    } else {
+                        withAnimation(.spring(response: 0.3, dampingFraction: 0.8)) {
+                            dragOffset = 0
+                        }
                     }
                 }
             }
@@ -120,8 +129,12 @@ struct LanguagePickerOverlay: View {
         let isActive = language == selectedLanguage
 
         return Button {
-            withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+            if reduceMotion {
                 selectedLanguage = language
+            } else {
+                withAnimation(.spring(response: 0.3, dampingFraction: 0.75)) {
+                    selectedLanguage = language
+                }
             }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
                 animateDismiss()
@@ -167,7 +180,7 @@ struct LanguagePickerOverlay: View {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("\(language)\(isActive ? ", selected" : "")")
-        .accessibilityHint("Selects \(language) as the menu language")
+        .accessibilityHint(strings.selectLanguageHint(language))
         .accessibilityAddTraits(isActive ? [.isButton, .isSelected] : .isButton)
     }
 
@@ -176,9 +189,14 @@ struct LanguagePickerOverlay: View {
             isPresented = false
             return
         }
-        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+        if reduceMotion {
             sheetAppeared = false
             dragOffset = sheetHeight
+        } else {
+            withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                sheetAppeared = false
+                dragOffset = sheetHeight
+            }
         }
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.35) {
             isPresented = false

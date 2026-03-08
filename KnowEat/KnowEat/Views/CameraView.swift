@@ -17,6 +17,7 @@ private struct GalleryThumbnail: Identifiable {
 
 struct CameraView: View {
     @Environment(UserProfileStore.self) private var profileStore
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     let onPhotosReady: ([UIImage]) -> Void
     let onCancelled: () -> Void
@@ -80,12 +81,20 @@ struct CameraView: View {
                             let newZoom = lastZoomValue * value
                             currentZoom = max(1.0, min(newZoom, CameraManager.shared.maxZoomFactor))
                             CameraManager.shared.setZoom(currentZoom)
-                            withAnimation { showZoomLabel = true }
+                            if reduceMotion {
+                                showZoomLabel = true
+                            } else {
+                                withAnimation { showZoomLabel = true }
+                            }
                         }
                         .onEnded { _ in
                             lastZoomValue = currentZoom
                             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) {
-                                withAnimation { showZoomLabel = false }
+                                if reduceMotion {
+                                    showZoomLabel = false
+                                } else {
+                                    withAnimation { showZoomLabel = false }
+                                }
                             }
                         }
                 )
@@ -123,8 +132,12 @@ struct CameraView: View {
     }
 
     private func dismissTutorial() {
-        withAnimation(.spring(response: 0.7, dampingFraction: 0.8)) {
+        if reduceMotion {
             showTutorial = false
+        } else {
+            withAnimation(.spring(response: 0.7, dampingFraction: 0.8)) {
+                showTutorial = false
+            }
         }
         hasSeenScanTutorial = true
     }

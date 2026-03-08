@@ -13,6 +13,7 @@ struct AnalysisDisclaimerView: View {
 
     @Environment(UserProfileStore.self) private var profileStore
     @Environment(\.openURL) private var openURL
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var hasAccepted = false
 
     private var strings: AppStrings {
@@ -148,7 +149,7 @@ struct AnalysisDisclaimerView: View {
                     )
             }
             .disabled(!hasAccepted)
-            .animation(.easeInOut(duration: 0.25), value: hasAccepted)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.25), value: hasAccepted)
             .accessibilityLabel(isPrivacyUpdate ? strings.acceptUpdatedPrivacyNotice : strings.continueButton)
             .accessibilityHint(hasAccepted ? strings.continuesToApp : strings.mustAcceptFirst)
             
@@ -172,8 +173,12 @@ struct AnalysisDisclaimerView: View {
 
     private var acceptanceCard: some View {
         Button {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+            if reduceMotion {
                 hasAccepted.toggle()
+            } else {
+                withAnimation(.spring(response: 0.35, dampingFraction: 0.65)) {
+                    hasAccepted.toggle()
+                }
             }
         } label: {
             HStack(spacing: 16) {

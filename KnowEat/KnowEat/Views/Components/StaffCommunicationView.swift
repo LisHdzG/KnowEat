@@ -60,27 +60,16 @@ struct StaffCommunicationView: View {
     // MARK: - Sections
 
     private var instructionSection: some View {
-        HStack(alignment: .top, spacing: 12) {
-            Image(systemName: "hand.wave.fill")
-                .font(.system(size: 22))
+        HStack(spacing: 8) {
+            Image(systemName: "lightbulb.fill")
+                .font(.system(size: 14))
                 .foregroundStyle(Color("PrimaryOrange"))
                 .symbolRenderingMode(.hierarchical)
-
-            VStack(alignment: .leading, spacing: 4) {
-                Text(strings.staffCardTitle)
-                    .font(.interSemiBold(size: 17))
-                Text(strings.staffCardTipFriendly)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineSpacing(2)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+            Text(strings.staffCardHint)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
         }
-        .padding(16)
-        .background(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color("PrimaryOrange").opacity(0.08))
-        )
+        .padding(.top, 20)
     }
 
     private var menuLanguageCard: some View {
@@ -106,6 +95,7 @@ struct StaffCommunicationView: View {
                     .background(.white.opacity(0.2), in: Capsule())
                 }
                 .accessibilityLabel(tts.isSpeaking ? strings.stopAudio : strings.playAudio)
+                .accessibilityAddTraits(.startsMediaSession)
             }
 
             Text(menuMessage)
@@ -122,7 +112,7 @@ struct StaffCommunicationView: View {
     }
 
     private var userLanguageSection: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        VStack(alignment: .leading, spacing: 6) {
             Text(strings.yourLanguageLabel)
                 .font(.interMedium(size: 12))
                 .foregroundStyle(.tertiary)
@@ -133,7 +123,8 @@ struct StaffCommunicationView: View {
                 .lineSpacing(3)
                 .textSelection(.enabled)
         }
-        .padding(16)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 12, style: .continuous)
