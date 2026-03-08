@@ -22,10 +22,10 @@ struct MenuResultView: View {
     @State private var showNamePrompt = false
     @State private var alertNameInput = ""
     @State private var searchText = ""
-    @State private var showDisclaimer = true
     @State private var displayMenu: ScannedMenu?
     @State private var displayDishes: [AnalyzedDish]?
     @State private var showDietaryEditor = false
+    @State private var showLegend = false
     @State private var currentFilterGroups: [DietaryFilterGroup]?
 
     private var strings: AppStrings {
@@ -73,10 +73,9 @@ struct MenuResultView: View {
                     headerSection
                         .padding(.horizontal, 24)
 
-                    if showDisclaimer {
-                        disclaimerBanner
-                            .padding(.horizontal, 24)
-                    }
+                    legendExpandableSection
+                        .padding(.horizontal, 24)
+                        .padding(.top, 4)
 
                     ActiveFiltersCard(
                         groups: currentFilterGroups ?? filterGroups,
@@ -169,42 +168,68 @@ struct MenuResultView: View {
         }
     }
 
-    // MARK: - Disclaimer
+    // MARK: - Legend Desplegable
 
-    private var disclaimerBanner: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "apple.intelligence")
-                .font(.system(size: 18))
-                .foregroundStyle(.secondary)
-                .accessibilityHidden(true)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(strings.analyzedOnDevice)
-                    .font(.system(size: 12, weight: .semibold))
-                    .foregroundStyle(.secondary)
-
-                Text(strings.confirmWithStaff)
-                    .font(.system(size: 11))
-                    .foregroundStyle(.tertiary)
-            }
-            .accessibilityElement(children: .combine)
-            .accessibilityLabel(strings.analysisNoticeA11y)
-
-            Spacer()
-
+    private var legendExpandableSection: some View {
+        VStack(alignment: .leading, spacing: 0) {
             Button {
-                withAnimation(.easeOut(duration: 0.2)) { showDisclaimer = false }
+                withAnimation(.easeOut(duration: 0.2)) {
+                    showLegend.toggle()
+                }
             } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.system(size: 18))
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.quaternary)
+                HStack(spacing: 6) {
+                    Image(systemName: "circle.hexagongrid.fill")
+                        .font(.system(size: 12))
+                    Text(strings.legendButton)
+                        .font(.interRegular(size: 13))
+                    Spacer()
+                    Image(systemName: showLegend ? "chevron.up" : "chevron.down")
+                        .font(.system(size: 10, weight: .medium))
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .contentShape(Rectangle())
             }
-            .accessibilityLabel(strings.dismissDisclaimer)
+            .buttonStyle(.plain)
+            .tint(.secondary)
+            .background(Color(.secondarySystemGroupedBackground).opacity(0.8), in: RoundedRectangle(cornerRadius: 8, style: .continuous))
+            .accessibilityLabel(showLegend ? strings.legendTitle : "\(strings.legendButton), \(strings.legendTitle)")
+            .accessibilityHint(showLegend ? "Collapses the color guide" : "Expands the color guide")
+
+            if showLegend {
+                legendCardContent
+                    .padding(.top, 8)
+                    .transition(.opacity.animation(.easeOut(duration: 0.2)))
+            }
         }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color(.secondarySystemGroupedBackground), in: RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var legendCardContent: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            legendRow(color: .green, icon: "checkmark.circle.fill", text: strings.legendSafe)
+            legendRow(color: .orange, icon: "info.circle.fill", text: strings.legendAdvisory)
+            legendRow(color: .red, icon: "exclamationmark.triangle.fill", text: strings.legendDanger)
+        }
+        .padding(12)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 10, style: .continuous)
+                .fill(Color(.tertiarySystemGroupedBackground.withAlphaComponent(0.5)))
+        )
+    }
+
+    private func legendRow(color: Color, icon: String, text: String) -> some View {
+        HStack(alignment: .center, spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 14))
+                .foregroundStyle(color)
+            Text(text)
+                .font(.interRegular(size: 12))
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.leading)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     // MARK: - Dish List
@@ -217,7 +242,7 @@ struct MenuResultView: View {
                     .padding(.top, 32)
             } else {
                 ForEach(filteredDishes) { item in
-                    DishCard(item: item, allergens: allergens, strings: strings, menu: activeMenu)
+                    DishCard(item: item, allergens: allergens, strings: strings, menu: activeMenu, onShowLegend: { showLegend = true })
                 }
             }
         }
@@ -255,6 +280,7 @@ private struct DishCard: View {
     let allergens: [Allergen]
     let strings: AppStrings
     let menu: ScannedMenu
+    var onShowLegend: (() -> Void)? = nil
 
     @State private var showLocation = false
 
@@ -282,34 +308,23 @@ private struct DishCard: View {
         strings.localizedAllergenName(id)
     }
 
-    private var riskIcon: String {
-        if item.isSafe { return "checkmark.circle.fill" }
-        if item.isDanger { return "exclamationmark.triangle.fill" }
-        return "info.circle.fill"
-    }
-
     private let iconWidth: CGFloat = 16
     private let rowSpacing: CGFloat = 8
 
     var body: some View {
         HStack(alignment: .top, spacing: 0) {
-            // Columna 1: Indicador de estado
-            HStack(spacing: 6) {
-                RoundedRectangle(cornerRadius: 3)
-                    .fill(accentColor)
-                    .frame(width: 5)
-                Image(systemName: riskIcon)
-                    .font(.system(size: 11, weight: .medium))
-                    .foregroundStyle(accentColor)
-            }
-            .frame(width: 24)
-            .padding(.top, 14)
+            // Columna 1: Solo barra de color (sin icono)
+            RoundedRectangle(cornerRadius: 3)
+                .fill(accentColor)
+                .frame(width: 5)
+                .padding(.top, 14)
 
             // Columna 2: Contenido principal (alineación consistente)
             VStack(alignment: .leading, spacing: rowSpacing) {
                 // Nombre del plato
                 Text(item.dish.name)
                     .font(.interSemiBold(size: 16))
+                    .lineLimit(nil)
 
                 if let translated = item.dish.translatedName, !translated.isEmpty {
                     Text(translated)
@@ -336,7 +351,8 @@ private struct DishCard: View {
                                 .foregroundStyle(.tertiary)
                             ingredientsText
                                 .font(.interRegular(size: 12))
-                                .lineLimit(3)
+                                .lineLimit(nil)
+                                .fixedSize(horizontal: false, vertical: true)
                         }
                     }
                 } else if isUnrecognizedDish {
@@ -364,48 +380,35 @@ private struct DishCard: View {
                 if !item.isSafe {
                     Divider()
                         .padding(.vertical, 2)
-                    HStack(alignment: .top, spacing: 6) {
+                    HStack(alignment: .top, spacing: 8) {
                         Image(systemName: item.isDanger ? "exclamationmark.triangle.fill" : "info.circle.fill")
-                            .font(.system(size: 10))
+                            .font(.system(size: 14))
                             .foregroundStyle(item.isDanger ? .red : .orange)
-                            .frame(width: iconWidth, alignment: .leading)
+                            .frame(width: 20, alignment: .leading)
                         VStack(alignment: .leading, spacing: 4) {
                             if item.isDanger {
                                 Text(dangerSummary)
                                     .font(.system(size: 11, weight: .medium))
                                     .foregroundStyle(.red)
+                                    .lineLimit(nil)
                             }
                             if item.isAdvisory {
                                 Text(advisorySummary)
                                     .font(.system(size: 11, weight: .medium))
                                     .foregroundStyle(.orange)
+                                    .lineLimit(nil)
                             }
                         }
                     }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.leading, 12)
-            .padding(.trailing, canShowLocation ? 4 : 0)
+            .padding(.leading, 16)
+            .padding(.trailing, 16)
             .padding(.vertical, 12)
-
-            // Columna 3: Botón ojito (posición fija)
-            if canShowLocation {
-                Button {
-                    showLocation = true
-                } label: {
-                    Image(systemName: "eye")
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(Color("PrimaryOrange").opacity(0.8))
-                        .frame(width: 36, height: 36)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .padding(.top, 10)
-            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-        .padding(.horizontal, 12)
+        .padding(.horizontal, 14)
         .padding(.vertical, 8)
         .background(
             RoundedRectangle(cornerRadius: 14)
@@ -416,6 +419,8 @@ private struct DishCard: View {
         .onTapGesture {
             if canShowLocation {
                 showLocation = true
+            } else {
+                onShowLegend?()
             }
         }
         .accessibilityElement(children: .combine)

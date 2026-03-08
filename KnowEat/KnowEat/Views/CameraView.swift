@@ -36,6 +36,9 @@ struct CameraView: View {
     @State private var isCropMode = false
     @State private var isCapturing = false
 
+    @AppStorage("hasSeenScanTutorial") private var hasSeenScanTutorial = false
+    @State private var showTutorial = false
+
     private var strings: AppStrings {
         AppStrings(profileStore.profile?.nativeLanguage ?? "English")
     }
@@ -55,6 +58,10 @@ struct CameraView: View {
             currentZoom = 1.0
             lastZoomValue = 1.0
             CameraManager.shared.setZoom(1.0)
+
+            if !hasSeenScanTutorial {
+                showTutorial = true
+            }
         }
         .onChange(of: galleryItems) { _, items in
             loadFromPicker(items)
@@ -105,7 +112,21 @@ struct CameraView: View {
 
                 shutterBar
             }
+
+            if showTutorial {
+                ScanTutorialOverlay(strings: strings) {
+                    dismissTutorial()
+                }
+                .transition(.opacity)
+            }
         }
+    }
+
+    private func dismissTutorial() {
+        withAnimation(.spring(response: 0.7, dampingFraction: 0.8)) {
+            showTutorial = false
+        }
+        hasSeenScanTutorial = true
     }
 
     private var zoomIndicator: some View {
@@ -664,7 +685,14 @@ final class CameraManager: NSObject {
     }
 
     static func cropToPreviewAspect(_ image: UIImage) -> UIImage {
-        let screenSize = UIScreen.main.bounds.size
+        let screenSize: CGSize = {
+            guard let scene = UIApplication.shared.connectedScenes
+                .compactMap({ $0 as? UIWindowScene })
+                .first(where: { $0.activationState == .foregroundActive }) else {
+                return CGSize(width: 390, height: 844)
+            }
+            return scene.screen.bounds.size
+        }()
         let targetRatio = screenSize.height / screenSize.width
         let imageRatio = image.size.height / image.size.width
 
@@ -1321,6 +1349,192 @@ struct PhotoCropView: View {
                 .overlay(Divider(), alignment: .top)
                 .ignoresSafeArea(edges: .bottom)
         )
+    }
+}
+
+// MARK: - Scan Tutorial Overlay
+
+private struct ScanTutorialOverlay: View {
+    let strings: AppStrings
+    let onDismiss: () -> Void
+
+    @State private var appeared = false
+    @State private var tipVisible: [Bool] = Array(repeating: false, count: 4)
+    @State private var noteVisible = false
+    @State private var buttonVisible = false
+    @State private var dismissing = false
+    @State private var pulseButton = false
+
+    private let tips: [(icon: String, keyPath: KeyPath<AppStrings, String>)] = [
+        ("doc.text.viewfinder", \AppStrings.scanTutorialTip1),
+        ("iphone", \AppStrings.scanTutorialTip2),
+        ("list.bullet.rectangle", \AppStrings.scanTutorialTip3),
+        ("sun.max", \AppStrings.scanTutorialTip4),
+    ]
+
+    var body: some View {
+        ZStack {
+            Rectangle()
+                .fill(.ultraThinMaterial)
+                .ignoresSafeArea()
+                .opacity(dismissing ? 0 : 1)
+
+            Color.black.opacity(dismissing ? 0 : 0.35)
+                .ignoresSafeArea()
+
+            if dismissing {
+                viewfinderFlash
+            }
+
+            VStack(spacing: 28) {
+                Spacer()
+
+                titleSection
+                tipsSection
+                noteSection
+                actionButton
+
+                Spacer()
+                Spacer()
+            }
+            .padding(.horizontal, 28)
+            .opacity(dismissing ? 0 : 1)
+            .scaleEffect(dismissing ? 0.85 : 1)
+        }
+        .onAppear { animateIn() }
+    }
+
+    private var titleSection: some View {
+        VStack(spacing: 12) {
+            Image(systemName: "viewfinder")
+                .font(.system(size: 44, weight: .light))
+                .foregroundStyle(Color("PrimaryOrange"))
+                .symbolEffect(.pulse, options: .repeating, value: appeared)
+
+            Text(strings.scanTutorialTitle)
+                .font(.system(size: 26, weight: .bold, design: .rounded))
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+        }
+        .opacity(appeared ? 1 : 0)
+        .offset(y: appeared ? 0 : 20)
+    }
+
+    private var tipsSection: some View {
+        VStack(spacing: 14) {
+            ForEach(Array(tips.enumerated()), id: \.offset) { index, tip in
+                tipRow(icon: tip.icon, text: strings[keyPath: tip.keyPath], visible: tipVisible[index])
+            }
+        }
+    }
+
+    private func tipRow(icon: String, text: String, visible: Bool) -> some View {
+        HStack(spacing: 14) {
+            Image(systemName: icon)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(Color("PrimaryOrange"))
+                .frame(width: 36, height: 36)
+                .background(.white.opacity(0.12), in: RoundedRectangle(cornerRadius: 10))
+
+            Text(text)
+                .font(.system(size: 15, weight: .medium))
+                .foregroundStyle(.white.opacity(0.92))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(.horizontal, 16)
+        .padding(.vertical, 12)
+        .background(.white.opacity(0.08), in: RoundedRectangle(cornerRadius: 14))
+        .opacity(visible ? 1 : 0)
+        .offset(x: visible ? 0 : -30)
+    }
+
+    private var noteSection: some View {
+        Text(strings.scanTutorialNote)
+            .font(.system(size: 13, weight: .regular, design: .rounded))
+            .foregroundStyle(.white.opacity(0.6))
+            .multilineTextAlignment(.center)
+            .padding(.horizontal, 8)
+            .opacity(noteVisible ? 1 : 0)
+            .offset(y: noteVisible ? 0 : 10)
+    }
+
+    private var actionButton: some View {
+        Button(action: {
+            withAnimation(.easeInOut(duration: 0.5)) {
+                dismissing = true
+            }
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.55) {
+                onDismiss()
+            }
+        }) {
+            HStack(spacing: 10) {
+                Text(strings.scanTutorialAction)
+                    .font(.system(size: 18, weight: .bold, design: .rounded))
+
+                Image(systemName: "camera.viewfinder")
+                    .font(.system(size: 18, weight: .semibold))
+            }
+            .foregroundStyle(.white)
+            .frame(maxWidth: .infinity)
+            .frame(height: 56)
+            .background(
+                ZStack {
+                    Color("PrimaryOrange")
+                    RoundedRectangle(cornerRadius: 16)
+                        .fill(.white.opacity(0.15))
+                        .scaleEffect(pulseButton ? 1.04 : 1.0)
+                        .opacity(pulseButton ? 0 : 0.4)
+                }
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .shadow(color: Color("PrimaryOrange").opacity(0.4), radius: 12, y: 4)
+        }
+        .opacity(buttonVisible ? 1 : 0)
+        .scaleEffect(buttonVisible ? 1 : 0.8)
+        .onAppear {
+            withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+                pulseButton = true
+            }
+        }
+    }
+
+    private var viewfinderFlash: some View {
+        GeometryReader { geo in
+            let w = geo.size.width * 0.78
+            let h = w * 1.25
+            let x = (geo.size.width - w) / 2
+            let y = (geo.size.height - h) / 2 - 60
+
+            RoundedRectangle(cornerRadius: 12)
+                .strokeBorder(.white.opacity(0.6), lineWidth: 2)
+                .frame(width: w, height: h)
+                .position(x: x + w / 2, y: y + h / 2)
+                .opacity(dismissing ? 1 : 0)
+                .scaleEffect(dismissing ? 1 : 1.15)
+                .animation(.easeOut(duration: 0.4), value: dismissing)
+        }
+        .allowsHitTesting(false)
+    }
+
+    private func animateIn() {
+        withAnimation(.easeOut(duration: 0.5)) {
+            appeared = true
+        }
+
+        for i in tips.indices {
+            withAnimation(.spring(response: 0.5, dampingFraction: 0.75).delay(0.3 + Double(i) * 0.12)) {
+                tipVisible[i] = true
+            }
+        }
+
+        withAnimation(.easeOut(duration: 0.4).delay(0.3 + Double(tips.count) * 0.12 + 0.1)) {
+            noteVisible = true
+        }
+
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.7).delay(0.3 + Double(tips.count) * 0.12 + 0.25)) {
+            buttonVisible = true
+        }
     }
 }
 

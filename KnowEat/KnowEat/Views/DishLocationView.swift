@@ -12,8 +12,8 @@ struct DishLocationView: View {
     let strings: AppStrings
 
     @Environment(\.dismiss) private var dismiss
-    @State private var scale: CGFloat = 1.0
-    @State private var lastScale: CGFloat = 1.0
+    @State private var scale: CGFloat = 1.35
+    @State private var lastScale: CGFloat = 1.35
     @State private var didAppear = false
 
     private var dish: Dish { item.dish }

@@ -589,4 +589,17 @@ struct AppStrings {
         "Guarda este menú en tu lista de menús recientes",
         "Salva questo menu nella lista dei menu recenti"
     ) }
+
+    // MARK: - Legend (colors & icons)
+
+    var legendTitle: String { t("What do the colors mean?", "¿Qué significa cada color?", "Cosa significano i colori?") }
+    var legendSubtitle: String { t(
+        "Each dish shows a bar and icon indicating safety for your diet.",
+        "Cada plato muestra una barra e icono según la seguridad para tu dieta.",
+        "Ogni piatto mostra una barra e un'icona per la sicurezza della tua dieta."
+    ) }
+    var legendSafe: String { t("Safe for your diet — no allergens detected", "Seguro para tu dieta — no se detectaron alérgenos", "Sicuro per la tua dieta — nessun allergene rilevato") }
+    var legendAdvisory: String { t("Check with staff — may contain allergens or ingredients to avoid", "Consulta al personal — puede contener alérgenos o ingredientes a evitar", "Chiedi al personale — può contenere allergeni o ingredienti da evitare") }
+    var legendDanger: String { t("Contains allergens — avoid or confirm with staff", "Contiene alérgenos — evita o confirma con el personal", "Contiene allergeni — evita o conferma con il personale") }
+    var legendButton: String { t("Color guide", "Guía de colores", "Guida colori") }
 }

@@ -149,17 +149,17 @@ final class MenuScanViewModel {
                         ocrText: ocrResult.text,
                         userLanguage: nativeLang,
                         onPhaseChange: { [weak self] phase in
+                            guard let viewModel = self else { return }
                             Task { @MainActor in
-                                guard let self else { return }
                                 switch phase {
                                 case .extracting:
                                     break
                                 case .translating(let current, let total):
-                                    self.stopProgressDrift()
+                                    viewModel.stopProgressDrift()
                                     let base = 0.70
                                     let translationRange = 0.15
-                                    self.analysisProgress = base + translationRange * Double(current) / Double(total)
-                                    self.analysisStage = currentStrings.translatingDish(current, total)
+                                    viewModel.analysisProgress = base + translationRange * Double(current) / Double(total)
+                                    viewModel.analysisStage = currentStrings.translatingDish(current, total)
                                 }
                             }
                         }
