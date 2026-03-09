@@ -278,6 +278,7 @@ private struct DishCard: View {
     }
 
     private var accentColor: Color {
+        if !hasExplicitIngredients { return .gray.opacity(0.45) }
         if item.isSafe { return .green }
         if item.isDanger { return .red }
         return .orange
@@ -362,34 +363,36 @@ private struct DishCard: View {
 
                 Divider()
                     .padding(.vertical, 2)
-                if item.isSafe {
-                    HStack(alignment: .center, spacing: 8) {
-                        Image(systemName: "checkmark.circle.fill")
-                            .font(.system(size: 14))
-                            .foregroundStyle(.green)
-                        Text(strings.dishSafeMessage)
-                            .font(.system(size: 11, weight: .medium))
-                            .foregroundStyle(.green)
-                            .lineLimit(nil)
-                    }
-                } else {
-                    HStack(alignment: .top, spacing: 8) {
-                        Image(systemName: item.isDanger ? "exclamationmark.triangle.fill" : "info.circle.fill")
-                            .font(.system(size: 14))
-                            .foregroundStyle(item.isDanger ? .red : .orange)
-                            .frame(width: 20, alignment: .leading)
-                        VStack(alignment: .leading, spacing: 4) {
-                            if item.isDanger {
-                                Text(dangerSummary)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(.red)
-                                    .lineLimit(nil)
-                            }
-                            if item.isAdvisory {
-                                Text(advisorySummary)
-                                    .font(.system(size: 11, weight: .medium))
-                                    .foregroundStyle(.orange)
-                                    .lineLimit(nil)
+                if hasExplicitIngredients {
+                    if item.isSafe {
+                        HStack(alignment: .center, spacing: 8) {
+                            Image(systemName: "checkmark.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundStyle(.green)
+                            Text(strings.dishSafeMessage)
+                                .font(.system(size: 11, weight: .medium))
+                                .foregroundStyle(.green)
+                                .lineLimit(nil)
+                        }
+                    } else {
+                        HStack(alignment: .top, spacing: 8) {
+                            Image(systemName: item.isDanger ? "exclamationmark.triangle.fill" : "info.circle.fill")
+                                .font(.system(size: 14))
+                                .foregroundStyle(item.isDanger ? .red : .orange)
+                                .frame(width: 20, alignment: .leading)
+                            VStack(alignment: .leading, spacing: 4) {
+                                if item.isDanger {
+                                    Text(dangerSummary)
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(.red)
+                                        .lineLimit(nil)
+                                }
+                                if item.isAdvisory {
+                                    Text(advisorySummary)
+                                        .font(.system(size: 11, weight: .medium))
+                                        .foregroundStyle(.orange)
+                                        .lineLimit(nil)
+                                }
                             }
                         }
                     }
@@ -433,12 +436,14 @@ private struct DishCard: View {
         } else if !hasExplicitIngredients {
             label += ". \(strings.noIngredientsDetected)"
         }
-        if item.isSafe {
-            label += ", safe"
-        } else if item.isDanger {
-            label += ", \(dangerSummary)"
-        } else if item.isAdvisory {
-            label += ", \(advisorySummary)"
+        if hasExplicitIngredients {
+            if item.isSafe {
+                label += ", safe"
+            } else if item.isDanger {
+                label += ", \(dangerSummary)"
+            } else if item.isAdvisory {
+                label += ", \(advisorySummary)"
+            }
         }
         return label
     }
