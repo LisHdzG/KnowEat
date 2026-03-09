@@ -98,6 +98,10 @@ final class OCRService {
             request.automaticallyDetectsLanguage = true
             request.revision = VNRecognizeTextRequest.currentRevision
 
+            if let supported = try? request.supportedRecognitionLanguages() {
+                request.recognitionLanguages = supported
+            }
+
             let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
             do {
                 try handler.perform([request])

@@ -133,7 +133,7 @@ final class MenuScanViewModel {
 
                 analysisProgress = 0.25
                 analysisStage = strings.validatingContent
-                try MenuValidator.validate(ocrResult.text)
+                try MenuValidator.validate(ocrResult.text, regions: ocrResult.regions)
 
                 analysisProgress = 0.40
                 analysisStage = strings.analyzingDishes
