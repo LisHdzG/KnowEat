@@ -412,18 +412,6 @@ struct CameraView: View {
             if !isCropMode {
                 HStack(spacing: 12) {
                     Button {
-                        isTorchOn.toggle()
-                        CameraManager.shared.setTorch(isTorchOn)
-                    } label: {
-                        Image(systemName: isTorchOn ? "bolt.fill" : "bolt.slash.fill")
-                            .font(.system(size: 15, weight: .semibold))
-                            .foregroundStyle(isTorchOn ? .yellow : .white)
-                            .frame(width: 40, height: 40)
-                            .background(.ultraThinMaterial.opacity(0.9), in: Circle())
-                    }
-                    .accessibilityLabel(isTorchOn ? strings.flashOn : strings.flashOff)
-
-                    Button {
                         withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) { isCropMode = true }
                     } label: {
                         Image(systemName: "crop")
@@ -433,6 +421,27 @@ struct CameraView: View {
                             .background(.ultraThinMaterial.opacity(0.9), in: Circle())
                     }
                     .accessibilityLabel(strings.cropPhoto)
+
+                    Button {
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.85)) {
+                            guard previewIndex < capturedPhotos.count else { return }
+                            capturedPhotos.remove(at: previewIndex)
+                            if capturedPhotos.isEmpty {
+                                CameraManager.shared.setTorch(false)
+                                isTorchOn = false
+                                showPreview = false
+                            } else {
+                                previewIndex = min(previewIndex, capturedPhotos.count - 1)
+                            }
+                        }
+                    } label: {
+                        Image(systemName: "trash")
+                            .font(.system(size: 15, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .frame(width: 40, height: 40)
+                            .background(.ultraThinMaterial.opacity(0.9), in: Circle())
+                    }
+                    .accessibilityLabel(strings.deletePhoto)
                 }
             }
         }

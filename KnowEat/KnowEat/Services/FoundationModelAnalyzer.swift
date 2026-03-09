@@ -80,13 +80,13 @@ struct GeneratedDish {
 
 @Generable
 struct DishTranslation {
-    @Guide(description: "The dish name translated to the target language.")
+    @Guide(description: "Dish name translated to target language. Keep unchanged if it is a universally recognized proper noun (e.g. Pizza Margherita, Tacos, Sushi, Ramen, Carbonara).")
     var translatedName: String
 
     @Guide(description: "The dish description translated to the target language.")
     var translatedDescription: String
 
-    @Guide(description: "Each ingredient translated to the target language, same count and order as input.")
+    @Guide(description: "Each ingredient translated to target language. Same count and order as input. Do not add or remove.")
     var translatedIngredients: [String]
 }
 
@@ -242,9 +242,18 @@ final class FoundationModelAnalyzer {
     ) async -> [Dish] {
         let session = LanguageModelSession(
             instructions: """
-            You are a food translator. Translate dish names, descriptions, \
-            and ingredients to \(language). Use proper culinary terms in \(language). \
-            Translate only — do not add, remove, or explain.
+            SYSTEM: You are an expert culinary translator. Your ONLY task is to translate \
+            the provided dish information strictly into \(language).
+
+            TRANSLATION RULES:
+            1. Translate the dishDescription and every single item in the ingredients array into \(language).
+            2. For the translatedName: If the original dish name is a universally recognized proper noun \
+            (e.g. Pizza Margherita, Tacos, Sushi, Ramen, Carbonara, Tiramisu), DO NOT translate it. \
+            Otherwise, translate it to \(language).
+            3. Keep the exact same number of ingredients. Do not add or remove any information.
+            4. Maintain a natural, appetizing culinary tone in \(language).
+
+            OUTPUT FORMAT: Strict JSON with translatedName, translatedDescription, translatedIngredients.
             """
         )
 
@@ -254,7 +263,6 @@ final class FoundationModelAnalyzer {
         for (index, dish) in dishes.enumerated() {
             onPhaseChange?(.translating(current: index + 1, total: total))
 
-            // Translate FROM English (englishName / dishDescription already in English)
             let sourceName = dish.englishName ?? dish.name
             let sourceDesc = dish.description ?? ""
             let ingredientList = dish.ingredients.isEmpty
@@ -262,8 +270,10 @@ final class FoundationModelAnalyzer {
                 : dish.ingredients.joined(separator: ", ")
 
             let prompt = """
-            Translate to \(language):
-            name: \(sourceName) | description: \(sourceDesc) | ingredients: \(ingredientList)
+            INPUT DISH DATA TO TRANSLATE:
+            - Original Name: \(sourceName)
+            - Description to translate: \(sourceDesc)
+            - Ingredients to translate: \(ingredientList)
             """
 
             do {

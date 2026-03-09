@@ -289,10 +289,8 @@ private struct DishCard: View {
                 if let translated = item.dish.translatedName, !translated.isEmpty {
                     Text(translated)
                         .font(.interRegular(size: 13))
-                        .foregroundStyle(Color("PrimaryOrange").opacity(0.8))
-                }
-
-                if let description = item.dish.description, !description.isEmpty {
+                        .foregroundStyle(.secondary)
+                } else if let description = item.dish.description, !description.isEmpty {
                     Text(description)
                         .font(.interRegular(size: 13))
                         .foregroundStyle(.secondary)
