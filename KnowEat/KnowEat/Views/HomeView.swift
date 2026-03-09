@@ -129,7 +129,13 @@ struct HomeView: View {
                                 selectedMenu = nil
                                 scanVM.dismissResults()
                             } : nil,
-                            onDismiss: { },
+                            onDismiss: {
+                                let id = selectedMenu?.id
+                                selectedMenu = nil
+                                if id == scanVM.scannedMenu?.id {
+                                    scanVM.dismissResults()
+                                }
+                            },
                             isPushed: true
                         )
                     }
@@ -137,6 +143,15 @@ struct HomeView: View {
                 .fullScreenCover(isPresented: $showSettings) {
                     NavigationStack {
                         SettingsView()
+                    }
+                }
+                .onReceive(NotificationCenter.default.publisher(for: .knowEatOpenMenuFromNotification)) { notification in
+                    guard let menuIdString = notification.userInfo?[NotificationPayload.menuIdKey] as? String,
+                          let menuId = UUID(uuidString: menuIdString) else { return }
+                    if scanVM.scannedMenu?.id == menuId {
+                        selectedMenu = scanVM.scannedMenu
+                    } else if let menu = menuStore.menus.first(where: { $0.id == menuId }) {
+                        selectedMenu = menu
                     }
                 }
                 .alert(strings.cameraAccessRequired, isPresented: $scanVM.showPermissionDeniedAlert) {

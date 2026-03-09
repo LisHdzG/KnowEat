@@ -42,6 +42,21 @@ struct LoaderView: View {
 
     var body: some View {
         VStack(spacing: 28) {
+            HStack(spacing: 0) {
+                Spacer(minLength: 0)
+                HStack(alignment: .top, spacing: 10) {
+                    Image(systemName: "lightbulb.fill")
+                        .font(.system(size: 18))
+                        .foregroundStyle(Color("PrimaryOrange").opacity(0.85))
+                    Text(strings.loaderBackgroundHint)
+                        .font(.interRegular(size: 13))
+                        .foregroundStyle(Color("SecondaryGray").opacity(0.5))
+                        .multilineTextAlignment(.center)
+                }
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 28)
+
             GIFImageView(name: selectedGIF, animate: !reduceMotion)
                 .frame(width: 180, height: 180)
                 .accessibilityHidden(true)

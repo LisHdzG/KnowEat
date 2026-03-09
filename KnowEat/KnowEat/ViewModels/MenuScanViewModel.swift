@@ -7,6 +7,11 @@
 
 import SwiftUI
 import AVFoundation
+import UserNotifications
+
+enum NotificationPayload {
+    static let menuIdKey = "menuId"
+}
 
 @Observable
 final class MenuScanViewModel {
@@ -69,15 +74,23 @@ final class MenuScanViewModel {
         analysisProgress = 0.05
         analysisStage = strings.preparingImages
         isShowingScanner = false
+        requestNotificationPermissionIfNeeded()
+        var backgroundTaskID: UIBackgroundTaskIdentifier = .invalid
+        backgroundTaskID = UIApplication.shared.beginBackgroundTask {
+            if backgroundTaskID != .invalid {
+                UIApplication.shared.endBackgroundTask(backgroundTaskID)
+                backgroundTaskID = .invalid
+            }
+        }
         // Defer analysis to next run loop so the loader is visible immediately
         DispatchQueue.main.async { [weak self] in
-            self?.performAnalysis(images: images, profile: profile)
+            self?.performAnalysis(images: images, profile: profile, backgroundTaskID: backgroundTaskID)
         }
     }
 
     func retry() {
         guard let profile = lastProfile, !lastImages.isEmpty else { return }
-        performAnalysis(images: lastImages, profile: profile)
+        performAnalysis(images: lastImages, profile: profile, backgroundTaskID: .invalid)
     }
 
     func retakePhoto() {
@@ -118,7 +131,37 @@ final class MenuScanViewModel {
         driftTask = nil
     }
 
-    private func performAnalysis(images: [UIImage], profile: UserProfile) {
+    private func requestNotificationPermissionIfNeeded() {
+        let center = UNUserNotificationCenter.current()
+        center.getNotificationSettings { settings in
+            guard settings.authorizationStatus == .notDetermined else { return }
+            center.requestAuthorization(options: [.alert, .sound, .badge]) { _, _ in }
+        }
+    }
+
+    @MainActor
+    private static func sendMenuReadyNotificationIfNeeded(menuId: UUID, strings: AppStrings) {
+        guard UIApplication.shared.applicationState != .active else { return }
+        let content = UNMutableNotificationContent()
+        content.body = strings.menuReadyNotificationBody
+        content.sound = .default
+        content.userInfo = [NotificationPayload.menuIdKey: menuId.uuidString]
+        let request = UNNotificationRequest(
+            identifier: "knoweat.menu.ready.\(menuId.uuidString)",
+            content: content,
+            trigger: nil
+        )
+        UNUserNotificationCenter.current().add(request)
+    }
+
+    private func endBackgroundTask(_ taskID: UIBackgroundTaskIdentifier) {
+        guard taskID != .invalid else { return }
+        Task { @MainActor in
+            UIApplication.shared.endBackgroundTask(taskID)
+        }
+    }
+
+    private func performAnalysis(images: [UIImage], profile: UserProfile, backgroundTaskID: UIBackgroundTaskIdentifier) {
         isAnalyzing = true
         errorMessage = nil
         canRetry = false
@@ -194,12 +237,15 @@ final class MenuScanViewModel {
                 self.analyzedDishes = analyzed
                 self.isAnalyzing = false
                 self.showResults = true
+                await Self.sendMenuReadyNotificationIfNeeded(menuId: menu.id, strings: self.strings)
+                self.endBackgroundTask(backgroundTaskID)
             } catch let validationError as MenuValidationError {
                 stopProgressDrift()
                 self.isAnalyzing = false
                 self.errorTitle = self.strings.notAMenuTitle
                 self.errorMessage = validationError.localizedDescription
                 self.canRetry = true
+                self.endBackgroundTask(backgroundTaskID)
             } catch FoundationModelError.notAMenu {
                 stopProgressDrift()
                 analysisProgress = 0.50
@@ -211,6 +257,7 @@ final class MenuScanViewModel {
                         self.errorTitle = self.strings.notAMenuTitle
                         self.errorMessage = self.strings.notAMenuMessage
                         self.canRetry = true
+                        self.endBackgroundTask(backgroundTaskID)
                     } else {
                         let fileNames = ImageStorageService.shared.save(images: images, forMenuId: menu.id)
                         menu.imageFileNames = fileNames
@@ -227,12 +274,15 @@ final class MenuScanViewModel {
                         self.analyzedDishes = analyzed
                         self.isAnalyzing = false
                         self.showResults = true
+                        await Self.sendMenuReadyNotificationIfNeeded(menuId: menu.id, strings: self.strings)
+                        self.endBackgroundTask(backgroundTaskID)
                     }
                 } else {
                     self.isAnalyzing = false
                     self.errorTitle = self.strings.notAMenuTitle
                     self.errorMessage = self.strings.notAMenuMessage
                     self.canRetry = true
+                    self.endBackgroundTask(backgroundTaskID)
                 }
             } catch is FoundationModelError {
                 stopProgressDrift()
@@ -245,6 +295,7 @@ final class MenuScanViewModel {
                         self.errorTitle = self.strings.analysisFailedTitle
                         self.errorMessage = self.strings.analysisFailedMessage
                         self.canRetry = true
+                        self.endBackgroundTask(backgroundTaskID)
                     } else {
                         let fileNames = ImageStorageService.shared.save(images: images, forMenuId: menu.id)
                         menu.imageFileNames = fileNames
@@ -261,12 +312,15 @@ final class MenuScanViewModel {
                         self.analyzedDishes = analyzed
                         self.isAnalyzing = false
                         self.showResults = true
+                        await Self.sendMenuReadyNotificationIfNeeded(menuId: menu.id, strings: self.strings)
+                        self.endBackgroundTask(backgroundTaskID)
                     }
                 } else {
                     self.isAnalyzing = false
                     self.errorTitle = self.strings.analysisFailedTitle
                     self.errorMessage = self.strings.analysisFailedMessage
                     self.canRetry = true
+                    self.endBackgroundTask(backgroundTaskID)
                 }
             } catch let ocrError as OCRError {
                 stopProgressDrift()
@@ -280,12 +334,14 @@ final class MenuScanViewModel {
                     self.errorMessage = self.strings.cantReadTextMessage
                 }
                 self.canRetry = true
+                self.endBackgroundTask(backgroundTaskID)
             } catch {
                 stopProgressDrift()
                 self.isAnalyzing = false
                 self.errorTitle = self.strings.somethingWentWrongTitle
                 self.errorMessage = self.strings.unexpectedError
                 self.canRetry = true
+                self.endBackgroundTask(backgroundTaskID)
             }
         }
     }

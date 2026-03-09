@@ -26,6 +26,7 @@ struct MenuResultView: View {
     @State private var displayDishes: [AnalyzedDish]?
     @State private var showDietaryEditor = false
     @State private var showStaffCard = false
+    @State private var showDiscardAlert = false
     @State private var currentFilterGroups: [DietaryFilterGroup]?
 
     private var strings: AppStrings {
@@ -93,7 +94,19 @@ struct MenuResultView: View {
         .background(Color(.systemBackground))
         .searchable(text: $searchText, prompt: strings.searchDishes)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarBackButtonHidden(isPushed && canSave)
         .toolbar {
+            if isPushed && canSave {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button {
+                        showDiscardAlert = true
+                    } label: {
+                        Image(systemName: "chevron.left")
+                            .font(.system(size: 17, weight: .regular))
+                    }
+                    .accessibilityLabel(strings.close)
+                }
+            }
             if !isPushed {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
@@ -173,6 +186,19 @@ struct MenuResultView: View {
             }
         } message: {
             Text(strings.couldntDetectName)
+        }
+        .alert(strings.leaveWithoutSavingTitle, isPresented: $showDiscardAlert) {
+            Button(strings.leaveWithoutSavingButton, role: .destructive) {
+                onDismiss()
+                dismiss()
+            }
+            Button(strings.saveMenuButton) {
+                showDiscardAlert = false
+                DispatchQueue.main.async { showNamePrompt = true }
+            }
+            Button(strings.cancel, role: .cancel) {}
+        } message: {
+            Text(strings.leaveWithoutSavingMessage)
         }
     }
 

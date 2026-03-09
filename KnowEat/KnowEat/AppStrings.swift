@@ -145,7 +145,7 @@ struct AppStrings {
 
     // MARK: - Home Error Sheet
 
-    var notAMenuTitle: String { t("Not a Menu", "No es un menú", "Non è un menu") }
+    var notAMenuTitle: String { t("This doesn't look like a menu", "Este no parece un menú", "Questo non sembra un menu") }
     var analysisFailedTitle: String { t("Analysis Failed", "Análisis fallido", "Analisi fallita") }
     var noMenuTextFoundTitle: String { t("No Menu Text Found", "No se encontró texto", "Nessun testo trovato") }
     var couldntReadTextTitle: String { t("Couldn't Read Text", "No se pudo leer el texto", "Impossibile leggere il testo") }
@@ -278,9 +278,9 @@ struct AppStrings {
         "Inserisci il nome"
     ) }
     var couldntDetectName: String { t(
-        "We couldn't detect the restaurant name. Please enter it to save this menu.",
-        "No pudimos detectar el nombre del restaurante. Ingresa un nombre para guardar este menú.",
-        "Non siamo riusciti a rilevare il nome del ristorante. Inserisci un nome per salvare questo menu."
+        "Give this menu a name so you can find it later in your history.",
+        "Dale un nombre a este menú para encontrarlo después en tu historial.",
+        "Dai un nome a questo menu per trovarlo dopo nella tua cronologia."
     ) }
 
     // MARK: - Dish Card
@@ -547,6 +547,16 @@ struct AppStrings {
     var doneStage: String { t("Done!", "¡Listo!", "Fatto!") }
     var retryingBackup: String { t("Retrying with backup…", "Reintentando…", "Nuovo tentativo…") }
     var analyzingMenu: String { t("Analyzing menu", "Analizando menú", "Analisi menu") }
+    var loaderBackgroundHint: String { t(
+        "Puedes salir de la app, te enviaremos una notificación cuando terminemos.",
+        "Puedes salir de la app, te enviaremos una notificación cuando terminemos.",
+        "Puoi uscire dall'app, ti invieremo una notifica al termine."
+    ) }
+    var menuReadyNotificationBody: String { t(
+        "¡Menú listo! Hemos terminado de analizar los ingredientes.",
+        "¡Menú listo! Hemos terminado de analizar los ingredientes.",
+        "Menu pronto! Abbiamo finito di analizzare gli ingredienti."
+    ) }
 
     var loaderPhrases: [String] { [
         t("Reading every dish on the menu…", "Leyendo cada platillo del menú…", "Lettura di ogni piatto del menu…"),
@@ -559,9 +569,9 @@ struct AppStrings {
     // MARK: - Error Messages
 
     var notAMenuMessage: String { t(
-        "We couldn't identify any dishes in this image. Make sure you're photographing a restaurant food menu.",
-        "No pudimos identificar platillos en esta imagen. Asegúrate de fotografiar un menú de restaurante.",
-        "Non siamo riusciti a identificare piatti in questa immagine. Assicurati di fotografare un menu di un ristorante."
+        "We suggest photographing a restaurant food menu with dish names and descriptions. Use good lighting and keep the text in focus.",
+        "Te sugerimos fotografiar un menú de restaurante con nombres y descripciones de platos. Usa buena iluminación y mantén el texto enfocado.",
+        "Ti suggeriamo di fotografare un menu da ristorante con nomi e descrizioni dei piatti. Usa una buona illuminazione e tieni il testo a fuoco."
     ) }
     var analysisFailedMessage: String { t(
         "We couldn't identify any dishes in this image. Make sure you're photographing a food menu with dish names and descriptions.",
@@ -690,6 +700,19 @@ struct AppStrings {
         "Guarda este menú en tu lista de menús recientes",
         "Salva questo menu nella lista dei menu recenti"
     ) }
+
+    var leaveWithoutSavingTitle: String { t(
+        "Leave without saving?",
+        "¿Salir sin guardar?",
+        "Uscire senza salvare?"
+    ) }
+    var leaveWithoutSavingMessage: String { t(
+        "If you leave now the menu will be lost and you'll need to scan it again.",
+        "Si sales ahora el menú se perderá y tendrás que escanearlo de nuevo.",
+        "Se esci ora il menu andrà perso e dovrai scansionarlo di nuovo."
+    ) }
+    var leaveWithoutSavingButton: String { t("Leave without saving", "Salir sin guardar", "Esci senza salvare") }
+    var saveMenuButton: String { t("Save menu", "Guardar menú", "Salva menu") }
 
     // MARK: - Staff Communication
 

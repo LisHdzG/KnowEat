@@ -8,12 +8,38 @@
 import SwiftUI
 import CoreText
 import FirebaseCore
+import UserNotifications
 
-class AppDelegate: NSObject, UIApplicationDelegate {
+extension Notification.Name {
+    /// Posted when user taps the "menu ready" local notification. userInfo[NotificationPayload.menuIdKey] = menuId as String (UUID string).
+    static let knowEatOpenMenuFromNotification = Notification.Name("KnowEatOpenMenuFromNotification")
+}
+
+class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication,
                      didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         FirebaseApp.configure()
+        UNUserNotificationCenter.current().delegate = self
         return true
+    }
+
+    func userNotificationCenter(
+        _ center: UNUserNotificationCenter,
+        didReceive response: UNNotificationResponse,
+        withCompletionHandler completionHandler: @escaping () -> Void
+    ) {
+        let userInfo = response.notification.request.content.userInfo
+        if let menuIdString = userInfo[NotificationPayload.menuIdKey] as? String,
+           UUID(uuidString: menuIdString) != nil {
+            DispatchQueue.main.async {
+                NotificationCenter.default.post(
+                    name: .knowEatOpenMenuFromNotification,
+                    object: nil,
+                    userInfo: [NotificationPayload.menuIdKey: menuIdString]
+                )
+            }
+        }
+        completionHandler()
     }
 }
 
