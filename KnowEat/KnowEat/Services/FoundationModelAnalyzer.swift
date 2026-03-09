@@ -12,7 +12,11 @@ import FoundationModels
 
 @Generable
 struct GeneratedMenu {
-    @Guide(description: "Restaurant name from the top 1-3 lines of the menu (branding/logo/header). 'Unknown' if not clearly visible. 'NOT_A_MENU' if the text is not a restaurant food menu.")
+    @Guide(description: """
+    Restaurant name: look ONLY in the first 5-7 lines. Must be mostly letters (apostrophe or '&' allowed). \
+    MUST NOT contain: @ www. .com Tel Phone P.IVA VAT Via Street Avenue Menu Drinks Carta. \
+    If no valid proper noun found, return exactly "UNKNOWN". "NOT_A_MENU" only if the text is not a restaurant food menu.
+    """)
     var restaurant: String
 
     @Guide(description: "Best icon for the overall menu type. Choose one: beer, dinner, fried-rice, lasagna, lunch-bag, nachos, pancake, pasta, pastry, pizza-slice, ramen, restaurant, rice, salad, sausage, shrimp, taco")
@@ -165,7 +169,7 @@ final class FoundationModelAnalyzer {
         Read this menu and extract every orderable item following the system rules exactly.
 
         ANTI-CONFUSION REMINDERS:
-        • The restaurant name is in the FIRST 1-3 lines and has no price.
+        • The restaurant name is ONLY in the first 5-7 lines; no URLs, Tel, addresses, or the word "Menu". If unsure, use "UNKNOWN".
         • Section headings (Antipasti, Starters, Pizzas, Drinks, Bebidas…) are NOT dishes — set isActualDish=false.
         • Bilingual menus often repeat the dish name in a second language on the next line — that is ONE dish, NOT two.
         • If a line contains commas or conjunctions (and, with, con, e, mit, avec), it is a description/ingredients line. Put it in dishDescription, NOT in name.
@@ -209,8 +213,16 @@ final class FoundationModelAnalyzer {
        so the allergen and ingredient databases can analyze them.
 
     ANTI-CONFUSION RULES (CRITICAL):
-    RESTAURANT NAME: Almost always in the first 1-3 lines of the text. \
-    It stands alone with no price. Once identified, never use it as a dish.
+    RESTAURANT NAME (STRICT — follow exactly):
+    1. SEARCH AREA: Look ONLY in the first 5 to 7 lines of the text. If you do not find a clear restaurant name there, do NOT search further down.
+    2. EXCLUSION RULES (negative heuristics): A valid name MUST NOT contain:
+       - Social or web symbols ("@", "www.", ".com", ".it", ".es", etc.).
+       - Phone or tax indicators ("Tel", "Phone", "P.IVA", "VAT", "CIF", "NIF", "Fax").
+       - Address keywords ("Via", "Street", "Avenue", "Piazza", "Blvd", "Calle", "Carrer", "Road", "Lane").
+       - Generic category words ("Menu", "Menù", "Drinks", "Desserts", "Restaurant", "Carta", "Carte", "Kitchen", "Wine list").
+    3. CLEAN FORMAT: The name should be mostly letters (one apostrophe or ampersand '&' is acceptable). If a line is only digits, dashes, or odd symbols (e.g. "123-456", "*#*"), ignore it and do not use it as the restaurant name.
+    4. FALLBACK: If after applying these rules you do not find a line that looks like a real proper noun (a business/restaurant name), you MUST return exactly the string "UNKNOWN". Do not guess, invent, or force a name.
+    Once identified, never use the restaurant name as a dish.
 
     CATEGORY HEADINGS: Lines like "Starters", "Antipasti", "Primi Piatti", "Postres", \
     "Pizzas", "Drinks", "Bevande", "Bebidas", "Platos Fuertes", "Secondi Piatti". \
