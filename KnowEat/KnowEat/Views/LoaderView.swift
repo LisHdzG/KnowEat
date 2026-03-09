@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UserNotifications
 
 struct LoaderView: View {
     var progress: Double? = nil
@@ -27,6 +28,7 @@ struct LoaderView: View {
     private let phrases: [String]
     @State private var currentPhrase: String
     @State private var displayedProgress: Double = 0
+    @State private var canSendNotifications = false
     private let selectedGIF: String
 
     init(progress: Double? = nil, stage: String? = nil, phrases: [String]? = nil, strings: AppStrings = AppStrings()) {
@@ -42,20 +44,22 @@ struct LoaderView: View {
 
     var body: some View {
         VStack(spacing: 28) {
-            HStack(spacing: 0) {
-                Spacer(minLength: 0)
-                HStack(alignment: .top, spacing: 10) {
-                    Image(systemName: "lightbulb.fill")
-                        .font(.system(size: 18))
-                        .foregroundStyle(Color("PrimaryOrange").opacity(0.85))
-                    Text(strings.loaderBackgroundHint)
-                        .font(.interRegular(size: 13))
-                        .foregroundStyle(Color("SecondaryGray").opacity(0.5))
-                        .multilineTextAlignment(.center)
+            if canSendNotifications {
+                HStack(spacing: 0) {
+                    Spacer(minLength: 0)
+                    HStack(alignment: .top, spacing: 10) {
+                        Image(systemName: "lightbulb.fill")
+                            .font(.system(size: 18))
+                            .foregroundStyle(Color("PrimaryOrange").opacity(0.85))
+                        Text(strings.loaderBackgroundHint)
+                            .font(.interRegular(size: 13))
+                            .foregroundStyle(Color("SecondaryGray").opacity(0.5))
+                            .multilineTextAlignment(.center)
+                    }
+                    Spacer(minLength: 0)
                 }
-                Spacer(minLength: 0)
+                .padding(.horizontal, 28)
             }
-            .padding(.horizontal, 28)
 
             GIFImageView(name: selectedGIF, animate: !reduceMotion)
                 .frame(width: 180, height: 180)
@@ -82,6 +86,11 @@ struct LoaderView: View {
         .accessibilityHint(stage ?? currentPhrase)
         .onAppear {
             if progress == nil { startPhraseRotation() }
+            UNUserNotificationCenter.current().getNotificationSettings { settings in
+                Task { @MainActor in
+                    canSendNotifications = settings.authorizationStatus == .authorized
+                }
+            }
         }
         .onChange(of: progress) { _, newValue in
             if reduceMotion {
