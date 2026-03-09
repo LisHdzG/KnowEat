@@ -325,6 +325,7 @@ final class MenuScanViewModel {
 
             return Dish(
                 name: dish.name,
+                englishName: dish.englishName,
                 translatedName: dish.translatedName,
                 description: dish.description,
                 price: dish.price,

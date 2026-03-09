@@ -60,7 +60,11 @@ struct TextRegion: Codable, Sendable {
 
 struct Dish: Identifiable, Codable, Sendable {
     let id: UUID
+    /// Original name exactly as it appears in the OCR text — used for bounding-box matching.
     let name: String
+    /// Always English — used for allergen-database lookups. Nil when name is already English.
+    let englishName: String?
+    /// User's native-language display name (set during translation pass). Nil when no translation is needed.
     let translatedName: String?
     let description: String?
     let price: String?
@@ -73,6 +77,7 @@ struct Dish: Identifiable, Codable, Sendable {
 
     init(
         name: String,
+        englishName: String? = nil,
         translatedName: String? = nil,
         description: String?,
         price: String?,
@@ -85,6 +90,7 @@ struct Dish: Identifiable, Codable, Sendable {
     ) {
         self.id = UUID()
         self.name = name
+        self.englishName = englishName
         self.translatedName = translatedName
         self.description = description
         self.price = price
@@ -99,6 +105,7 @@ struct Dish: Identifiable, Codable, Sendable {
     init(from original: Dish, translatedName: String?, translatedDescription: String?, translatedIngredients: [String], translatedInferredIngredients: [String]) {
         self.id = original.id
         self.name = original.name
+        self.englishName = original.englishName
         self.translatedName = translatedName
         self.description = translatedDescription
         self.price = original.price
@@ -114,6 +121,7 @@ struct Dish: Identifiable, Codable, Sendable {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decode(UUID.self, forKey: .id)
         name = try container.decode(String.self, forKey: .name)
+        englishName = try container.decodeIfPresent(String.self, forKey: .englishName)
         translatedName = try container.decodeIfPresent(String.self, forKey: .translatedName)
         description = try container.decodeIfPresent(String.self, forKey: .description)
         price = try container.decodeIfPresent(String.self, forKey: .price)

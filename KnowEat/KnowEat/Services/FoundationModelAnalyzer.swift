@@ -8,45 +8,75 @@
 import Foundation
 import FoundationModels
 
-// MARK: - Generable Structs (Pass 1: Extraction — always in English)
+// MARK: - Generable Structs (Pass 1: Strict extraction)
 
 @Generable
 struct GeneratedMenu {
-    @Guide(description: "Restaurant name from branding/logo/header. 'Unknown' if not visible. 'NOT_A_MENU' if not a food menu.")
+    @Guide(description: "Restaurant name from the top 1-3 lines of the menu (branding/logo/header). 'Unknown' if not clearly visible. 'NOT_A_MENU' if the text is not a restaurant food menu.")
     var restaurant: String
 
-    @Guide(description: "Icon: beer, dinner, fried-rice, lasagna, lunch-bag, nachos, pancake, pasta, pastry, pizza-slice, ramen, restaurant, rice, salad, sausage, shrimp, taco")
+    @Guide(description: "Best icon for the overall menu type. Choose one: beer, dinner, fried-rice, lasagna, lunch-bag, nachos, pancake, pasta, pastry, pizza-slice, ramen, restaurant, rice, salad, sausage, shrimp, taco")
     var categoryIcon: String
 
-    @Guide(description: "Every dish and drink, in the same order as the original text. Empty if not a menu.")
+    @Guide(description: "Every orderable dish or drink item, in the exact order they appear in the text. Empty array if not a menu.")
     var dishes: [GeneratedDish]
 }
 
 @Generable
 struct GeneratedDish {
-    @Guide(description: "The dish name exactly as printed on the menu, in the menu's original language. Do NOT include ingredients or descriptions in this field.")
+    @Guide(description: """
+    The dish name EXACTLY as it appears in the original OCR text, preserving the original language. \
+    This field is used for bounding-box matching in the UI. \
+    RULES: Short (1–4 words). NEVER contains commas. \
+    NEVER put ingredient lists or descriptions here. \
+    NEVER put category headings (Antipasti, Starters, Pizzas, Drinks…) here.
+    """)
     var name: String
 
-    @Guide(description: "English description of this dish. Include any subtitle or secondary text from the menu that describes this dish.")
+    @Guide(description: """
+    English translation of the dish name. \
+    If the original name is already in English, repeat it here. \
+    This field is used for ingredient and allergen database lookups. \
+    Same short format as 'name' — no commas, no ingredient lists.
+    """)
+    var englishName: String
+
+    @Guide(description: """
+    English translation of any description or ingredient text written on the menu FOR THIS DISH. \
+    Empty string if the menu writes nothing. DO NOT invent or hallucinate a description.
+    """)
     var dishDescription: String
 
-    @Guide(description: "true if a customer can order this item. false for section headers, categories, subtitles, translations, restaurant name, or decorative text.")
+    @Guide(description: """
+    true → the item is orderable by a customer. \
+    false → it is a section heading, category label, restaurant name, subtitle, \
+    decorative text, or a bilingual translation line of the previous dish.
+    """)
     var isActualDish: Bool
 
-    @Guide(description: "Ingredients explicitly written on the menu for this dish, each translated to English. Empty array if the menu does not list ingredients for this dish.")
+    @Guide(description: """
+    Ingredients explicitly written on the menu for this dish, each translated to English. \
+    Empty array if the menu does not list ingredients for this dish. \
+    Do NOT include the dish name itself as an ingredient.
+    """)
     var ingredients: [String]
 
-    @Guide(description: "Common ingredients this dish typically has based on culinary knowledge, in English. Empty array if unsure.")
+    @Guide(description: "Typical ingredients this dish usually contains based on culinary knowledge, in English. Empty array if genuinely unsure.")
     var inferredIngredients: [String]
 
-    @Guide(description: "Allergen IDs from explicit ingredients. Valid: gluten, dairy, eggs, fish, crustaceans, peanuts, soy, tree_nuts, celery, mustard, sesame, sulfites, lupins, mollusks, lactose, fructose, histamine, fodmap, meat, poultry, pork, alcohol")
+    @Guide(description: """
+    Allergen IDs from EXPLICIT ingredients only. \
+    Valid IDs: gluten, dairy, eggs, fish, crustaceans, peanuts, soy, tree_nuts, \
+    celery, mustard, sesame, sulfites, lupins, mollusks, lactose, fructose, \
+    histamine, fodmap, meat, poultry, pork, alcohol
+    """)
     var allergenIds: [String]
 
-    @Guide(description: "Allergen IDs from inferred ingredients only. Same valid IDs. Empty if none.")
+    @Guide(description: "Allergen IDs from INFERRED ingredients only. Same valid IDs. Empty if none inferred.")
     var suggestedAllergenIds: [String]
 }
 
-// MARK: - Generable Structs (Pass 2: Per-dish translation)
+// MARK: - Generable Structs (Pass 2: Per-dish user-language translation)
 
 @Generable
 struct DishTranslation {
@@ -56,7 +86,7 @@ struct DishTranslation {
     @Guide(description: "The dish description translated to the target language.")
     var translatedDescription: String
 
-    @Guide(description: "Each ingredient translated to the target language, same count and order.")
+    @Guide(description: "Each ingredient translated to the target language, same count and order as input.")
     var translatedIngredients: [String]
 }
 
@@ -97,7 +127,7 @@ final class FoundationModelAnalyzer {
         "meat", "poultry", "pork", "alcohol"
     ]
 
-    private static let maxOCRCharacters = 12000
+    private static let maxOCRCharacters = 12_000
 
     var isAvailable: Bool {
         SystemLanguageModel.default.availability == .available
@@ -108,7 +138,7 @@ final class FoundationModelAnalyzer {
         case translating(current: Int, total: Int)
     }
 
-    // MARK: - Analysis (two-pass: extract in English, then translate per-dish)
+    // MARK: - Main Entry Point
 
     func analyze(
         ocrText: String,
@@ -119,56 +149,32 @@ final class FoundationModelAnalyzer {
             throw FoundationModelError.modelNotAvailable
         }
 
-        // --- PASS 1: Extract menu content — always in English ---
-        let extractSession = LanguageModelSession(
-            instructions: """
-            You are a restaurant menu reader. ALL output MUST be in English. \
-            \
-            VALIDATE: If the text is NOT a restaurant food menu (product label, \
-            nutrition facts, receipt, invoice, bottle, delivery app, book, random text), \
-            set restaurant to "NOT_A_MENU" with empty dishes. \
-            \
-            HOW TO READ A MENU LINE BY LINE: \
-            Each dish typically occupies 1-3 lines: \
-            LINE A: The dish name (often with a price on the same line). \
-            LINE B (optional): A subtitle, description, or translation of Line A. \
-            This is NOT a separate dish. Put this in dishDescription. \
-            LINE C (optional): Ingredient details for the dish on Line A. \
-            Put these into the ingredients array, translated to English. \
-            \
-            Many menus are BILINGUAL: they print the name in one language \
-            and a translation on the next line. Both refer to the SAME dish. \
-            Use the FIRST line as name, the second as dishDescription. \
-            \
-            KEY RULES: \
-            - name: EXACTLY as written on the menu, original language. \
-            Do NOT append ingredients or descriptions to the name field. \
-            - dishDescription: English description. Include subtitles from the menu. \
-            - ingredients: ONLY ingredients explicitly listed on the menu for this dish, \
-            translated to English. Do NOT break the dish name into ingredients. \
-            Empty array if none listed. \
-            - inferredIngredients: Typical ingredients from culinary knowledge, in English. \
-            - isActualDish: true ONLY for orderable items. \
-            - The restaurant name is NEVER a dish. \
-            - Extract dishes in the EXACT order they appear.
-            """
-        )
-
         onPhaseChange?(.extracting)
 
         let cleanedText = Self.preprocessOCRText(ocrText)
-
-        let truncatedText = cleanedText.count > Self.maxOCRCharacters
+        let truncated = cleanedText.count > Self.maxOCRCharacters
             ? String(cleanedText.prefix(Self.maxOCRCharacters))
             : cleanedText
 
+        // PASS 1 ── Strict extraction (always in English for allergen analysis)
+        let extractSession = LanguageModelSession(
+            instructions: Self.extractionSystemPrompt
+        )
+
         let extractPrompt = """
-        Read this menu and extract every dish. \
-        Write all descriptions and ingredients in English. \
-        Subtitle lines below a dish name are descriptions, NOT separate dishes. \
-        \
-        TEXT: \
-        \(truncatedText)
+        Read this menu and extract every orderable item following the system rules exactly.
+
+        ANTI-CONFUSION REMINDERS:
+        • The restaurant name is in the FIRST 1-3 lines and has no price.
+        • Section headings (Antipasti, Starters, Pizzas, Drinks, Bebidas…) are NOT dishes — set isActualDish=false.
+        • Bilingual menus often repeat the dish name in a second language on the next line — that is ONE dish, NOT two.
+        • If a line contains commas or conjunctions (and, with, con, e, mit, avec), it is a description/ingredients line. Put it in dishDescription, NOT in name.
+        • name must be short (1-4 words) and match the exact OCR text.
+        • englishName must be the English translation (or copy of name if already English).
+        • dishDescription must be in English. Leave empty if the menu writes nothing.
+
+        RAW OCR TEXT:
+        \(truncated)
         """
 
         let generated: GeneratedMenu
@@ -181,15 +187,53 @@ final class FoundationModelAnalyzer {
 
         var menu = try buildScannedMenu(from: generated, ocrText: cleanedText)
 
-        // --- PASS 2: Translate each dish individually ---
-        if userLanguage != "English" && !menu.dishes.isEmpty {
+        // PASS 2 ── Per-dish translation into user's native language (FROM English — more reliable)
+        if userLanguage != "English", !menu.dishes.isEmpty {
             menu.dishes = await translateDishesIndividually(menu.dishes, to: userLanguage, onPhaseChange: onPhaseChange)
         }
 
         return menu
     }
 
-    // MARK: - Per-Dish Translation (one AI call per dish — maximum reliability)
+    // MARK: - System Prompt (Pass 1)
+
+    private static let extractionSystemPrompt = """
+    You are a strict, highly accurate culinary data extraction system. \
+    You receive raw OCR text from a restaurant menu.
+
+    YOUR WORKFLOW & LANGUAGE RULES:
+    1. The input text may be in ANY language (e.g., Italian, Spanish, Korean, Japanese).
+    2. Extract the exact original dish name for 'name' — this is used for bounding-box \
+       UI matching and MUST match the OCR text precisely.
+    3. Always output an English translation in 'englishName' and 'dishDescription' \
+       so the allergen and ingredient databases can analyze them.
+
+    ANTI-CONFUSION RULES (CRITICAL):
+    RESTAURANT NAME: Almost always in the first 1-3 lines of the text. \
+    It stands alone with no price. Once identified, never use it as a dish.
+
+    CATEGORY HEADINGS: Lines like "Starters", "Antipasti", "Primi Piatti", "Postres", \
+    "Pizzas", "Drinks", "Bevande", "Bebidas", "Platos Fuertes", "Secondi Piatti". \
+    These are section separators → set isActualDish=false.
+
+    DISH NAME vs. INGREDIENTS RULE (most important):
+    • A dish name (name field) is SHORT — 1 to 4 words — and NEVER contains commas.
+    • If a line contains commas (',') or culinary conjunctions ('and', 'with', 'con', \
+      'e', 'mit', 'avec', 'y', 'og'), it is ALWAYS a description/ingredients line. \
+      Put it in dishDescription. NEVER put comma-separated text in the name field.
+    • If a dish has no description written on the menu, leave dishDescription EMPTY. \
+      Do NOT invent or hallucinate a description.
+
+    BILINGUAL MENUS:
+    • Many menus print the dish name in one language, then repeat it in a second \
+      language on the very next line. Both refer to the SAME dish — they are NOT two \
+      separate dishes. Use the first line as 'name'. Use the second line as 'dishDescription' \
+      if it adds context, otherwise leave it empty.
+
+    OUTPUT: Follow the structured format exactly. All descriptions and ingredients in English.
+    """
+
+    // MARK: - Pass 2: Per-Dish Translation
 
     private func translateDishesIndividually(
         _ dishes: [Dish],
@@ -198,9 +242,9 @@ final class FoundationModelAnalyzer {
     ) async -> [Dish] {
         let session = LanguageModelSession(
             instructions: """
-            You are a food translator. \
-            Translate dish names, descriptions, and ingredients to \(language). \
-            Use proper culinary terms in \(language).
+            You are a food translator. Translate dish names, descriptions, \
+            and ingredients to \(language). Use proper culinary terms in \(language). \
+            Translate only — do not add, remove, or explain.
             """
         )
 
@@ -209,16 +253,17 @@ final class FoundationModelAnalyzer {
 
         for (index, dish) in dishes.enumerated() {
             onPhaseChange?(.translating(current: index + 1, total: total))
+
+            // Translate FROM English (englishName / dishDescription already in English)
+            let sourceName = dish.englishName ?? dish.name
+            let sourceDesc = dish.description ?? ""
             let ingredientList = dish.ingredients.isEmpty
                 ? "none"
                 : dish.ingredients.joined(separator: ", ")
-            let desc = dish.description ?? ""
 
             let prompt = """
-            Translate to \(language): \
-            name: \(dish.name) | \
-            description: \(desc) | \
-            ingredients: \(ingredientList)
+            Translate to \(language):
+            name: \(sourceName) | description: \(sourceDesc) | ingredients: \(ingredientList)
             """
 
             do {
@@ -227,7 +272,7 @@ final class FoundationModelAnalyzer {
 
                 let tName = t.translatedName.trimmingCharacters(in: .whitespacesAndNewlines)
                 let effectiveName: String? = if tName.isEmpty
-                    || tName.lowercased() == dish.name.lowercased() {
+                    || tName.lowercased() == sourceName.lowercased() {
                     nil
                 } else {
                     tName
@@ -251,7 +296,7 @@ final class FoundationModelAnalyzer {
         return result
     }
 
-    // MARK: - Build ScannedMenu (post-processing)
+    // MARK: - Build ScannedMenu
 
     private func buildScannedMenu(from generated: GeneratedMenu, ocrText: String) throws -> ScannedMenu {
         if generated.restaurant.trimmingCharacters(in: .whitespacesAndNewlines).uppercased() == "NOT_A_MENU" {
@@ -262,8 +307,8 @@ final class FoundationModelAnalyzer {
 
         let candidateDishes = generated.dishes.compactMap { gd -> Dish? in
             guard gd.isActualDish else { return nil }
-            let trimmedName = gd.name
-                .trimmingCharacters(in: .whitespacesAndNewlines)
+
+            let trimmedName = gd.name.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !trimmedName.isEmpty else { return nil }
             guard !Self.isJunkEntry(trimmedName) else { return nil }
 
@@ -271,25 +316,37 @@ final class FoundationModelAnalyzer {
                 ? String(trimmedName.split(separator: " ").prefix(8).joined(separator: " "))
                 : trimmedName
 
-            let explicitText = (gd.ingredients + [gd.dishDescription])
-                .joined(separator: " ").lowercased()
-            let explicitLocalAllergens = Self.detectAllergensLocally(in: explicitText)
+            let trimmedEnglish = gd.englishName.trimmingCharacters(in: .whitespacesAndNewlines)
+            let englishName: String? = (trimmedEnglish.isEmpty || trimmedEnglish.lowercased() == finalName.lowercased())
+                ? nil
+                : trimmedEnglish
 
+            // Use the English name for allergen/DB lookups (more reliable keyword matching)
+            let lookupName = englishName ?? finalName
+            let lookupText = (gd.ingredients + [gd.dishDescription]).joined(separator: " ").lowercased()
+
+            // Layer 1: LLM-declared allergens (validated against known IDs)
             let llmConfirmed = Set(gd.allergenIds.filter { Self.validAllergenIds.contains($0) })
-            let dbAllergens = DishDatabase.shared.allergens(forDishNamed: finalName)
+
+            // Layer 2: Local keyword scan on explicit text (English is best for this)
+            let explicitLocalAllergens = Self.detectAllergensLocally(in: lookupText)
+
+            // Layer 3: DishDatabase lookup using English name
+            let dbAllergens = DishDatabase.shared.allergens(forDishNamed: lookupName)
 
             let confirmedAllergens = Array(llmConfirmed.union(explicitLocalAllergens).union(dbAllergens)).sorted()
 
+            // Suggested allergens from inferred ingredients (LLM + local scan)
             let inferredText = gd.inferredIngredients.joined(separator: " ").lowercased()
             let inferredLocalAllergens = Self.detectAllergensLocally(in: inferredText)
             let llmSuggested = Set(gd.suggestedAllergenIds.filter { Self.validAllergenIds.contains($0) })
-
-            let allSuggested = llmSuggested.union(inferredLocalAllergens)
-                .subtracting(confirmedAllergens)
-            let suggestedAllergens = Array(allSuggested).sorted()
+            let suggestedAllergens = Array(
+                llmSuggested.union(inferredLocalAllergens).subtracting(confirmedAllergens)
+            ).sorted()
 
             return Dish(
                 name: finalName,
+                englishName: englishName,
                 description: gd.dishDescription.isEmpty ? nil : gd.dishDescription,
                 price: nil,
                 category: nil,
@@ -300,16 +357,21 @@ final class FoundationModelAnalyzer {
             )
         }
 
-        let restaurantLower = generated.restaurant.lowercased()
+        // Anti-hallucination: only keep dishes whose name exists in the original OCR
+        let restaurantNorm = generated.restaurant.lowercased()
             .folding(options: .diacriticInsensitive, locale: nil)
             .trimmingCharacters(in: .whitespacesAndNewlines)
 
         let ocrValidated = candidateDishes.filter { dish in
-            let dishLower = dish.name.lowercased()
+            let dishNorm = dish.name.lowercased()
                 .folding(options: .diacriticInsensitive, locale: nil)
                 .trimmingCharacters(in: .whitespacesAndNewlines)
-            if !restaurantLower.isEmpty && restaurantLower != "unknown"
-                && (dishLower == restaurantLower || restaurantLower.contains(dishLower) || dishLower.contains(restaurantLower)) {
+
+            // Exclude if the dish name is basically the restaurant name
+            if !restaurantNorm.isEmpty && restaurantNorm != "unknown"
+                && (dishNorm == restaurantNorm
+                    || restaurantNorm.contains(dishNorm)
+                    || dishNorm.contains(restaurantNorm)) {
                 return false
             }
             return Self.dishNameFoundInOCR(dish.name, ocrText: ocrText)
@@ -350,22 +412,18 @@ final class FoundationModelAnalyzer {
 
         guard !significantWords.isEmpty else { return false }
 
-        let matchCount = significantWords.filter { word in
-            normalizedOCR.contains(word)
-        }.count
+        let matchCount = significantWords.filter { normalizedOCR.contains($0) }.count
 
         if significantWords.count <= 2 {
             return matchCount == significantWords.count
         }
-
-        let threshold = (significantWords.count * 2 + 2) / 3
-        return matchCount >= threshold
+        return matchCount >= (significantWords.count * 2 + 2) / 3
     }
 
     private static let ocrStopWords: Set<String> = [
         "di", "al", "alla", "alle", "allo", "agli", "del", "della", "delle", "dello", "dei",
         "con", "fra", "tra", "per", "sul", "sulla", "sulle",
-        "de", "la", "el", "los", "las", "un", "una", "con", "por", "para", "sin",
+        "de", "la", "el", "los", "las", "un", "una", "por", "para", "sin",
         "the", "and", "with", "in", "on", "or", "of", "for",
         "le", "les", "du", "des", "au", "aux", "et",
         "e", "o", "y", "a", "em", "no", "na", "do", "da",
@@ -404,7 +462,7 @@ final class FoundationModelAnalyzer {
             "orden", "order", "pedido",
             "extra", "add-on", "topping", "supplement",
             "regular", "xl", "xxl", "combo", "upgrade",
-            // Italian categories (simple and compound)
+            // Italian section categories
             "antipasti", "antipasto", "primi", "primi piatti", "secondi", "secondi piatti",
             "contorni", "dolci", "dessert", "desserts", "bevande", "bibite",
             "antipasti di mare", "antipasti di terra", "antipasti misti",
@@ -423,26 +481,26 @@ final class FoundationModelAnalyzer {
             "- side dishes -", "- sweets -", "- drinks -", "- beers -", "- liquors -",
             "- first of earth -", "- seconds of the sea -", "- earth seconds -",
             "first of earth", "seconds of the sea", "earth seconds",
-            // Spanish categories
+            // Spanish section categories
             "entrantes", "entradas", "sopas", "ensaladas", "platos fuertes",
             "platos principales", "postres", "bebidas", "aperitivos",
             "antojitos", "tacos", "quesadillas", "volcanes",
             "especialidades", "para compartir", "para empezar",
             "extras", "acompañamientos", "guarniciones",
             "aguas", "refrescos", "cervezas", "vinos", "cocktails", "cócteles",
-            // English categories
+            // English section categories
             "appetizers", "starters", "soups", "salads", "main courses",
             "main dishes", "sides", "side dishes", "drinks", "beverages",
             "wines", "cocktails", "beers", "spirits",
             "small plates", "large plates", "shareable", "shareables",
             "flight bites", "atmospheric spirits", "crew brews",
             "worldly wines", "zero-proof cocktails",
-            // French categories
+            // French section categories
             "entrées", "plats", "hors d'oeuvres", "boissons",
             "nos apéritifs", "nos bières", "les eaux", "les softs",
             "nos producteurs", "les planches apéro",
             "fromage et desserts", "fromages", "formules",
-            // Turkish categories
+            // Turkish section categories
             "başlangıçlar", "ana yemekler", "tatlılar", "içecekler",
             "çorbalar", "salatalar", "mezeler",
             // Generic structural
@@ -453,7 +511,6 @@ final class FoundationModelAnalyzer {
             "del día", "del giorno", "of the day",
             "brunch", "breakfast", "lunch", "dinner", "cena", "pranzo", "colazione",
             "desayuno", "almuerzo", "comida",
-            // Subtitles / translations of categories
             "traditional neapolitan desserts", "sparkling or still water",
             "normative sugli allergeni",
         ]
@@ -485,103 +542,43 @@ final class FoundationModelAnalyzer {
         ]
         if junkContains.contains(where: { lower.contains($0) }) { return true }
 
+        // All non-letter characters → noise
         let nonSpace = name.filter { !$0.isWhitespace }
         let nonAlpha = nonSpace.filter { !$0.isLetter }
         if !nonSpace.isEmpty && nonAlpha.count == nonSpace.count { return true }
 
+        // Single word shorter than 4 characters (usually noise)
         let words = name.split(separator: " ")
         if words.count == 1 && lower.count < 4 { return true }
 
+        // Too many digits (phone number / tracking code)
         let digits = name.filter { $0.isNumber }
         if digits.count > 5 { return true }
 
+        // Looks like a phone number or code
         if lower.hasPrefix("+") || lower.allSatisfy({ $0.isNumber || $0 == " " || $0 == "-" || $0 == "+" }) {
             return true
         }
 
+        // Low letter ratio → mostly symbols
         let letters = name.filter { $0.isLetter }
-        if words.count <= 3 && !letters.isEmpty && letters == letters.uppercased() {
-            let categoryHeaders: Set<String> = [
-                "antipasti", "antipasto", "primi", "secondi", "contorni", "dolci",
-                "dessert", "bevande", "bibite", "vini", "cocktails", "birre", "liquori",
-                "entrantes", "sopas", "ensaladas", "postres", "bebidas", "tacos",
-                "appetizers", "starters", "soups", "salads", "sides", "drinks",
-                "pizze", "pizzas", "insalate", "zuppe", "risotti", "focacce",
-                "carni", "pesce", "fritti", "grigliate", "aperitivi", "digestivi",
-                "extras", "especialidades", "quesadillas", "volcanes",
-            ]
-            if categoryHeaders.contains(lower) { return true }
-        }
-
-        let stripped = lower.trimmingCharacters(in: CharacterSet(charactersIn: "-–—· "))
-        if stripped != lower && junkExact.contains(stripped) { return true }
-
-        let categoryPrefixes = [
-            "antipasti ", "primi ", "secondi ", "piatti ",
-            "dolci ", "crudi ", "fritti ",
-        ]
-        if categoryPrefixes.contains(where: { lower.hasPrefix($0) }) {
-            let foodIndicators = ["con ", "alla ", "al ", "alle ", "allo ", "e ", "di pesce", "fritto", "fritte", "marinato", "arrosto"]
-            let looksLikeDish = foodIndicators.contains(where: { lower.contains($0) }) && words.count >= 3
-            if !looksLikeDish { return true }
-        }
-
-        let letterChars = name.unicodeScalars.filter { CharacterSet.letters.contains($0) }
         let totalChars = name.unicodeScalars.filter { !CharacterSet.whitespacesAndNewlines.contains($0) }
-        if !totalChars.isEmpty && letterChars.count < totalChars.count / 2 { return true }
+        if !totalChars.isEmpty && letters.count < totalChars.count / 2 { return true }
 
+        // Consonant cluster check (likely OCR noise)
         if letters.count >= 3 {
             let vowels: Set<Character> = ["a","e","i","o","u","á","é","í","ó","ú","à","è","ì","ò","ù","ä","ö","ü","â","ê","î","ô","û"]
-            let consonants = letters.lowercased().filter { !vowels.contains($0) }
             let vowelCount = letters.lowercased().filter { vowels.contains($0) }.count
-            if vowelCount == 0 && consonants.count >= 3 { return true }
+            if vowelCount == 0 { return true }
 
-            var maxConsecutiveConsonants = 0
-            var currentRun = 0
+            var maxRun = 0; var run = 0
             for ch in letters.lowercased() {
-                if vowels.contains(ch) {
-                    currentRun = 0
-                } else {
-                    currentRun += 1
-                    maxConsecutiveConsonants = max(maxConsecutiveConsonants, currentRun)
-                }
+                if vowels.contains(ch) { run = 0 } else { run += 1; maxRun = max(maxRun, run) }
             }
-            if maxConsecutiveConsonants >= 5 { return true }
+            if maxRun >= 5 { return true }
         }
 
         return false
-    }
-
-    private static func sanitizeRestaurantName(_ name: String) -> String {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        if trimmed.isEmpty || trimmed.lowercased() == "unknown" { return "Unknown" }
-
-        let letterCount = trimmed.filter { $0.isLetter }.count
-        if letterCount == 0 { return "Unknown" }
-
-        let nonSpaceCount = trimmed.filter { !$0.isWhitespace }.count
-        if nonSpaceCount > 0 && letterCount < nonSpaceCount / 2 { return "Unknown" }
-
-        let stripped = trimmed.replacingOccurrences(of: " ", with: "")
-        if stripped.range(of: #"^\d{1,2}[:.]\d{2}$"#, options: .regularExpression) != nil {
-            return "Unknown"
-        }
-        if stripped.allSatisfy({ $0.isNumber || $0 == "." || $0 == "," || $0 == ":" || $0 == "-" || $0 == "/" }) {
-            return "Unknown"
-        }
-
-        let lower = trimmed.lowercased()
-        let genericNames: Set<String> = [
-            "menù", "menu", "la carta", "the menu", "restaurant", "ristorante", "restaurante",
-            "antipasti", "primi", "secondi", "dolci", "dessert", "bevande", "bibite",
-            "entrantes", "entradas", "platos", "postres", "bebidas",
-            "appetizers", "starters", "main courses", "drinks",
-            "pizze", "pizzas", "insalate", "zuppe", "pasta",
-            "our menu", "nuestra carta", "la nostra carta",
-        ]
-        if genericNames.contains(lower) { return "Unknown" }
-        if trimmed.count > 40 { return String(trimmed.prefix(40)) }
-        return trimmed
     }
 
     // MARK: - OCR Pre-processing
@@ -617,7 +614,7 @@ final class FoundationModelAnalyzer {
         return lines.joined(separator: "\n")
     }
 
-    // MARK: - Local Allergen Detection (safety net)
+    // MARK: - Local Allergen Detection (safety net — English-optimized)
 
     private static func detectAllergensLocally(in text: String) -> Set<String> {
         var found: Set<String> = []
@@ -628,17 +625,10 @@ final class FoundationModelAnalyzer {
         )
         for (allergenId, keywords) in allergenKeywordMap {
             for keyword in keywords {
-                if keyword.contains(" ") {
-                    if text.contains(keyword) {
-                        found.insert(allergenId)
-                        break
-                    }
-                } else {
-                    if words.contains(keyword) {
-                        found.insert(allergenId)
-                        break
-                    }
-                }
+                let matched = keyword.contains(" ")
+                    ? text.contains(keyword)
+                    : words.contains(keyword)
+                if matched { found.insert(allergenId); break }
             }
         }
         return found
@@ -717,7 +707,7 @@ final class FoundationModelAnalyzer {
         "poultry": [
             "chicken", "turkey", "duck", "goose", "quail", "hen",
             "pollo", "pavo", "pato", "gallina",
-            "pollo", "tacchino", "anatra", "oca", "quaglia"
+            "tacchino", "anatra", "oca", "quaglia"
         ],
         "pork": [
             "pork", "bacon", "sausage", "salami", "prosciutto", "pancetta",
